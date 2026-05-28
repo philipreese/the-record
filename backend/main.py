@@ -104,10 +104,11 @@ def read_wrapped(
     return get_wrapped_data(year=year, quarter=quarter, month=month, decade=decade)
 
 @app.post("/api/sync")
-async def sync_listens():
+async def sync_listens(mode: str = Query("normal", description="Sync mode: 'normal' or 'full'")):
     """
     Synchronize local database with the ListenBrainz API.
-    Fetches plays submitted since our local maximum timestamp.
+    Fetches plays submitted since our local maximum timestamp, or performs a backfill
+    if local count differs from ListenBrainz.
     """
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         raise HTTPException(
@@ -115,35 +116,58 @@ async def sync_listens():
             detail="Credentials missing. Please configure LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN in your .env file."
         )
         
-    # Get local maximum timestamp
+    headers = {
+        "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
+        "User-Agent": "the-record-dashboard-sync/1.0"
+    }
+
+    # 1. Fetch total count from ListenBrainz
+    lb_total_count = 0
+    async with httpx.AsyncClient() as client:
+        try:
+            count_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listen-count"
+            count_res = await client.get(count_url, headers=headers)
+            count_res.raise_for_status()
+            lb_total_count = count_res.json().get("payload", {}).get("count", 0)
+        except Exception:
+            # Fallback to 0 if the endpoint fails
+            lb_total_count = 0
+
+    # 2. Get local database count and latest timestamp
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM listens")
+    local_count = cursor.fetchone()[0]
+    
     cursor.execute("SELECT MAX(unix_ts) FROM listens")
     max_ts_row = cursor.fetchone()
     latest_ts = max_ts_row[0] if max_ts_row and max_ts_row[0] is not None else 0
+    
+    # 3. Load all local keys to prevent duplicates
+    cursor.execute("SELECT unix_ts, artist, title FROM listens")
+    local_keys = {(row[0], row[1].lower(), row[2].lower()) for row in cursor.fetchall()}
     conn.close()
+    
+    # Determine if we need backfill
+    backfill = (mode == "full") or (lb_total_count > local_count)
+    missing_count = lb_total_count - local_count if lb_total_count > local_count else 0
     
     new_listens = []
     current_max_ts = None
     stop_sync = False
     
-    headers = {
-        "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
-        "User-Agent": "the-record-dashboard-sync/1.0"
-    }
+    # Use larger count for backfill to minimize API requests
+    batch_size = 1000 if backfill else 100
     
     async with httpx.AsyncClient() as client:
         while not stop_sync:
-            # Build API URL
-            # ListenBrainz pagination: max_ts fetches scrobbles *before* this timestamp
-            url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens?count=100"
+            url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens?count={batch_size}"
             if current_max_ts:
                 url += f"&max_ts={current_max_ts}"
                 
             try:
                 response = await client.get(url, headers=headers)
                 if response.status_code == 429:
-                    # Rate limited: wait and retry or stop
                     reset_in = response.headers.get("X-RateLimit-Reset-In", "5")
                     raise HTTPException(
                         status_code=429,
@@ -162,32 +186,35 @@ async def sync_listens():
             if not listens:
                 break
                 
-            # Process plays (returned descending: newest first)
             for listen in listens:
                 ts = listen.get("listened_at")
                 if ts is None:
                     continue
-                    
-                # If we've reached an entry we already have, we can stop fetching
-                if ts <= latest_ts:
-                    stop_sync = True
-                    break
                     
                 meta = listen.get("track_metadata", {})
                 artist = meta.get("artist_name")
                 title = meta.get("track_name")
                 
                 if artist and title:
-                    new_listens.append((
-                        artist,
-                        title,
-                        ts,
-                        "listenbrainz_sync"
-                    ))
+                    key = (ts, artist.lower(), title.lower())
+                    if key not in local_keys:
+                        new_listens.append((artist, title, ts, "listenbrainz_sync"))
+                        local_keys.add(key)
+                        if missing_count > 0:
+                            missing_count -= 1
+                            if missing_count == 0 and backfill and mode != "full":
+                                stop_sync = True
+                                break
+                    
+                # If we're not in backfill mode, stop when we see an entry older than or equal to latest_ts
+                if not backfill and ts <= latest_ts:
+                    stop_sync = True
+                    break
             
-            # If we processed all 100 entries, get older ones in the next loop
-            if len(listens) == 100 and not stop_sync:
-                # Set max_ts to the timestamp of the oldest listen in this batch
+            if stop_sync:
+                break
+                
+            if len(listens) == batch_size:
                 current_max_ts = listens[-1].get("listened_at")
             else:
                 break
@@ -207,5 +234,6 @@ async def sync_listens():
     return {
         "status": "success",
         "synced_count": len(new_listens),
-        "latest_timestamp": latest_ts
+        "latest_timestamp": latest_ts,
+        "backfill_run": backfill
     }

@@ -79,6 +79,7 @@
   let syncing = false;
   let syncResult: SyncResultInfo | null = null;
   let syncError: string | null = null;
+  let forceFullSync = false;
 
   onMount(() => {
     // Load theme from localStorage or fallback to default
@@ -169,7 +170,8 @@
     syncError = null;
     syncResult = null;
     try {
-      const res = await fetch('/api/sync', { method: 'POST' });
+      const url = forceFullSync ? '/api/sync?mode=full' : '/api/sync';
+      const res = await fetch(url, { method: 'POST' });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.detail || "Synchronization failed.");
@@ -178,6 +180,7 @@
       
       // Refresh dashboard data
       await fetchDashboardData();
+      forceFullSync = false;
     } catch (e) {
       syncError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -246,21 +249,27 @@
             
             <!-- Sync Action -->
             <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
-              <button 
-                class="btn btn-primary btn-md w-full sm:w-auto shadow-lg" 
-                disabled={syncing}
-                on:click={runSync}
-              >
-                {#if syncing}
-                  <span class="loading loading-spinner loading-xs"></span>
-                  Syncing ListenBrainz...
-                {:else}
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                  </svg>
-                  Sync Now
-                {/if}
-              </button>
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <label class="label cursor-pointer gap-2 py-0">
+                  <span class="label-text text-[10px] opacity-60">Force Full Sync</span>
+                  <input type="checkbox" bind:checked={forceFullSync} class="checkbox checkbox-xs checkbox-primary" />
+                </label>
+                <button 
+                  class="btn btn-primary btn-md w-full sm:w-auto shadow-lg" 
+                  disabled={syncing}
+                  on:click={runSync}
+                >
+                  {#if syncing}
+                    <span class="loading loading-spinner loading-xs"></span>
+                    Syncing ListenBrainz...
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Sync Now
+                  {/if}
+                </button>
+              </div>
               
               {#if syncResult}
                 <span class="text-[10px] text-success font-semibold">
