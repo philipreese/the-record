@@ -224,3 +224,12 @@ backend/import_checkpoint.pkl
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# database files and cache
+backend/*.db
+backend/*.db-journal
+*.db
+*.db-journal
+
+# editor settings
+.vscode/

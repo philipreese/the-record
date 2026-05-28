@@ -29,27 +29,62 @@ def strip_watched(title):
         return title[8:]
     return title
 
-def parse_ytm_entry(entry):
+def parse_yt_entry(entry):
     """
-    Extract artist and title from a YouTube Music entry if it is a topic channel.
-    Matches the logic of scrobble_adaptive.py.
+    Extract artist and title from a YouTube or YouTube Music entry.
+    Handles both standard watch-history.json and MyActivity.json schemas.
     """
-    if entry.get("header") != "YouTube Music":
+    header = entry.get("header", "")
+    
+    # 1. Determine if it is a music watch event
+    is_music = False
+    if header == "YouTube Music":
+        is_music = True
+    elif header == "YouTube":
+        # Check details for "From YouTube Music"
+        details = entry.get("details", [])
+        for d in details:
+            if d.get("name") == "From YouTube Music":
+                is_music = True
+                break
+        
+        # Check description
+        if entry.get("description") == "Watched on YouTube Music":
+            is_music = True
+            
+        # Check subtitles for "- Topic" channel (highly indicative of a track)
+        subtitles = entry.get("subtitles", [])
+        if subtitles and subtitles[0].get("name", "").endswith(" - Topic"):
+            is_music = True
+
+    if not is_music:
         return None, None
 
-    raw_title = strip_watched(entry.get("title", ""))
+    # 2. Extract title (strip "Watched " prefix)
+    raw_title = entry.get("title", "")
+    if raw_title.startswith("Watched "):
+        raw_title = raw_title[8:]
+        
+    if not raw_title or raw_title.startswith("http"):
+        return None, None
+
+    # 3. Extract artist from subtitles
     subtitles = entry.get("subtitles", [])
-    subtitle_name = subtitles[0]["name"] if subtitles else None
-
-    if raw_title.startswith("http") or not subtitle_name:
+    if not subtitles:
+        return None, None
+        
+    subtitle_name = subtitles[0].get("name", "")
+    if not subtitle_name:
         return None, None
 
-    # Only import topic_channel entries
+    # If it ends with " - Topic", strip it.
     if subtitle_name.endswith(" - Topic"):
-        artist = subtitle_name[:-8]  # strip " - Topic"
-        return artist, raw_title
+        artist = subtitle_name[:-8]
+    else:
+        # If it was marked as music (e.g. from YTM details), we can keep the channel name as artist
+        artist = subtitle_name
 
-    return None, None
+    return artist, raw_title
 
 def parse_ytm_timestamp(time_str):
     """Parse ISO 8601 timestamp with millisecond rounding to Unix epoch."""
@@ -205,13 +240,21 @@ def merge_histories(ytm_list, lfm_list):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    ytm_path = "watch-history.json"
+    # Detect which file to load: MyActivity.json takes priority over watch-history.json
+    ytm_path = None
     if len(sys.argv) > 1:
         ytm_path = sys.argv[1]
+    else:
+        for filename in ["MyActivity.json", "watch-history.json"]:
+            if os.path.exists(filename):
+                ytm_path = filename
+                break
+        if not ytm_path:
+            ytm_path = "watch-history.json"  # Fallback to trigger file not found error
 
     if not os.path.exists(ytm_path):
         print(f"Error: YouTube watch history file not found at '{ytm_path}'")
-        print("Please place watch-history.json in the repository root.")
+        print("Please place watch-history.json or MyActivity.json in the repository root.")
         sys.exit(1)
 
     print(f"Loading {ytm_path}...")
@@ -222,10 +265,10 @@ def main():
         print(f"Error reading watch history file: {e}")
         sys.exit(1)
 
-    print(f"Parsing YouTube Music Takeout data...")
+    print(f"Parsing YouTube history logs...")
     ytm_parsed = []
     for entry in data:
-        artist, title = parse_ytm_entry(entry)
+        artist, title = parse_yt_entry(entry)
         if artist and title:
             ts = parse_ytm_timestamp(entry.get("time", ""))
             if ts:
@@ -235,7 +278,7 @@ def main():
                     "unix_ts": ts
                 })
 
-    print(f"Parsed {len(ytm_parsed):,} clean YouTube Music topic channel entries.")
+    print(f"Parsed {len(ytm_parsed):,} clean YouTube Music entries.")
 
     # Fetch Last.fm
     lfm_scrobbles = []

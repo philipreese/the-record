@@ -9,7 +9,11 @@ version = "0.1.0"
 
 [dependencies]
 python = "3.13.*"
+fastapi = "*"
+uvicorn = "*"
+httpx = "*"
 
 [pypi-dependencies]
 pylast = ">=7.0.2, <8"
 python-dotenv = ">=1.2.2, <2"
+pyrefly = "*"
