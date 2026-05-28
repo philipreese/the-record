@@ -5,10 +5,15 @@ Run with: pixi run python backend/test_consolidator.py
 """
 
 import sys
+import os
 import unittest
-from .merge_history import (
+
+# Adjust path to import backend modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from merge_history import (
     strip_watched,
-    parse_ytm_entry,
+    parse_yt_entry,
     parse_ytm_timestamp,
     normalize,
     merge_histories
@@ -21,32 +26,56 @@ class TestConsolidator(unittest.TestCase):
         self.assertEqual(strip_watched("The Summoning"), "The Summoning")
         self.assertEqual(strip_watched(""), "")
 
-    def test_parse_ytm_entry(self):
-        # Valid entry (topic channel)
-        valid = {
+    def test_parse_yt_entry(self):
+        # 1. Standard watch-history.json format (topic channel)
+        std_valid = {
             "header": "YouTube Music",
             "title": "Watched The Summoning",
             "subtitles": [{"name": "Sleep Token - Topic"}]
         }
-        artist, title = parse_ytm_entry(valid)
+        artist, title = parse_yt_entry(std_valid)
         self.assertEqual(artist, "Sleep Token")
         self.assertEqual(title, "The Summoning")
 
-        # Invalid header
-        invalid_header = {
+        # 2. MyActivity format with "From YouTube Music" details
+        myact_details = {
+            "header": "YouTube",
+            "title": "Watched The Summoning",
+            "subtitles": [{"name": "Sleep Token"}],
+            "details": [{"name": "From YouTube Music"}]
+        }
+        artist, title = parse_yt_entry(myact_details)
+        self.assertEqual(artist, "Sleep Token")
+        self.assertEqual(title, "The Summoning")
+
+        # 3. MyActivity format with "Watched on YouTube Music" description
+        myact_desc = {
+            "header": "YouTube",
+            "title": "Watched The Summoning",
+            "subtitles": [{"name": "Sleep Token"}],
+            "description": "Watched on YouTube Music"
+        }
+        artist, title = parse_yt_entry(myact_desc)
+        self.assertEqual(artist, "Sleep Token")
+        self.assertEqual(title, "The Summoning")
+
+        # 4. MyActivity format with generic YouTube header but "- Topic" subtitle
+        myact_topic = {
             "header": "YouTube",
             "title": "Watched The Summoning",
             "subtitles": [{"name": "Sleep Token - Topic"}]
         }
-        self.assertEqual(parse_ytm_entry(invalid_header), (None, None))
+        artist, title = parse_yt_entry(myact_topic)
+        self.assertEqual(artist, "Sleep Token")
+        self.assertEqual(title, "The Summoning")
 
-        # Not topic channel
-        non_topic = {
-            "header": "YouTube Music",
-            "title": "Watched The Summoning",
-            "subtitles": [{"name": "Sleep Token"}]
+        # 5. Invalid: generic YouTube video with no music indicators
+        invalid_yt = {
+            "header": "YouTube",
+            "title": "Watched Funny Cats Video",
+            "subtitles": [{"name": "Cat channel"}]
         }
-        self.assertEqual(parse_ytm_entry(non_topic), (None, None))
+        self.assertEqual(parse_yt_entry(invalid_yt), (None, None))
 
     def test_parse_ytm_timestamp(self):
         time_str = "2026-05-28T01:23:28.084Z"
