@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""
+Unit tests for merge_history.py.
+Run with: pixi run python backend/test_consolidator.py
+"""
+
+import sys
+import unittest
+from .merge_history import (
+    strip_watched,
+    parse_ytm_entry,
+    parse_ytm_timestamp,
+    normalize,
+    merge_histories
+)
+
+class TestConsolidator(unittest.TestCase):
+
+    def test_strip_watched(self):
+        self.assertEqual(strip_watched("Watched The Summoning"), "The Summoning")
+        self.assertEqual(strip_watched("The Summoning"), "The Summoning")
+        self.assertEqual(strip_watched(""), "")
+
+    def test_parse_ytm_entry(self):
+        # Valid entry (topic channel)
+        valid = {
+            "header": "YouTube Music",
+            "title": "Watched The Summoning",
+            "subtitles": [{"name": "Sleep Token - Topic"}]
+        }
+        artist, title = parse_ytm_entry(valid)
+        self.assertEqual(artist, "Sleep Token")
+        self.assertEqual(title, "The Summoning")
+
+        # Invalid header
+        invalid_header = {
+            "header": "YouTube",
+            "title": "Watched The Summoning",
+            "subtitles": [{"name": "Sleep Token - Topic"}]
+        }
+        self.assertEqual(parse_ytm_entry(invalid_header), (None, None))
+
+        # Not topic channel
+        non_topic = {
+            "header": "YouTube Music",
+            "title": "Watched The Summoning",
+            "subtitles": [{"name": "Sleep Token"}]
+        }
+        self.assertEqual(parse_ytm_entry(non_topic), (None, None))
+
+    def test_parse_ytm_timestamp(self):
+        time_str = "2026-05-28T01:23:28.084Z"
+        ts = parse_ytm_timestamp(time_str)
+        # Expected unix timestamp for 2026-05-28 01:23:28 UTC is 1779931408
+        self.assertEqual(ts, 1779931408)
+
+    def test_normalize(self):
+        self.assertEqual(normalize("Sleep Token"), "sleeptoken")
+        self.assertEqual(normalize("The Summoning (Remix)"), "thesummoningremix")
+        self.assertEqual(normalize(""), "")
+
+    def test_merge_histories(self):
+        # 3 YTM entries
+        ytm_list = [
+            {"artist": "Sleep Token", "title": "The Summoning", "unix_ts": 1000},
+            {"artist": "Spiritbox", "title": "Cellar Door", "unix_ts": 2000},
+            {"artist": "Loathe", "title": "Is It Really You?", "unix_ts": 3000}
+        ]
+
+        # 3 Last.fm entries:
+        # 1. Matches first YTM entry (exact match, timestamp identical)
+        # 2. Matches second YTM entry (slight timestamp offset, slightly different casing/topic)
+        # 3. Does NOT match any YTM entry (e.g. 2010 track)
+        lfm_list = [
+            {"artist": "Sleep Token", "title": "The Summoning", "unix_ts": 1000},
+            {"artist": "Spiritbox", "title": "Cellar Door", "unix_ts": 2001},
+            {"artist": "The Beatles", "title": "Yesterday", "unix_ts": 500}
+        ]
+
+        merged = merge_histories(ytm_list, lfm_list)
+
+        # Result should have 4 items: the 3 YTM items + the 1 unmatched Last.fm item (Yesterday)
+        self.assertEqual(len(merged), 4)
+
+        # Yesterday should be first (sorted by timestamp 500)
+        self.assertEqual(merged[0]["title"], "Yesterday")
+        self.assertEqual(merged[0]["source"], "last_fm")
+
+        # The others should preserve their details and order
+        self.assertEqual(merged[1]["title"], "The Summoning")
+        self.assertEqual(merged[1]["source"], "youtube_music")
+        self.assertEqual(merged[2]["title"], "Cellar Door")
+        self.assertEqual(merged[2]["source"], "youtube_music")
+        self.assertEqual(merged[3]["title"], "Is It Really You?")
+        self.assertEqual(merged[3]["source"], "youtube_music")
+
+if __name__ == "__main__":
+    unittest.main()

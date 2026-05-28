@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# User watch history and consolidated history
+watch-history.json
+backend/merged_history.json
+backend/import_checkpoint.pkl
+# pixi environments
+.pixi/*
+!.pixi/config.toml
