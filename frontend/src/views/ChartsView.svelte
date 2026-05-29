@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  // Layout refresh trigger
+  import { onMount, untrack } from 'svelte';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
@@ -34,12 +35,46 @@
 
   let currentArtists = $derived(appCache.charts[topRange]?.artists || []);
   let currentTracks = $derived(appCache.charts[topRange]?.tracks || []);
+
+  let focusedArtist = $state<string | null>(null);
+  let focusedTrack = $state<string | null>(null);
+
+  // Clear focus when range selection changes
+  $effect(() => {
+    const _range = topRange;
+    focusedArtist = null;
+    focusedTrack = null;
+    themeManager.setAmbientColor(null);
+  });
+
+  function toggleArtistFocus(name: string) {
+    if (focusedArtist === name) {
+      focusedArtist = null;
+      themeManager.setAmbientColor(null);
+    } else {
+      focusedArtist = name;
+      focusedTrack = null;
+      themeManager.setAmbientColor(stringToColor(name));
+    }
+  }
+
+  function toggleTrackFocus(title: string, artistName: string) {
+    const key = `${artistName} - ${title}`;
+    if (focusedTrack === key) {
+      focusedTrack = null;
+      themeManager.setAmbientColor(null);
+    } else {
+      focusedTrack = key;
+      focusedArtist = null;
+      themeManager.setAmbientColor(stringToColor(artistName));
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-6 text-base-content">
-  <div class="flex justify-between items-center bg-base-200/40 border border-base-content/5 rounded-2xl p-6 backdrop-blur-md">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 memory-surface">
     <div>
-      <h1 class="text-3xl font-extrabold tracking-tight">Top Charts</h1>
+      <h1 class="editorial-text-h1">Top Charts</h1>
       <p class="text-sm opacity-60 mt-1">Your most played tracks and artists over time.</p>
     </div>
     
@@ -60,29 +95,30 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
       <!-- Top Artists List -->
-      <div class="card bg-base-200/50 border border-base-content/10 p-6 backdrop-blur-md">
-        <h2 class="text-xl font-bold mb-6 text-primary border-b border-base-content/10 pb-3 flex justify-between items-center">
+      <div class="memory-surface">
+        <h2 class="editorial-text-h2 text-primary border-b border-base-content/10 pb-3 mb-6 flex justify-between items-center">
           <span>Top Artists</span>
-          <span class="badge badge-primary">{currentArtists.length} items</span>
+          <span class="badge chip-primary">{currentArtists.length} items</span>
         </h2>
         
         <div class="flex flex-col gap-3">
           {#each currentArtists as artist, idx}
             <div 
-              role="listitem"
-              class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-all duration-300 cursor-pointer"
-              onmouseenter={() => themeManager.setAmbientColor(stringToColor(artist.artist))}
-              onmouseleave={() => themeManager.setAmbientColor(null)}
+              role="button"
+              tabindex="0"
+              class="list-row-interactive border {focusedArtist === artist.artist ? 'border-primary bg-primary/10 shadow-sm' : 'bg-base-300/30 border-base-content/5 hover:bg-base-300/50'}"
+              onclick={() => toggleArtistFocus(artist.artist)}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist); }}
             >
               <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
                 {idx + 1}
               </div>
               <div class="flex-grow">
-                <div class="font-extrabold text-base-content">{artist.artist}</div>
+                <div class="font-extrabold">{artist.artist}</div>
               </div>
               <div class="text-right">
                 <div class="text-md font-black">{artist.play_count.toLocaleString()}</div>
-                <div class="text-[9px] opacity-40 uppercase font-semibold">plays</div>
+                <div class="text-detail uppercase font-bold mt-0.5">plays</div>
               </div>
             </div>
           {:else}
@@ -92,30 +128,31 @@
       </div>
 
       <!-- Top Tracks List -->
-      <div class="card bg-base-200/50 border border-base-content/10 p-6 backdrop-blur-md">
-        <h2 class="text-xl font-bold mb-6 text-secondary border-b border-base-content/10 pb-3 flex justify-between items-center">
+      <div class="memory-surface">
+        <h2 class="editorial-text-h2 text-primary border-b border-base-content/10 pb-3 mb-6 flex justify-between items-center">
           <span>Top Tracks</span>
-          <span class="badge badge-secondary">{currentTracks.length} items</span>
+          <span class="badge chip-primary">{currentTracks.length} items</span>
         </h2>
         
         <div class="flex flex-col gap-3">
           {#each currentTracks as track, idx}
             <div 
-              role="listitem"
-              class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-all duration-300 cursor-pointer"
-              onmouseenter={() => themeManager.setAmbientColor(stringToColor(track.artist))}
-              onmouseleave={() => themeManager.setAmbientColor(null)}
+              role="button"
+              tabindex="0"
+              class="list-row-interactive border {focusedTrack === `${track.artist} - ${track.title}` ? 'border-primary bg-primary/10 shadow-sm' : 'bg-base-300/30 border-base-content/5 hover:bg-base-300/50'}"
+              onclick={() => toggleTrackFocus(track.title, track.artist)}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist); }}
             >
-              <div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center font-bold text-secondary text-sm">
+              <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
                 {idx + 1}
               </div>
               <div class="flex-grow min-w-0">
-                <div class="font-extrabold text-base-content truncate">{track.title}</div>
+                <div class="font-extrabold truncate">{track.title}</div>
                 <div class="text-xs opacity-60 truncate">{track.artist}</div>
               </div>
               <div class="text-right flex-shrink-0">
                 <div class="text-md font-black">{track.play_count.toLocaleString()}</div>
-                <div class="text-[9px] opacity-40 uppercase font-semibold">plays</div>
+                <div class="text-detail uppercase font-bold mt-0.5">plays</div>
               </div>
             </div>
           {:else}

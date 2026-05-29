@@ -53,9 +53,9 @@
 </script>
 
 <div class="flex flex-col gap-6 text-base-content">
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-base-200/40 border border-base-content/5 rounded-2xl p-6 backdrop-blur-md">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 memory-surface">
     <div>
-      <h1 class="text-3xl font-extrabold tracking-tight">Periodic Reviews</h1>
+      <h1 class="editorial-text-h1">Periodic Reviews</h1>
       <p class="text-sm opacity-60 mt-1">Spotify Wrapped style summaries for custom time ranges.</p>
     </div>
     
@@ -143,7 +143,7 @@
             </svg>
             <span class="text-sm font-bold uppercase tracking-widest text-pink-400">The Record Wrapped</span>
           </div>
-          <span class="badge badge-accent uppercase font-black text-[10px] text-accent-content">
+          <span class="chip-neutral">
             {#if wrappedPeriod === 'year'}
               {wrappedYear}
             {:else}
@@ -154,8 +154,8 @@
 
         <!-- Big Statistics -->
         <div class="flex flex-col items-center justify-center py-4 text-center">
-          <div class="text-[11px] font-extrabold uppercase tracking-widest opacity-60 text-white">Total Plays</div>
-          <div class="text-5xl font-black mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent">
+          <div class="text-caps text-white opacity-60">Total Plays</div>
+          <div class="text-display-large mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent">
             {currentWrappedData.total_plays.toLocaleString()}
           </div>
           <div class="text-xs font-semibold opacity-70 mt-2 text-white">
@@ -167,8 +167,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
           
           <!-- Top Artist -->
-          <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col">
-            <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Top Creator</span>
+          <div class="memory-surface-nested bg-white/5 border-white/5 !p-4 flex flex-col">
+            <span class="text-caps text-white opacity-50">Top Creator</span>
             {#if currentWrappedData.top_artist}
               <span class="text-md font-extrabold text-white mt-1 truncate">{currentWrappedData.top_artist.name}</span>
               <span class="text-xs opacity-60 mt-1 text-white/80">{currentWrappedData.top_artist.plays.toLocaleString()} plays</span>
@@ -178,8 +178,8 @@
           </div>
 
           <!-- Top Track -->
-          <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col">
-            <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Top Track</span>
+          <div class="memory-surface-nested bg-white/5 border-white/5 !p-4 flex flex-col">
+            <span class="text-caps text-white opacity-50">Top Track</span>
             {#if currentWrappedData.top_track}
               <span class="text-md font-extrabold text-white mt-1 truncate">{currentWrappedData.top_track.title}</span>
               <span class="text-xs opacity-60 truncate mt-0.5 text-white/80">{currentWrappedData.top_track.artist}</span>
@@ -193,16 +193,16 @@
 
         <!-- Peak Day -->
         {#if currentWrappedData.peak_day}
-          <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between mt-2">
+          <div class="memory-surface-nested bg-white/5 border-white/5 !p-4 flex items-center justify-between mt-2">
             <div class="flex flex-col">
-              <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Peak Listening Day</span>
+              <span class="text-caps text-white opacity-50">Peak Listening Day</span>
               <span class="text-sm font-extrabold text-white mt-1">
                 {new Date(currentWrappedData.peak_day.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             <div class="text-right">
               <span class="text-lg font-black text-secondary">{currentWrappedData.peak_day.plays}</span>
-              <span class="text-[9px] block uppercase opacity-40 font-bold text-white">plays</span>
+              <span class="text-detail block uppercase font-bold text-white opacity-40 mt-0.5">plays</span>
             </div>
           </div>
         {/if}

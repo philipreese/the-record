@@ -32,7 +32,7 @@
   <div class="drawer-content flex flex-col bg-transparent min-h-screen">
     
     <!-- Navbar (Mobile only) -->
-    <Navbar />
+    <Navbar bind:activeTab />
 
     <!-- Main Content Area -->
     <main class="flex-grow p-4 lg:p-8 max-w-[1400px] w-full mx-auto relative z-10">

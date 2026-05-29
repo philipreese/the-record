@@ -79,10 +79,10 @@
       <circle cx="120" cy="120" r="37" fill="none" class="stroke-base-content/5" stroke-width="1" />
       
       <!-- Hour text labels (12, 3, 6, 9) -->
-      <text x="120" y="25" text-anchor="middle" class="text-[10px] font-bold fill-current opacity-60">12</text>
-      <text x="215" y="124" text-anchor="middle" class="text-[10px] font-bold fill-current opacity-60">3</text>
-      <text x="120" y="222" text-anchor="middle" class="text-[10px] font-bold fill-current opacity-60">6</text>
-      <text x="25" y="124" text-anchor="middle" class="text-[10px] font-bold fill-current opacity-60">9</text>
+      <text x="120" y="25" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">12</text>
+      <text x="215" y="124" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">3</text>
+      <text x="120" y="222" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">6</text>
+      <text x="25" y="124" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">9</text>
 
       <g transform="translate(0, 0)">
         {#each segments as seg}
@@ -90,34 +90,36 @@
           {@const amCount = hourlyData[seg.amKey] || 0}
           <path
             d={getSegmentPath(120, 120, 40, 70, seg.startAngle, seg.endAngle)}
-            class="fill-primary transition-all duration-300 hover:scale-103 hover:stroke-primary hover:stroke-1 cursor-pointer tooltip tooltip-secondary"
+            class="fill-primary transition-all duration-300 hover:scale-103 hover:stroke-primary hover:stroke-1 cursor-pointer"
             class:opacity-10={amCount === 0}
             style="opacity: {getOpacity(amCount)};"
-            data-tip="{seg.amLabel}: {amCount} plays"
-          />
+          >
+            <title>{seg.amLabel}: {amCount} plays</title>
+          </path>
           
           <!-- PM Segment (Outer Ring: rInner=72, rOuter=102) -->
           {@const pmCount = hourlyData[seg.pmKey] || 0}
           <path
             d={getSegmentPath(120, 120, 72, 102, seg.startAngle, seg.endAngle)}
-            class="fill-secondary transition-all duration-300 hover:scale-103 hover:stroke-secondary hover:stroke-1 cursor-pointer tooltip tooltip-accent"
+            class="fill-secondary transition-all duration-300 hover:scale-103 hover:stroke-secondary hover:stroke-1 cursor-pointer"
             class:opacity-10={pmCount === 0}
             style="opacity: {getOpacity(pmCount)};"
-            data-tip="{seg.pmLabel}: {pmCount} plays"
-          />
+          >
+            <title>{seg.pmLabel}: {pmCount} plays</title>
+          </path>
         {/each}
       </g>
     </svg>
     
     <!-- Center visual core -->
     <div class="absolute w-[70px] h-[70px] rounded-full bg-base-300 border border-base-content/10 shadow-inner flex flex-col items-center justify-center text-center p-1 select-none">
-      <div class="text-[8px] font-bold uppercase opacity-50 tracking-wider">AM / PM</div>
-      <div class="text-[10px] font-extrabold text-primary">Inner / Outer</div>
+      <div class="text-xs font-bold uppercase opacity-50 tracking-wider">AM / PM</div>
+      <div class="text-xs font-extrabold text-primary">Inner / Outer</div>
     </div>
   </div>
   
   <!-- Heat clock legend -->
-  <div class="flex gap-4 mt-4 text-[10px] opacity-75">
+  <div class="flex gap-4 mt-4 text-xs opacity-75">
     <div class="flex items-center gap-1.5">
       <div class="w-2.5 h-2.5 rounded-full bg-primary"></div>
       <span>AM (Morning)</span>

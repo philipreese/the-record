@@ -43,9 +43,9 @@
         
         <Icon name="flame" size="w-10 h-10" class="stroke-primary fill-primary/20 animate-pulse transition-transform duration-300 group-hover:scale-110" />
         
-        <span class="text-2xl font-extrabold mt-2 text-base-content">{current}</span>
-        <span class="text-[10px] font-bold uppercase opacity-60 mt-0.5">Current Streak</span>
-        <span class="text-[9px] opacity-40 mt-1">days in a row</span>
+        <span class="text-display-medium mt-2 text-base-content">{current}</span>
+        <span class="text-caps mt-0.5">Current Streak</span>
+        <span class="text-detail mt-1">days in a row</span>
       </div>
       
       <!-- Longest Streak Card -->
@@ -55,9 +55,9 @@
         
         <Icon name="crown" size="w-10 h-10" class="stroke-secondary fill-secondary/10 transition-transform duration-300 group-hover:scale-110" />
         
-        <span class="text-2xl font-extrabold mt-2 text-base-content">{longest}</span>
-        <span class="text-[10px] font-bold uppercase opacity-60 mt-0.5">Longest Record</span>
-        <span class="text-[9px] opacity-40 mt-1">days active</span>
+        <span class="text-display-medium mt-2 text-base-content">{longest}</span>
+        <span class="text-caps mt-0.5">Longest Record</span>
+        <span class="text-detail mt-1">days active</span>
       </div>
     </div>
   </div>

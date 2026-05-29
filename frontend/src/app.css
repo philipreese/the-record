@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Define custom themes with audited WCAG AA contrast ratios and DaisyUI v5 mappings */
 [data-theme="warm-dark"] {
   --bg-base: #131009;
@@ -217,22 +221,50 @@
   --color-accent: var(--accent);
 }
 
+[data-theme="music-mood"] {
+  --bg-base: #0d0e12;
+  --bg-sidebar: #07080a;
+  --bg-panel: #0d0e12;
+  --bg-active-nav: #161820;
+  --border: #222430;
+  --accent: #7899f5;
+  --text-primary: #e8eaf0;
+  --text-secondary: #a6abbf;
+  --text-muted: #858da3;
+  --text-faint: #4c5469;
+  --bar-track: #1e2430;
+  --bar-fill-1: #7899f5;
+  --bar-fill-2: #4a629e;
+  --bar-fill-3: #324470;
+
+  --color-base-100: var(--bg-base);
+  --color-base-200: var(--bg-sidebar);
+  --color-base-300: var(--bg-active-nav);
+  --color-base-content: var(--text-primary);
+  --color-primary: var(--accent);
+  --color-primary-content: var(--bg-base);
+  --color-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+}
+
 /* Layout Utilities for "Adaptive Memory Interface" */
-@utility memory-surface {
+.memory-surface {
   background-color: var(--color-base-100);
   opacity: 0.95;
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 1.75rem;
-  transition: all 0.3s ease;
+  border-radius: 1rem; /* Standardized 16px */
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); /* Standardized Shadow */
+  padding: 1.5rem; /* Standardized Card Padding (24px) */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Standardized Transition */
 }
 
-@utility memory-surface-nested {
+.memory-surface-nested {
   background-color: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.25rem;
+  border-radius: 0.75rem; /* Standardized 12px */
+  padding: 1rem; /* Standardized Nested Padding (16px) */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Standardized Transition */
 }
 
 /* Style light mode nested boxes slightly darker for separation */
@@ -242,22 +274,89 @@
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-@utility editorial-text-h1 {
+.editorial-text-h1 {
   font-family: inherit;
   font-size: 1.875rem;
-  font-weight: 800;
+  font-weight: 800; /* Standardized Title Weight */
   letter-spacing: -0.025em;
   color: var(--text-primary);
 }
 
-@utility editorial-text-h2 {
+.editorial-text-h2 {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800; /* Standardized Title Weight */
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
-@utility editorial-text-muted {
+.editorial-text-muted {
   font-size: 0.875rem;
   color: var(--text-muted);
+}
+
+.chip-primary {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem; /* Standardized 4px */
+  background-color: var(--color-primary);
+  color: var(--color-primary-content);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chip-neutral {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem; /* Standardized 4px */
+  background-color: var(--color-base-300);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.text-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.text-caps {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.text-display-large {
+  font-size: 3rem; /* text-5xl equivalent */
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.text-display-medium {
+  font-size: 1.5rem; /* text-2xl equivalent */
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.list-row-interactive {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem; /* Standardized 12px */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-row-interactive:hover {
+  transform: translateX(4px);
 }

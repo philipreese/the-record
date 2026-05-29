@@ -1,4 +1,5 @@
 <script lang="ts">
+  // Layout refresh trigger
   import { onMount } from 'svelte';
   import Heatmap from '../components/Heatmap.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
@@ -59,13 +60,13 @@
   let currentStreak = $derived(appCache.streak || { current_streak: 0, longest_streak: 0 });
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 text-base-content">
   
   <!-- Header and Sync -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-base-200/40 border border-base-content/5 rounded-2xl p-6 backdrop-blur-md">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 memory-surface">
     <div>
-      <h1 class="text-3xl font-extrabold tracking-tight text-base-content">Music History</h1>
-      <p class="text-sm opacity-60 mt-1 text-base-content/80">Self-hosted scrobble archives and listening insight analytics.</p>
+      <h1 class="editorial-text-h1">Music History</h1>
+      <p class="text-sm opacity-60 mt-1">Self-hosted scrobble archives and listening insight analytics.</p>
     </div>
     
     <!-- Sync Action -->
@@ -84,13 +85,13 @@
   <!-- Heatmap Contribution Board -->
   <div class="flex flex-col gap-4">
     <div class="flex justify-between items-center px-2">
-      <h2 class="text-xl font-bold tracking-tight text-base-content">Listening Activity</h2>
+      <h2 class="editorial-text-h2">Listening Activity</h2>
       <div class="join">
-        <button class="join-item btn btn-xs btn-outline text-base-content" aria-label="Previous Year" onclick={() => heatmapYear--}>
+        <button class="join-item btn btn-xs btn-outline" aria-label="Previous Year" onclick={() => heatmapYear--}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
         </button>
-        <span class="join-item btn btn-xs btn-active bg-base-300 font-bold px-4 text-base-content">{heatmapYear}</span>
-        <button class="join-item btn btn-xs btn-outline text-base-content" aria-label="Next Year" onclick={() => heatmapYear++}>
+        <span class="join-item btn btn-xs btn-active bg-base-300 font-bold px-4">{heatmapYear}</span>
+        <button class="join-item btn btn-xs btn-outline" aria-label="Next Year" onclick={() => heatmapYear++}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
         </button>
       </div>

@@ -34,7 +34,8 @@ export const themes = [
   "monochrome-dark",
   "sepia-warm",
   "charcoal-cozy",
-  "mist-gray"
+  "mist-gray",
+  "music-mood"
 ];
 
 export const themeMetadata: ThemeInfo[] = [
@@ -45,7 +46,8 @@ export const themeMetadata: ThemeInfo[] = [
   { id: 'monochrome-dark', name: 'Monochrome Dark', category: 'Paper', isDark: true, description: 'Absolute carbon black with paper white accents', colors: { bg: '#000000', accent: '#ffffff', text: '#ffffff' } },
   { id: 'sepia-warm', name: 'Sepia Warm', category: 'Comfort', isDark: false, description: 'Classic ink on warm, eye-friendly sepia book pages', colors: { bg: '#f5edd6', accent: '#6f4e37', text: '#3c2f2f' } },
   { id: 'charcoal-cozy', name: 'Charcoal Cozy', category: 'Comfort', isDark: true, description: 'Warm amber glow on deep cozy hearth charcoal', colors: { bg: '#1a1614', accent: '#e5a93b', text: '#e6dfd9' } },
-  { id: 'mist-gray', name: 'Mist Gray', category: 'Comfort', isDark: false, description: 'Muted navy details on a soft fog-colored canvas', colors: { bg: '#edf0f5', accent: '#2e5cb8', text: '#1c2e4a' } }
+  { id: 'mist-gray', name: 'Mist Gray', category: 'Comfort', isDark: false, description: 'Muted navy details on a soft fog-colored canvas', colors: { bg: '#edf0f5', accent: '#2e5cb8', text: '#1c2e4a' } },
+  { id: 'music-mood', name: 'Music Mood (Dynamic)', category: 'Atmospheric', isDark: true, description: 'UI accent colors and background glows shift to match selected artists and tracks', colors: { bg: '#0d0e12', accent: '#7899f5', text: '#e8eaf0' } }
 ];
 
 class ThemeManager {
@@ -129,9 +131,18 @@ class ThemeManager {
     
     if (typeof document === 'undefined') return;
 
-    if (!hex) {
+    // Static themes never allow dynamic color overrides
+    if (this.currentTheme !== 'music-mood') {
       document.documentElement.style.removeProperty('--color-primary');
       document.documentElement.style.removeProperty('--accent');
+      document.documentElement.style.removeProperty('--ambient-glow');
+      return;
+    }
+
+    if (!hex) {
+      // Restore music-mood's default slate blue accent
+      document.documentElement.style.setProperty('--accent', '#7899f5');
+      document.documentElement.style.setProperty('--color-primary', '#7899f5');
       document.documentElement.style.removeProperty('--ambient-glow');
       return;
     }
@@ -144,8 +155,8 @@ class ThemeManager {
     document.documentElement.style.setProperty('--accent', adjustedHex);
     document.documentElement.style.setProperty('--color-primary', adjustedHex);
 
-    // Dynamic ambient glow variable for backing radial layouts
-    document.documentElement.style.setProperty('--ambient-glow', `${adjustedHex}26`); // 15% opacity hex (26)
+    // Dynamic ambient glow variable for backing radial layouts (15% opacity)
+    document.documentElement.style.setProperty('--ambient-glow', `${adjustedHex}26`);
   }
 }
 

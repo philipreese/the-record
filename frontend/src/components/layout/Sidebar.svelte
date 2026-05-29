@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { themeManager } from '../../services/theme.svelte';
+  import { themeManager, themeMetadata } from '../../services/theme.svelte';
   import Icon from './Icon.svelte';
 
   // Svelte 5 bindable props
@@ -8,6 +8,15 @@
   }: { 
     activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings';
   } = $props();
+
+  let activeThemeMeta = $derived(themeMetadata.find(t => t.id === themeManager.currentTheme));
+
+  function closeSidebar() {
+    // On mobile the sidebar is a DaisyUI drawer controlled by a checkbox input.
+    // Programmatically unchecking it dismisses the overlay after navigation.
+    const drawerToggle = document.getElementById('sidebar-drawer') as HTMLInputElement | null;
+    if (drawerToggle) drawerToggle.checked = false;
+  }
 </script>
 
 <div class="drawer-side border-r border-base-content/10 bg-base-200">
@@ -18,18 +27,16 @@
     <!-- Top Section -->
     <div>
       <!-- Logo Branding -->
+       <button
+          class="button cursor-pointer"
+          onclick={() => { activeTab = 'dashboard'; closeSidebar(); }}>
       <div class="flex items-center gap-3 px-2 py-4 mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-8 h-8 text-primary">
-          <circle cx="12" cy="12" r="10" stroke-width="1.5" class="stroke-current" />
-          <circle cx="12" cy="12" r="7" stroke-width="0.5" stroke-dasharray="2 1" class="stroke-current opacity-80" />
-          <circle cx="12" cy="12" r="4" stroke-width="0.5" stroke-dasharray="1 1" class="stroke-current opacity-60" />
-          <circle cx="12" cy="12" r="2.5" class="fill-secondary stroke-none" />
-          <circle cx="12" cy="12" r="0.8" class="fill-base-100 stroke-none" />
-        </svg>
+        <Icon name="logo" size="w-8 h-8" class="text-primary" />
         <span class="text-xl font-black tracking-widest uppercase bg-clip-text bg-gradient-to-r from-primary to-secondary text-transparent">
           The Record
         </span>
       </div>
+      </button>
 
       <!-- Navigation Tabs -->
       <ul class="flex flex-col gap-2">
@@ -39,7 +46,7 @@
             class:bg-primary={activeTab === 'dashboard'}
             class:text-primary-content={activeTab === 'dashboard'}
             class:bg-transparent={activeTab !== 'dashboard'}
-            onclick={() => activeTab = 'dashboard'}
+            onclick={() => { activeTab = 'dashboard'; closeSidebar(); }}
           >
             <Icon name="home" />
             Overview
@@ -52,7 +59,7 @@
             class:bg-primary={activeTab === 'charts'}
             class:text-primary-content={activeTab === 'charts'}
             class:bg-transparent={activeTab !== 'charts'}
-            onclick={() => activeTab = 'charts'}
+            onclick={() => { activeTab = 'charts'; closeSidebar(); }}
           >
             <Icon name="charts" />
             Top Charts
@@ -65,7 +72,7 @@
             class:bg-primary={activeTab === 'wrapped'}
             class:text-primary-content={activeTab === 'wrapped'}
             class:bg-transparent={activeTab !== 'wrapped'}
-            onclick={() => activeTab = 'wrapped'}
+            onclick={() => { activeTab = 'wrapped'; closeSidebar(); }}
           >
             <Icon name="book" />
             Reviews
@@ -83,19 +90,19 @@
             class:bg-primary={activeTab === 'settings'}
             class:text-primary-content={activeTab === 'settings'}
             class:bg-transparent={activeTab !== 'settings'}
-            onclick={() => activeTab = 'settings'}
+            onclick={() => { activeTab = 'settings'; closeSidebar(); }}
           >
             <span class="flex items-center gap-3">
               <Icon name="settings" />
               Settings
             </span>
-            <span class="text-[9px] px-2 py-0.5 rounded bg-primary-content/20 text-current uppercase font-black tracking-wider">
-              {themeManager.currentTheme.replace('-', ' ')}
+            <span 
+              class="chip-primary transition-all duration-300">
+              <span>{themeManager.currentTheme.replace('-', ' ')}</span>
             </span>
           </button>
         </li>
       </ul>
     </div>
-
   </div>
 </div>

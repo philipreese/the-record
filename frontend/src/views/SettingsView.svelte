@@ -8,13 +8,13 @@
   }
 </script>
 
-<div class="flex flex-col gap-10 text-base-content p-2 md:p-4">
+<div class="flex flex-col gap-6 text-base-content">
   
   <!-- Header Card (Spacious with standard padding classes) -->
-  <div class="memory-surface p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 memory-surface">
     <div>
       <h1 class="editorial-text-h1">Interface Settings</h1>
-      <p class="editorial-text-muted mt-1.5">Tailor the visual atmosphere of your music memory space.</p>
+      <p class="text-sm opacity-60 mt-1">Tailor the visual atmosphere of your music memory space.</p>
     </div>
   </div>
 
@@ -22,7 +22,7 @@
   <div class="memory-surface p-6 sm:p-8 space-y-10">
     {#each categories as category}
       <div class="space-y-5">
-        <h3 class="text-xs font-black uppercase tracking-widest text-base-content/30 border-b border-base-content/5 pb-3">
+        <h3 class="text-xs font-black uppercase tracking-wider text-base-content/30 border-b border-base-content/5 pb-3">
           {category} Presets
         </h3>
 
@@ -45,17 +45,17 @@
                   </span>
                   
                   {#if themeManager.currentTheme === theme.id}
-                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-primary text-primary-content uppercase tracking-wider">
+                    <span class="chip-primary">
                       Active
                     </span>
                   {/if}
                   
-                  <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-base-300 text-base-content/75 border border-base-content/5 uppercase tracking-wider">
+                  <span class="chip-neutral">
                     {theme.isDark ? 'dark' : 'light'}
                   </span>
                 </div>
                 
-                <span class="text-[11px] leading-relaxed text-base-content/60 font-medium max-w-[280px]">
+                <span class="text-xs leading-relaxed text-base-content/60 font-medium max-w-[280px]">
                   {theme.description}
                 </span>
               </div>
@@ -75,7 +75,7 @@
   </div>
 
   <!-- Information Footer (Clean & simple) -->
-  <div class="memory-surface-nested p-5 flex flex-col sm:flex-row justify-between items-center text-xs text-base-content/40 gap-3">
+  <div class="memory-surface-nested flex flex-col sm:flex-row justify-between items-center text-xs text-base-content gap-3">
     <div class="flex items-center gap-2.5">
       <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
       <span>Tonal overlays automatically shift atmospheric temperature based on your historical music trends.</span>

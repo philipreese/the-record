@@ -4,6 +4,7 @@
     dateStr: string;
     count: number;
     weight: number;
+    isFuture: boolean;
   }
 
   let { data = {}, year = new Date().getFullYear() }: { data?: Record<string, number>, year?: number } = $props();
@@ -21,6 +22,9 @@
     const startDate = new Date(y, 0, 1);
     const endDate = new Date(y, 11, 31);
     
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
     // Fill leading empty days of the first week
     const firstDayOfWeek = startDate.getDay(); // 0 = Sunday, 6 = Saturday
     for (let i = 0; i < firstDayOfWeek; i++) {
@@ -31,18 +35,22 @@
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
       const count = data[dateStr] || 0;
+      const isFuture = currentDate > today;
       
       let weight = 0;
-      if (count > 0 && count <= 2) weight = 1;
-      else if (count > 2 && count <= 5) weight = 2;
-      else if (count > 5 && count <= 10) weight = 3;
-      else if (count > 10) weight = 4;
+      if (!isFuture) {
+        if (count > 0 && count <= 2) weight = 1;
+        else if (count > 2 && count <= 5) weight = 2;
+        else if (count > 5 && count <= 10) weight = 3;
+        else if (count > 10) weight = 4;
+      }
       
       days.push({
         date: new Date(currentDate),
         dateStr,
         count,
-        weight
+        weight,
+        isFuture
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -96,20 +104,19 @@
   }
 </script>
 
-<div class="overflow-x-auto w-full p-4 bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10">
-  <div class="min-w-[820px]">
-    <svg width="835" height="150" class="mx-auto text-base-content">
-      <!-- Month Labels -->
+<div class="w-full memory-surface !p-4" style="min-width: 320px; max-width: 900px;">
+    <svg viewBox="0 0 835 150" width="100%" preserveAspectRatio="xMidYMid meet" class="text-base-content">
+      <!-- Month Labels (absolute font-size so text doesn't scale with viewBox) -->
       {#each monthHeaders as header}
-        <text x={header.x} y="15" class="text-[10px] font-medium fill-current opacity-70">
+        <text x={header.x} y="15" font-size="11" font-weight="500" class="fill-current opacity-70">
           {header.name}
         </text>
       {/each}
 
-      <!-- Weekday Labels -->
-      <text x="5" y="38" class="text-[10px] font-medium fill-current opacity-70">Mon</text>
-      <text x="5" y="68" class="text-[10px] font-medium fill-current opacity-70">Wed</text>
-      <text x="5" y="98" class="text-[10px] font-medium fill-current opacity-70">Fri</text>
+      <!-- Weekday Labels (absolute font-size so text doesn't scale with viewBox) -->
+      <text x="5" y="38" font-size="11" font-weight="500" class="fill-current opacity-70">Mon</text>
+      <text x="5" y="68" font-size="11" font-weight="500" class="fill-current opacity-70">Wed</text>
+      <text x="5" y="98" font-size="11" font-weight="500" class="fill-current opacity-70">Fri</text>
 
       <!-- Heatmap Grid -->
       <g transform="translate(30, 20)">
@@ -117,23 +124,37 @@
           <g transform="translate({wIndex * 15}, 0)">
             {#each week as day, dIndex}
               {#if day}
-                <!-- Grid square with tooltip -->
-                <g class="tooltip tooltip-primary" data-tip="{day.count} plays on {formatDate(day.date)}">
-                  <rect
-                    y={dIndex * 15}
-                    width="12"
-                    height="12"
-                    rx="2"
-                    class="transition-all duration-300 hover:stroke-primary hover:stroke-2 cursor-pointer"
-                    class:fill-base-300={day.weight === 0}
-                    class:opacity-10={day.weight === 0}
-                    class:fill-primary={day.weight > 0}
-                    class:opacity-30={day.weight === 1}
-                    class:opacity-55={day.weight === 2}
-                    class:opacity-80={day.weight === 3}
-                    class:opacity-100={day.weight === 4}
-                  />
-                </g>
+                 <!-- Grid square with standard browser tooltip (works on SVGs!) -->
+                 {#if day.isFuture}
+                    <rect
+                      y={dIndex * 15}
+                      width="12"
+                      height="12"
+                      rx="2"
+                      fill="none"
+                      style="stroke: var(--color-base-content); stroke-opacity: 0.35; stroke-width: 1px;"
+                      stroke-dasharray="1.5 1.5"
+                    >
+                      <title>Future Date: {formatDate(day.date)}</title>
+                    </rect>
+                 {:else}
+                   <rect
+                     y={dIndex * 15}
+                     width="12"
+                     height="12"
+                     rx="2"
+                     class="transition-all duration-300 hover:stroke-primary hover:stroke-2 cursor-pointer"
+                     class:fill-base-300={day.weight === 0}
+                     class:opacity-10={day.weight === 0}
+                     class:fill-primary={day.weight > 0}
+                     class:opacity-30={day.weight === 1}
+                     class:opacity-55={day.weight === 2}
+                     class:opacity-80={day.weight === 3}
+                     class:opacity-100={day.weight === 4}
+                   >
+                     <title>{day.count} plays on {formatDate(day.date)}</title>
+                   </rect>
+                 {/if}
               {:else}
                 <!-- Place holder for empty leading/trailing days -->
                 <rect
@@ -151,7 +172,7 @@
     </svg>
     
     <!-- Legend -->
-    <div class="flex items-center justify-end gap-2 mt-2 px-6 text-xs opacity-75">
+    <div class="flex items-center justify-end gap-2 mt-2 px-2 text-xs opacity-75">
       <span>Less</span>
       <div class="w-3 h-3 rounded bg-base-300 opacity-10"></div>
       <div class="w-3 h-3 rounded bg-primary opacity-30"></div>
@@ -160,12 +181,4 @@
       <div class="w-3 h-3 rounded bg-primary opacity-100"></div>
       <span>More</span>
     </div>
-  </div>
 </div>
-
-<style>
-  /* Ensure SVG elements can trigger Tooltips */
-  .tooltip {
-    display: block;
-  }
-</style>
