@@ -6,7 +6,8 @@ from typing import Optional, Any
 
 import httpx
 
-from app.db import get_db_connection
+from sqlalchemy import func
+from app.db import get_session, Listen
 from app.repository import deduplicate_listens
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
@@ -69,20 +70,19 @@ async def _run_sync(mode: str) -> None:
 
             # 2. Load local state helper
             def load_local_state() -> tuple[int, int, int, set[tuple[int, str, str]]]:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM listens")
-                local_cnt = cursor.fetchone()[0]
-                cursor.execute("SELECT MAX(unix_ts), MIN(unix_ts) FROM listens")
-                ts_row = cursor.fetchone()
-                lat_ts = ts_row[0] if ts_row and ts_row[0] is not None else 0
-                old_ts = ts_row[1] if ts_row and ts_row[1] is not None else 0
-                cursor.execute("SELECT unix_ts, artist, title FROM listens")
-                loc_keys = {
-                    (row[0], row[1].lower(), row[2].lower()) for row in cursor.fetchall()
-                }
-                conn.close()
-                return local_cnt, lat_ts, old_ts, loc_keys
+                session = get_session()
+                try:
+                    local_cnt = session.query(func.count(Listen.id)).scalar() or 0
+                    ts_row = session.query(func.max(Listen.unix_ts), func.min(Listen.unix_ts)).first()
+                    lat_ts = ts_row[0] if ts_row and ts_row[0] is not None else 0
+                    old_ts = ts_row[1] if ts_row and ts_row[1] is not None else 0
+                    rows = session.query(Listen.unix_ts, Listen.artist, Listen.title).all()
+                    loc_keys = {
+                        (row.unix_ts, row.artist.lower(), row.title.lower()) for row in rows
+                    }
+                    return local_cnt, lat_ts, old_ts, loc_keys
+                finally:
+                    session.close()
 
             local_count, latest_ts, oldest_ts, local_keys = load_local_state()
             _sync_state.local_total = local_count
@@ -132,14 +132,24 @@ async def _run_sync(mode: str) -> None:
                 if not listens_to_insert:
                     return
                 listens_to_insert.sort(key=lambda x: x[2])
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.executemany(
-                    "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
-                    listens_to_insert,
-                )
-                conn.commit()
-                conn.close()
+                session = get_session()
+                try:
+                    objects = [
+                        Listen(
+                            artist=item[0],
+                            title=item[1],
+                            unix_ts=item[2],
+                            source=item[3]
+                        )
+                        for item in listens_to_insert
+                    ]
+                    session.bulk_save_objects(objects)
+                    session.commit()
+                except Exception:
+                    session.rollback()
+                    raise
+                finally:
+                    session.close()
 
             full_mode = (mode == "full")
 
