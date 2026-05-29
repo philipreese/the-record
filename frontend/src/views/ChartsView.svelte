@@ -122,8 +122,8 @@
               class:opacity-35={(hoveredArtist || focusedArtist) && hoveredArtist !== artist.artist && focusedArtist !== artist.artist}
               class:border-theme-accent={focusedArtist === artist.artist}
               class:bg-theme-accent-soft={focusedArtist === artist.artist}
-              onmouseenter={() => { hoveredArtist = artist.artist; themeManager.setAmbientColor(stringToColor(artist.artist)); }}
-              onmouseleave={() => { hoveredArtist = null; themeManager.setAmbientColor(focusedArtist ? stringToColor(focusedArtist) : null); }}
+              onmouseenter={() => { hoveredArtist = artist.artist; }}
+              onmouseleave={() => { hoveredArtist = null; }}
               onclick={() => toggleArtistFocus(artist.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist); }}
             >
@@ -160,8 +160,8 @@
               class:opacity-35={(hoveredTrack || focusedTrack) && hoveredTrack !== `${track.artist} - ${track.title}` && focusedTrack !== `${track.artist} - ${track.title}`}
               class:border-theme-accent={focusedTrack === `${track.artist} - ${track.title}`}
               class:bg-theme-accent-soft={focusedTrack === `${track.artist} - ${track.title}`}
-              onmouseenter={() => { hoveredTrack = `${track.artist} - ${track.title}`; themeManager.setAmbientColor(stringToColor(track.artist)); }}
-              onmouseleave={() => { hoveredTrack = null; themeManager.setAmbientColor(focusedTrack ? stringToColor(focusedTrack.split(' - ')[0]) : null); }}
+              onmouseenter={() => { hoveredTrack = `${track.artist} - ${track.title}`; }}
+              onmouseleave={() => { hoveredTrack = null; }}
               onclick={() => toggleTrackFocus(track.title, track.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist); }}
             >

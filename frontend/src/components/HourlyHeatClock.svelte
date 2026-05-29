@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { appCache } from '../services/store.svelte';
+
   let { hourlyData = {} }: { hourlyData?: Record<string, number> } = $props();
 
   // Determine max play count to scale opacities dynamically
@@ -61,6 +63,15 @@
 
   // Hovered state for center visual core
   let hoveredSegment = $state<{ label: string; count: number } | null>(null);
+
+  // Calculate average plays per day for the hovered hour
+  let daysActive = $derived(appCache.stats?.days_active || 1);
+  let average = $derived(hoveredSegment ? (hoveredSegment.count / daysActive) : 0);
+  let formattedAverage = $derived(
+    average === 0 ? "0" :
+    average < 0.1 ? average.toFixed(2) :
+    average.toFixed(1)
+  );
 </script>
 
 <div class="memory-surface flex flex-col items-center justify-center relative overflow-visible">
@@ -73,11 +84,11 @@
       <!-- Inner boundary -->
       <circle cx="120" cy="120" r="37" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.06;" stroke-width="1" />
       
-      <!-- Hour text labels (12, 3, 6, 9) -->
-      <text x="120" y="25" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">12</text>
-      <text x="215" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">3</text>
-      <text x="120" y="222" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">6</text>
-      <text x="25" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">9</text>
+      <!-- Hour text labels (12, 3, 6, 9) shifted outside the clock to prevent overlap -->
+      <text x="120" y="10" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">12</text>
+      <text x="233" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">3</text>
+      <text x="120" y="235" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">6</text>
+      <text x="7" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">9</text>
 
       <g transform="translate(0, 0)">
         {#each segments as seg}
@@ -110,19 +121,25 @@
     
     <!-- Center visual core - Displays hovered details or base instructions -->
     <div 
-      class="absolute w-[84px] h-[84px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+      class="absolute w-[90px] h-[90px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
       style="
         background-color: color-mix(in srgb, var(--bg-base) 96%, transparent);
         border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
       "
     >
       {#if hoveredSegment}
-        <div class="text-micro font-mono uppercase tracking-widest text-zinc-500">{hoveredSegment.label}</div>
-        <div class="text-lg font-light tracking-tight mt-0.5" style="color: var(--text-primary);">{hoveredSegment.count}</div>
-        <div class="text-micro font-mono uppercase tracking-wider text-zinc-400 opacity-60">plays</div>
+        <div class="text-xs font-mono uppercase text-zinc-500 leading-none">{hoveredSegment.label}</div>
+        <div class="text-[16px] font-light tracking-tight mt-1.5 text-theme-text leading-none">
+          {hoveredSegment.count} <span class="text-[10px] font-mono uppercase tracking-normal text-zinc-400 opacity-70">plays</span>
+        </div>
+        <div class="text-[11px] font-mono text-zinc-400 opacity-80 mt-1.5 leading-none">
+          {formattedAverage} <span class="opacity-60">/ day</span>
+        </div>
       {:else}
-        <div class="text-micro font-mono uppercase tracking-widest text-zinc-500">Diurnal</div>
-        <div class="text-micro font-light leading-snug text-zinc-400 mt-1">am / inner<br/>pm / outer</div>
+        <div class="text-xs font-mono uppercase tracking-wider text-zinc-500 leading-none">Diurnal</div>
+        <div class="text-[11px] font-light leading-normal text-zinc-400 mt-1.5">
+          inner &bull; am<br/>outer &bull; pm
+        </div>
       {/if}
     </div>
   </div>
