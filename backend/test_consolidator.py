@@ -16,7 +16,8 @@ from merge_history import (
     parse_yt_entry,
     parse_ytm_timestamp,
     normalize,
-    merge_histories
+    merge_histories,
+    deduplicate_myactivity
 )
 
 class TestConsolidator(unittest.TestCase):
@@ -37,39 +38,17 @@ class TestConsolidator(unittest.TestCase):
         self.assertEqual(artist, "Sleep Token")
         self.assertEqual(title, "The Summoning")
 
-        # 2. MyActivity format with "From YouTube Music" details
+        # 2. Excludes header == "YouTube" (now ignored to prevent noise)
         myact_details = {
-            "header": "YouTube",
-            "title": "Watched The Summoning",
-            "subtitles": [{"name": "Sleep Token"}],
-            "details": [{"name": "From YouTube Music"}]
-        }
-        artist, title = parse_yt_entry(myact_details)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
-
-        # 3. MyActivity format with "Watched on YouTube Music" description
-        myact_desc = {
-            "header": "YouTube",
-            "title": "Watched The Summoning",
-            "subtitles": [{"name": "Sleep Token"}],
-            "description": "Watched on YouTube Music"
-        }
-        artist, title = parse_yt_entry(myact_desc)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
-
-        # 4. MyActivity format with generic YouTube header but "- Topic" subtitle
-        myact_topic = {
             "header": "YouTube",
             "title": "Watched The Summoning",
             "subtitles": [{"name": "Sleep Token - Topic"}]
         }
-        artist, title = parse_yt_entry(myact_topic)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
+        artist, title = parse_yt_entry(myact_details)
+        self.assertEqual(artist, None)
+        self.assertEqual(title, None)
 
-        # 5. Invalid: generic YouTube video with no music indicators
+        # 3. Invalid: generic YouTube video
         invalid_yt = {
             "header": "YouTube",
             "title": "Watched Funny Cats Video",
@@ -122,6 +101,56 @@ class TestConsolidator(unittest.TestCase):
         self.assertEqual(merged[2]["source"], "youtube_music")
         self.assertEqual(merged[3]["title"], "Is It Really You?")
         self.assertEqual(merged[3]["source"], "youtube_music")
+
+    def test_deduplicate_myactivity(self):
+        # 1. Exact match (0s difference)
+        watch_1 = [{"artist": "Taylor Swift", "title": "seven", "unix_ts": 10000}]
+        myact_1 = [{"artist": "Taylor Swift", "title": "seven", "unix_ts": 10000}]
+        added, skipped = deduplicate_myactivity(watch_1, myact_1)
+        self.assertEqual(skipped, 1)
+        self.assertEqual(len(added), 0)
+
+        # 2. Shifted duplicate within 12h (e.g. 1h 44m offset = 6240s)
+        watch_2 = [{"artist": "American Football", "title": "Blood On My Blood", "unix_ts": 10000 + 6240}]
+        myact_2 = [{"artist": "American Football", "title": "Blood On My Blood", "unix_ts": 10000}]
+        added, skipped = deduplicate_myactivity(watch_2, myact_2)
+        self.assertEqual(skipped, 1)
+        self.assertEqual(len(added), 0)
+
+        # 3. Genuine repeat (watch has 1 play, myact has 2 plays: 1h 44m offset and 8h later)
+        # 10000 + 6240 = 16240 (watch)
+        # 10000 (myact, dup)
+        # 10000 + 28800 = 38800 (myact, genuine repeat 8h later)
+        watch_3 = [{"artist": "American Football", "title": "Blood On My Blood", "unix_ts": 16240}]
+        myact_3 = [
+            {"artist": "American Football", "title": "Blood On My Blood", "unix_ts": 10000},
+            {"artist": "American Football", "title": "Blood On My Blood", "unix_ts": 38800}
+        ]
+        added, skipped = deduplicate_myactivity(watch_3, myact_3)
+        self.assertEqual(skipped, 1)
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["unix_ts"], 38800)
+
+        # 4. Greedy closest matching
+        # Watch play at 12:00 (ts=10000). MyAct plays at 11:58 (ts=9880) and 11:30 (ts=8200)
+        # 9880 is closer to 10000 than 8200, so it gets matched/skipped. 8200 is kept.
+        watch_4 = [{"artist": "Sleep Token", "title": "The Summoning", "unix_ts": 10000}]
+        myact_4 = [
+            {"artist": "Sleep Token", "title": "The Summoning", "unix_ts": 8200},
+            {"artist": "Sleep Token", "title": "The Summoning", "unix_ts": 9880}
+        ]
+        added, skipped = deduplicate_myactivity(watch_4, myact_4)
+        self.assertEqual(skipped, 1)
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["unix_ts"], 8200)
+
+        # 5. Outside window (12h + 1s = 43201s offset)
+        watch_5 = [{"artist": "Loathe", "title": "Is It Really You?", "unix_ts": 10000 + 43201}]
+        myact_5 = [{"artist": "Loathe", "title": "Is It Really You?", "unix_ts": 10000}]
+        added, skipped = deduplicate_myactivity(watch_5, myact_5)
+        self.assertEqual(skipped, 0)
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0]["unix_ts"], 10000)
 
 if __name__ == "__main__":
     unittest.main()

@@ -125,7 +125,7 @@
                     width="12"
                     height="12"
                     rx="2"
-                    class="transition-all duration-300 hover:scale-115 hover:stroke-primary hover:stroke-2 cursor-pointer"
+                    class="transition-all duration-300 hover:stroke-primary hover:stroke-2 cursor-pointer"
                     class:fill-base-300={day.weight === 0}
                     class:opacity-10={day.weight === 0}
                     class:fill-primary={day.weight > 0}

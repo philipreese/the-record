@@ -31,36 +31,14 @@ def strip_watched(title):
 
 def parse_yt_entry(entry):
     """
-    Extract artist and title from a YouTube or YouTube Music entry.
-    Handles both standard watch-history.json and MyActivity.json schemas.
+    Extract artist and title from a YouTube Music entry.
+    Only allows entries where header == "YouTube Music".
     """
     header = entry.get("header", "")
-    
-    # 1. Determine if it is a music watch event
-    is_music = False
-    if header == "YouTube Music":
-        is_music = True
-    elif header == "YouTube":
-        # Check details for "From YouTube Music"
-        details = entry.get("details", [])
-        for d in details:
-            if d.get("name") == "From YouTube Music":
-                is_music = True
-                break
-        
-        # Check description
-        if entry.get("description") == "Watched on YouTube Music":
-            is_music = True
-            
-        # Check subtitles for "- Topic" channel (highly indicative of a track)
-        subtitles = entry.get("subtitles", [])
-        if subtitles and subtitles[0].get("name", "").endswith(" - Topic"):
-            is_music = True
-
-    if not is_music:
+    if header != "YouTube Music":
         return None, None
 
-    # 2. Extract title (strip "Watched " prefix)
+    # Extract title (strip "Watched " prefix)
     raw_title = entry.get("title", "")
     if raw_title.startswith("Watched "):
         raw_title = raw_title[8:]
@@ -68,7 +46,7 @@ def parse_yt_entry(entry):
     if not raw_title or raw_title.startswith("http"):
         return None, None
 
-    # 3. Extract artist from subtitles
+    # Extract artist from subtitles
     subtitles = entry.get("subtitles", [])
     if not subtitles:
         return None, None
@@ -81,10 +59,28 @@ def parse_yt_entry(entry):
     if subtitle_name.endswith(" - Topic"):
         artist = subtitle_name[:-8]
     else:
-        # If it was marked as music (e.g. from YTM details), we can keep the channel name as artist
         artist = subtitle_name
 
     return artist, raw_title
+
+def filter_rapid_skips(parsed_list):
+    """
+    Remove tracks that are followed by another track in less than 30 seconds.
+    This filters out fast skips and batch-loaded library/playlist syncs.
+    """
+    if not parsed_list:
+        return []
+    # Sort chronologically to check consecutive gaps
+    parsed_list.sort(key=lambda e: e["unix_ts"])
+    filtered = []
+    for i in range(len(parsed_list)):
+        if i < len(parsed_list) - 1:
+            time_diff = parsed_list[i+1]["unix_ts"] - parsed_list[i]["unix_ts"]
+            if time_diff < 30:
+                continue
+        filtered.append(parsed_list[i])
+    return filtered
+
 
 def parse_ytm_timestamp(time_str):
     """Parse ISO 8601 timestamp with millisecond rounding to Unix epoch."""
@@ -93,6 +89,60 @@ def parse_ytm_timestamp(time_str):
         return round(dt.timestamp())  # round to nearest second
     except Exception:
         return None
+
+def deduplicate_myactivity(watch_list, myact_list, window=43200):
+    """
+    Deduplicate MyActivity plays against base watch history using a greedy one-to-one matching algorithm.
+    Returns: (added_list, skipped_count)
+    """
+    # Group watch history timestamps by track key
+    watch_tracks = {}
+    for entry in watch_list:
+        key = (normalize(entry["artist"]), normalize(entry["title"]))
+        watch_tracks.setdefault(key, []).append(entry["unix_ts"])
+        
+    # Group MyActivity entries by track key
+    myact_by_track = {}
+    for entry in myact_list:
+        key = (normalize(entry["artist"]), normalize(entry["title"]))
+        myact_by_track.setdefault(key, []).append(entry)
+        
+    added_list = []
+    skipped_dup_count = 0
+    
+    for key, m_entries in myact_by_track.items():
+        w_timestamps = watch_tracks.get(key, [])
+        
+        # Match each w_ts to the closest unmatched m_entry within the window
+        matched_m_indices = set()
+        
+        w_sorted = sorted(w_timestamps)
+        m_sorted_entries = sorted(m_entries, key=lambda e: e["unix_ts"])
+        
+        for w_ts in w_sorted:
+            closest_m_idx = None
+            min_diff = None
+            
+            for i, entry in enumerate(m_sorted_entries):
+                if i in matched_m_indices:
+                    continue
+                diff = abs(w_ts - entry["unix_ts"])
+                if diff <= window:
+                    if min_diff is None or diff < min_diff:
+                        min_diff = diff
+                        closest_m_idx = i
+            
+            if closest_m_idx is not None:
+                matched_m_indices.add(closest_m_idx)
+        
+        # Any entry that was not matched is a truly new recovered play
+        for i, entry in enumerate(m_sorted_entries):
+            if i in matched_m_indices:
+                skipped_dup_count += 1
+            else:
+                added_list.append(entry)
+                
+    return added_list, skipped_dup_count
 
 # ── Fetching Last.fm history ───────────────────────────────────────────────────
 
@@ -240,45 +290,73 @@ def merge_histories(ytm_list, lfm_list):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    # Detect which file to load: MyActivity.json takes priority over watch-history.json
-    ytm_path = None
-    if len(sys.argv) > 1:
-        ytm_path = sys.argv[1]
-    else:
-        for filename in ["MyActivity.json", "watch-history.json"]:
-            if os.path.exists(filename):
-                ytm_path = filename
-                break
-        if not ytm_path:
-            ytm_path = "watch-history.json"  # Fallback to trigger file not found error
+    # 1. Load watch-history.json (base history)
+    watch_path = "watch-history.json"
+    watch_parsed = []
+    if os.path.exists(watch_path):
+        print(f"Loading {watch_path}...")
+        try:
+            with open(watch_path, "r", encoding="utf-8") as f:
+                watch_data = json.load(f)
+            for entry in watch_data:
+                artist, title = parse_yt_entry(entry)
+                if artist and title:
+                    ts = parse_ytm_timestamp(entry.get("time", ""))
+                    if ts:
+                        watch_parsed.append({
+                            "artist": artist,
+                            "title": title,
+                            "unix_ts": ts
+                        })
+            print(f"Parsed {len(watch_parsed):,} entries from watch-history.json.")
+            watch_parsed = filter_rapid_skips(watch_parsed)
+            print(f"Filtered to {len(watch_parsed):,} plays (removed skips/bursts) in watch-history.json.")
+        except Exception as e:
+            print(f"Warning: Error reading/parsing watch-history.json: {e}")
 
-    if not os.path.exists(ytm_path):
-        print(f"Error: YouTube watch history file not found at '{ytm_path}'")
-        print("Please place watch-history.json or MyActivity.json in the repository root.")
+    # 2. Load MyActivity.json (for recovering missing/older plays)
+    myact_path = "MyActivity.json"
+    myact_parsed = []
+    if os.path.exists(myact_path):
+        print(f"Loading {myact_path}...")
+        try:
+            with open(myact_path, "r", encoding="utf-8") as f:
+                myact_data = json.load(f)
+            
+            # Filter to >= 2020-01-01 UTC (timestamp >= 1577836800)
+            cutoff_ts = 1577836800
+            for entry in myact_data:
+                artist, title = parse_yt_entry(entry)
+                if artist and title:
+                    ts = parse_ytm_timestamp(entry.get("time", ""))
+                    if ts and ts >= cutoff_ts:
+                        myact_parsed.append({
+                            "artist": artist,
+                            "title": title,
+                            "unix_ts": ts
+                        })
+            print(f"Parsed {len(myact_parsed):,} entries (>= 2020) from MyActivity.json.")
+            myact_parsed = filter_rapid_skips(myact_parsed)
+            print(f"Filtered to {len(myact_parsed):,} plays (removed skips/bursts) in MyActivity.json.")
+        except Exception as e:
+            print(f"Warning: Error reading/parsing MyActivity.json: {e}")
+
+    if not watch_parsed and not myact_parsed:
+        print("Error: No history data found. Please place watch-history.json or MyActivity.json in the repository root.")
         sys.exit(1)
 
-    print(f"Loading {ytm_path}...")
-    try:
-        with open(ytm_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        print(f"Error reading watch history file: {e}")
-        sys.exit(1)
+    # 3. Combine both histories, skipping 12-hour duplicates from MyActivity.json using greedy one-to-one matching
+    combined_ytm = list(watch_parsed)
+    
+    if myact_parsed:
+        print("Deduplicating MyActivity.json against base history (greedy 12-hour window)...")
+        recovered_added, skipped_dup_count = deduplicate_myactivity(combined_ytm, myact_parsed, window=12*3600)
+        combined_ytm.extend(recovered_added)
+        print(f"  Added {len(recovered_added):,} unique recovered plays from MyActivity.json.")
+        print(f"  Skipped {skipped_dup_count:,} shifted duplicate plays.")
 
-    print(f"Parsing YouTube history logs...")
-    ytm_parsed = []
-    for entry in data:
-        artist, title = parse_yt_entry(entry)
-        if artist and title:
-            ts = parse_ytm_timestamp(entry.get("time", ""))
-            if ts:
-                ytm_parsed.append({
-                    "artist": artist,
-                    "title": title,
-                    "unix_ts": ts
-                })
-
-    print(f"Parsed {len(ytm_parsed):,} clean YouTube Music entries.")
+    combined_ytm.sort(key=lambda e: e["unix_ts"])
+    print(f"Total consolidated YouTube Music plays: {len(combined_ytm):,}")
 
     # Fetch Last.fm
     lfm_scrobbles = []
@@ -288,8 +366,8 @@ def main():
         print("\nLast.fm integration skipped: LASTFM_API_KEY or LASTFM_USERNAME not set.")
         print("Check your .env file. Merging will proceed with YouTube Music only.")
 
-    # Merge
-    merged = merge_histories(ytm_parsed, lfm_scrobbles)
+    # Merge combined YTM with Last.fm
+    merged = merge_histories(combined_ytm, lfm_scrobbles)
 
     # Output results
     output_path = os.path.join("backend", "merged_history.json")

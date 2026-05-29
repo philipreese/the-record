@@ -239,3 +239,7 @@ backend/*.db-wal
 
 # editor settings
 .vscode/
+
+# Vite dev server cache and timestamp files
+frontend/.vite/
+frontend/vite.config.js.timestamp-*.mjs
