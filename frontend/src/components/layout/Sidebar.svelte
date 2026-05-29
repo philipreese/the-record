@@ -84,7 +84,9 @@
         onchange={(e) => themeManager.apply(e.currentTarget.value)}
       >
         {#each themes as theme}
-          <option value={theme}>{theme}</option>
+          <option value={theme}>
+            {theme.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+          </option>
         {/each}
       </select>
     </div>

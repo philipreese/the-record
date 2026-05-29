@@ -1,7 +1,7 @@
-export const themes = ["dark", "synthwave", "dracula", "luxury", "night", "cyberpunk", "dim", "coffee"];
+export const themes = ["cool-slate", "warm-dark", "editorial-light", "forest-deep"];
 
 class ThemeManager {
-  currentTheme = $state('dark');
+  currentTheme = $state('cool-slate');
 
   init() {
     if (typeof window !== 'undefined') {
