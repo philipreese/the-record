@@ -37,39 +37,17 @@ class TestConsolidator(unittest.TestCase):
         self.assertEqual(artist, "Sleep Token")
         self.assertEqual(title, "The Summoning")
 
-        # 2. MyActivity format with "From YouTube Music" details
+        # 2. Excludes header == "YouTube" (now ignored to prevent noise)
         myact_details = {
-            "header": "YouTube",
-            "title": "Watched The Summoning",
-            "subtitles": [{"name": "Sleep Token"}],
-            "details": [{"name": "From YouTube Music"}]
-        }
-        artist, title = parse_yt_entry(myact_details)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
-
-        # 3. MyActivity format with "Watched on YouTube Music" description
-        myact_desc = {
-            "header": "YouTube",
-            "title": "Watched The Summoning",
-            "subtitles": [{"name": "Sleep Token"}],
-            "description": "Watched on YouTube Music"
-        }
-        artist, title = parse_yt_entry(myact_desc)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
-
-        # 4. MyActivity format with generic YouTube header but "- Topic" subtitle
-        myact_topic = {
             "header": "YouTube",
             "title": "Watched The Summoning",
             "subtitles": [{"name": "Sleep Token - Topic"}]
         }
-        artist, title = parse_yt_entry(myact_topic)
-        self.assertEqual(artist, "Sleep Token")
-        self.assertEqual(title, "The Summoning")
+        artist, title = parse_yt_entry(myact_details)
+        self.assertEqual(artist, None)
+        self.assertEqual(title, None)
 
-        # 5. Invalid: generic YouTube video with no music indicators
+        # 3. Invalid: generic YouTube video
         invalid_yt = {
             "header": "YouTube",
             "title": "Watched Funny Cats Video",
