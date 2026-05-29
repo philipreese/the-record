@@ -26,6 +26,7 @@ from database import (
     get_monthly_trends,
     get_streak_stats,
     get_wrapped_data,
+    deduplicate_listens,
 )
 
 load_dotenv(dotenv_path=".env")
@@ -372,6 +373,11 @@ async def _run_sync(mode: str) -> None:
         if new_listens:
             persist_listens(new_listens)
             _sync_state.synced_count += len(new_listens)
+
+        # 6. Post-sync cleanup for duplicate plays (e.g. from multiple scrobbler apps)
+        deleted_dupes = deduplicate_listens()
+        if deleted_dupes > 0:
+            print(f"[sync] Post-sync cleanup: Removed {deleted_dupes} duplicate play(s).")
 
         print(
             f"[sync] Done — fetched {_sync_state.batches_fetched} batch(es), "

@@ -405,3 +405,27 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         "peak_day": peak_day,
         "minutes_listened": minutes_listened
     }
+
+def deduplicate_listens() -> int:
+    """
+    Remove duplicate listens where the same artist and title are scrobbled
+    within 60 seconds of each other. Keeps the entry with the lower ID.
+    Returns the number of deleted duplicate rows.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM listens 
+        WHERE id IN (
+            SELECT b.id 
+            FROM listens a 
+            JOIN listens b ON a.artist = b.artist 
+                          AND a.title = b.title 
+                          AND a.id < b.id 
+                          AND abs(a.unix_ts - b.unix_ts) <= 60
+        )
+    """)
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted_count
