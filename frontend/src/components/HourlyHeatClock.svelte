@@ -1,8 +1,8 @@
 <script lang="ts">
-  export let hourlyData: Record<string, number> = {};
+  let { hourlyData = {} }: { hourlyData?: Record<string, number> } = $props();
 
   // Determine max play count to scale opacities dynamically
-  $: maxCount = Math.max(...Object.values(hourlyData), 1);
+  let maxCount = $derived(Math.max(...Object.values(hourlyData), 1));
 
   // Helper: Convert polar coordinates to Cartesian
   function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {

@@ -15,13 +15,15 @@ import urllib.parse
 import urllib.error
 from datetime import datetime, timezone
 from dotenv import load_dotenv
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
 LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
 
-CHECKPOINT_FILE = os.path.join("backend", "import_checkpoint.pkl")
+CHECKPOINT_FILE = os.path.join(PROJECT_ROOT, "backend", "import_checkpoint.pkl")
 BATCH_SIZE = 1000  # ListenBrainz API maximum per import request
 DEFAULT_SLEEP = 1.0
 
@@ -83,7 +85,7 @@ def main():
         print("Please set LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN in your .env file.")
         sys.exit(1)
 
-    history_path = os.path.join("backend", "merged_history.json")
+    history_path = os.path.join(PROJECT_ROOT, "backend", "merged_history.json")
     if not os.path.exists(history_path):
         print(f"Error: Consolidated history file not found at '{history_path}'")
         print("Please run backend/merge_history.py first to generate the file.")
@@ -107,7 +109,7 @@ def main():
 
     # Load existing database plays to avoid importing duplicates
     db_plays = {}  # key: (artist, title) -> list of unix_ts
-    db_path = os.path.join("backend", "history.db")
+    db_path = os.path.join(PROJECT_ROOT, "backend", "history.db")
     if os.path.exists(db_path):
         import sqlite3
         try:

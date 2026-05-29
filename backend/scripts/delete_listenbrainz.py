@@ -22,13 +22,16 @@ def safe_str(s):
         return ""
     return s.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8")
 
-load_dotenv(dotenv_path=".env")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+
+load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
 LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
 
-CHECKPOINT_FILE = os.path.join("backend", "import_checkpoint.pkl")
-MERGED_HISTORY_FILE = os.path.join("backend", "merged_history.json")
+CHECKPOINT_FILE = os.path.join(PROJECT_ROOT, "backend", "import_checkpoint.pkl")
+MERGED_HISTORY_FILE = os.path.join(PROJECT_ROOT, "backend", "merged_history.json")
 
 def load_checkpoint():
     if os.path.exists(CHECKPOINT_FILE):

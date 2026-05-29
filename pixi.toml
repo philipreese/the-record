@@ -6,6 +6,12 @@ platforms = ["win-64"]
 version = "0.1.0"
 
 [tasks]
+dev = "python backend/scripts/run_dev.py"
+dev-backend = "uvicorn --app-dir backend app.main:app --reload"
+dev-frontend = "npm --prefix frontend run dev"
+test = "python -m unittest discover -s backend/tests"
+lint = "pyrefly check && npm --prefix frontend run lint"
+generate-api-types = "python backend/scripts/generate_openapi.py && npx openapi-typescript backend/openapi.json -o frontend/src/services/api-types.ts"
 
 [dependencies]
 python = "3.13.*"

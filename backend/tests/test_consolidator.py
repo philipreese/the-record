@@ -9,7 +9,10 @@ import os
 import unittest
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+tests_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(tests_dir)
+sys.path.append(backend_dir)
+sys.path.append(os.path.join(backend_dir, "scripts"))
 
 from merge_history import (
     strip_watched,

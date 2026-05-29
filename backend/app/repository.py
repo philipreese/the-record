@@ -1,85 +1,8 @@
-import os
 import sqlite3
-import json
 from datetime import datetime, timezone, timedelta
-from typing import Any
+from typing import Any, List, Dict
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "history.db")
-JSON_PATH = os.path.join(os.path.dirname(__file__), "merged_history.json")
-
-def get_db_connection():
-    """Establish and return an SQLite connection with row factory enabled."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    """Initialize the database schema and build indices."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Create listens table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS listens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            artist TEXT NOT NULL,
-            title TEXT NOT NULL,
-            unix_ts INTEGER NOT NULL,
-            source TEXT NOT NULL
-        )
-    """)
-    
-    # Create indices for fast queries
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_listens_unix_ts ON listens(unix_ts)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_listens_artist ON listens(artist)")
-    
-    conn.commit()
-    conn.close()
-
-def bootstrap_db_from_json():
-    """Bootstrap the SQLite database from merged_history.json if the database is empty."""
-    init_db()
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if database is empty
-    cursor.execute("SELECT COUNT(*) FROM listens")
-    count = cursor.fetchone()[0]
-    
-    if count > 0:
-        print(f"Database already contains {count:,} entries. Skipping bootstrap.")
-        conn.close()
-        return False
-
-    if not os.path.exists(JSON_PATH):
-        print(f"merged_history.json not found at '{JSON_PATH}'. Skipping bootstrap.")
-        conn.close()
-        return False
-        
-    print(f"Bootstrapping database from {JSON_PATH}...")
-    try:
-        with open(JSON_PATH, "r", encoding="utf-8") as f:
-            history = json.load(f)
-            
-        # Bulk insert
-        cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
-            [(item["artist"], item["title"], item["unix_ts"], item.get("source", "unknown")) for item in history]
-        )
-        conn.commit()
-        
-        cursor.execute("SELECT COUNT(*) FROM listens")
-        new_count = cursor.fetchone()[0]
-        print(f"Successfully bootstrapped SQLite database with {new_count:,} records.")
-        conn.close()
-        return True
-    except Exception as e:
-        print(f"Error bootstrapping database: {e}")
-        conn.close()
-        return False
-
-# ── Query Helpers ──────────────────────────────────────────────────────────────
+from app.db import get_db_connection
 
 def get_stats_summary() -> dict[str, Any]:
     """Calculate overall statistics from the scrobble database."""
@@ -94,7 +17,7 @@ def get_stats_summary() -> dict[str, Any]:
         conn.close()
         return {
             "total_listens": 0, "unique_artists": 0, "unique_tracks": 0,
-            "days_active": 0, "avg_per_day": 0, "top_source": "None"
+            "days_active": 0, "avg_per_day": 0.0, "top_source": "None"
         }
         
     # Unique artists
@@ -300,10 +223,10 @@ def get_streak_stats() -> dict[str, int]:
         "longest_streak": max(longest, current_streak)
     }
 
-def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None, decade: str | None = None) -> dict[str, Any]:
+def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None) -> dict[str, Any]:
     """
     Retrieve highly detailed spotify-wrapped style metrics for custom periods.
-    Supports years, quarters (Q1-Q4), specific months (M1-M12), and decades (10s, 20s).
+    Supports years, quarters (Q1-Q4), specific months (M1-M12).
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -311,17 +234,8 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
     where_clauses: list[str] = []
     params: list[Any] = []
     
-    # 1. Filter by year or decade
-    if decade:
-        if decade == "10s":
-            where_clauses.append("unix_ts >= ? AND unix_ts <= ?")
-            # 2010-01-01 00:00:00 to 2019-12-31 23:59:59 UTC
-            params.extend([1262304000, 1577836799])
-        elif decade == "20s":
-            where_clauses.append("unix_ts >= ? AND unix_ts <= ?")
-            # 2020-01-01 00:00:00 to 2029-12-31 23:59:59 UTC
-            params.extend([1577836800, 1893455999])
-    elif year is not None:
+    # 1. Filter by year
+    if year is not None:
         where_clauses.append("strftime('%Y', unix_ts, 'unixepoch', 'localtime') = ?")
         params.append(str(year))
         
