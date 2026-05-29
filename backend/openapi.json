@@ -1,0 +1,779 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "The Record API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/stats": {
+      "get": {
+        "summary": "Read Stats",
+        "description": "Retrieve high-level listening history metrics.",
+        "operationId": "read_stats_api_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/top-artists": {
+      "get": {
+        "summary": "Read Top Artists",
+        "description": "Retrieve top artists for a specified time range.",
+        "operationId": "read_top_artists_api_top_artists_get",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time range in days: 30, 90, 365, or 'all'",
+              "default": "all",
+              "title": "Range"
+            },
+            "description": "Time range in days: 30, 90, 365, or 'all'"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Max results to return",
+              "default": 15,
+              "title": "Limit"
+            },
+            "description": "Max results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArtistInfo"
+                  },
+                  "title": "Response Read Top Artists Api Top Artists Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/top-tracks": {
+      "get": {
+        "summary": "Read Top Tracks",
+        "description": "Retrieve top tracks for a specified time range.",
+        "operationId": "read_top_tracks_api_top_tracks_get",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time range in days: 30, 90, 365, or 'all'",
+              "default": "all",
+              "title": "Range"
+            },
+            "description": "Time range in days: 30, 90, 365, or 'all'"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Max results to return",
+              "default": 15,
+              "title": "Limit"
+            },
+            "description": "Max results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackInfo"
+                  },
+                  "title": "Response Read Top Tracks Api Top Tracks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/heatmap": {
+      "get": {
+        "summary": "Read Heatmap",
+        "description": "Retrieve daily play counts for a calendar heatmap visualization.",
+        "operationId": "read_heatmap_api_heatmap_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The calendar year to display",
+              "title": "Year"
+            },
+            "description": "The calendar year to display"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Read Heatmap Api Heatmap Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trends/hourly": {
+      "get": {
+        "summary": "Read Hourly Trends",
+        "description": "Retrieve play counts grouped by the hour of the day.",
+        "operationId": "read_hourly_trends_api_trends_hourly_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "type": "object",
+                  "title": "Response Read Hourly Trends Api Trends Hourly Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trends/monthly": {
+      "get": {
+        "summary": "Read Monthly Trends",
+        "description": "Retrieve play counts grouped by month (chronological).",
+        "operationId": "read_monthly_trends_api_trends_monthly_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MonthlyTrendInfo"
+                  },
+                  "type": "array",
+                  "title": "Response Read Monthly Trends Api Trends Monthly Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trends/streak": {
+      "get": {
+        "summary": "Read Streak",
+        "description": "Retrieve active and historical daily listening streaks.",
+        "operationId": "read_streak_api_trends_streak_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreakStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wrapped": {
+      "get": {
+        "summary": "Read Wrapped",
+        "description": "Retrieve aggregated review stats for custom time intervals (Spotify Wrapped style).",
+        "operationId": "read_wrapped_api_wrapped_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by year (e.g. 2025)",
+              "title": "Year"
+            },
+            "description": "Filter by year (e.g. 2025)"
+          },
+          {
+            "name": "quarter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by quarter: Q1, Q2, Q3, Q4",
+              "title": "Quarter"
+            },
+            "description": "Filter by quarter: Q1, Q2, Q3, Q4"
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by month: M1 to M12",
+              "title": "Month"
+            },
+            "description": "Filter by month: M1 to M12"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrappedDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync": {
+      "post": {
+        "summary": "Start Sync",
+        "description": "Kick off a background sync with ListenBrainz and return immediately.\nPoll GET /api/sync/status for progress and results.",
+        "operationId": "start_sync_api_sync_post",
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Sync mode: 'normal' or 'full'",
+              "default": "normal",
+              "title": "Mode"
+            },
+            "description": "Sync mode: 'normal' or 'full'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/status": {
+      "get": {
+        "summary": "Get Sync Status",
+        "description": "Return the current state of the background sync job.",
+        "operationId": "get_sync_status_api_sync_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ArtistInfo": {
+        "properties": {
+          "artist": {
+            "type": "string",
+            "title": "Artist"
+          },
+          "play_count": {
+            "type": "integer",
+            "title": "Play Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artist",
+          "play_count"
+        ],
+        "title": "ArtistInfo"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MonthlyTrendInfo": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "count"
+        ],
+        "title": "MonthlyTrendInfo"
+      },
+      "StatsSummaryResponse": {
+        "properties": {
+          "total_listens": {
+            "type": "integer",
+            "title": "Total Listens"
+          },
+          "unique_artists": {
+            "type": "integer",
+            "title": "Unique Artists"
+          },
+          "unique_tracks": {
+            "type": "integer",
+            "title": "Unique Tracks"
+          },
+          "days_active": {
+            "type": "integer",
+            "title": "Days Active"
+          },
+          "avg_per_day": {
+            "type": "number",
+            "title": "Avg Per Day"
+          },
+          "top_source": {
+            "type": "string",
+            "title": "Top Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_listens",
+          "unique_artists",
+          "unique_tracks",
+          "days_active",
+          "avg_per_day",
+          "top_source"
+        ],
+        "title": "StatsSummaryResponse"
+      },
+      "StreakStatsResponse": {
+        "properties": {
+          "current_streak": {
+            "type": "integer",
+            "title": "Current Streak"
+          },
+          "longest_streak": {
+            "type": "integer",
+            "title": "Longest Streak"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_streak",
+          "longest_streak"
+        ],
+        "title": "StreakStatsResponse"
+      },
+      "SyncStartResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SyncStartResponse"
+      },
+      "SyncStatusResponse": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running"
+          },
+          "finished": {
+            "type": "boolean",
+            "title": "Finished"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "batches_fetched": {
+            "type": "integer",
+            "title": "Batches Fetched"
+          },
+          "synced_count": {
+            "type": "integer",
+            "title": "Synced Count"
+          },
+          "lb_total": {
+            "type": "integer",
+            "title": "Lb Total"
+          },
+          "local_total": {
+            "type": "integer",
+            "title": "Local Total"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "running",
+          "finished",
+          "mode",
+          "batches_fetched",
+          "synced_count",
+          "lb_total",
+          "local_total"
+        ],
+        "title": "SyncStatusResponse"
+      },
+      "TrackInfo": {
+        "properties": {
+          "artist": {
+            "type": "string",
+            "title": "Artist"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "play_count": {
+            "type": "integer",
+            "title": "Play Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artist",
+          "title",
+          "play_count"
+        ],
+        "title": "TrackInfo"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WrappedArtist": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "plays"
+        ],
+        "title": "WrappedArtist"
+      },
+      "WrappedDataResponse": {
+        "properties": {
+          "total_plays": {
+            "type": "integer",
+            "title": "Total Plays"
+          },
+          "top_artist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WrappedArtist"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WrappedTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peak_day": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WrappedPeakDay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutes_listened": {
+            "type": "integer",
+            "title": "Minutes Listened"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_plays",
+          "minutes_listened"
+        ],
+        "title": "WrappedDataResponse"
+      },
+      "WrappedPeakDay": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "plays"
+        ],
+        "title": "WrappedPeakDay"
+      },
+      "WrappedTrack": {
+        "properties": {
+          "artist": {
+            "type": "string",
+            "title": "Artist"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artist",
+          "title",
+          "plays"
+        ],
+        "title": "WrappedTrack"
+      }
+    }
+  }
+}

@@ -1,9 +1,8 @@
 <script lang="ts">
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
+  import { appCache } from '../services/store.svelte';
 
   let topRange = $state('all'); // 30, 90, 365, all
-  let topArtists = $state<ArtistInfo[]>([]);
-  let topTracks = $state<TrackInfo[]>([]);
   let loadingCharts = $state(false);
 
   // Automatically fetch when the selected range changes
@@ -13,20 +12,24 @@
   });
 
   async function fetchTopCharts(range: string) {
-    loadingCharts = true;
+    if (!appCache.charts[range]) {
+      loadingCharts = true;
+    }
     try {
       const [artistsRes, tracksRes] = await Promise.all([
         fetchTopArtists(range, 15),
         fetchTopTracks(range, 15)
       ]);
-      topArtists = artistsRes;
-      topTracks = tracksRes;
+      appCache.charts[range] = { artists: artistsRes, tracks: tracksRes };
     } catch (e) {
       console.error("Failed to fetch top charts:", e);
     } finally {
       loadingCharts = false;
     }
   }
+
+  let currentArtists = $derived(appCache.charts[topRange]?.artists || []);
+  let currentTracks = $derived(appCache.charts[topRange]?.tracks || []);
 </script>
 
 <div class="flex flex-col gap-6 text-base-content">
@@ -56,11 +59,11 @@
       <div class="card bg-base-200/50 border border-base-content/10 p-6 backdrop-blur-md">
         <h2 class="text-xl font-bold mb-6 text-primary border-b border-base-content/10 pb-3 flex justify-between items-center">
           <span>Top Artists</span>
-          <span class="badge badge-primary">{topArtists.length} items</span>
+          <span class="badge badge-primary">{currentArtists.length} items</span>
         </h2>
         
         <div class="flex flex-col gap-3">
-          {#each topArtists as artist, idx}
+          {#each currentArtists as artist, idx}
             <div class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-colors duration-300">
               <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
                 {idx + 1}
@@ -83,11 +86,11 @@
       <div class="card bg-base-200/50 border border-base-content/10 p-6 backdrop-blur-md">
         <h2 class="text-xl font-bold mb-6 text-secondary border-b border-base-content/10 pb-3 flex justify-between items-center">
           <span>Top Tracks</span>
-          <span class="badge badge-secondary">{topTracks.length} items</span>
+          <span class="badge badge-secondary">{currentTracks.length} items</span>
         </h2>
         
         <div class="flex flex-col gap-3">
-          {#each topTracks as track, idx}
+          {#each currentTracks as track, idx}
             <div class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-colors duration-300">
               <div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center font-bold text-secondary text-sm">
                 {idx + 1}

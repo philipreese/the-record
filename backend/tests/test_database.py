@@ -4,18 +4,19 @@ import unittest
 from datetime import datetime, timezone, timedelta
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import database
+import app.repository as database
+import app.db as db
 
 class TestDatabaseQueries(unittest.TestCase):
     def setUp(self):
         # Override the database path to use a temporary file for tests
         self.test_db_path = "test_history.db"
-        database.DB_PATH = self.test_db_path
-        database.init_db()
+        db.DB_PATH = self.test_db_path
+        db.init_db()
         
-        self.conn = database.get_db_connection()
+        self.conn = db.get_db_connection()
         self.cursor = self.conn.cursor()
         
         # Populate in-memory database with test data

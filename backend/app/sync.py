@@ -6,10 +6,8 @@ from typing import Optional, Any
 
 import httpx
 
-from database import (
-    get_db_connection,
-    deduplicate_listens,
-)
+from app.db import get_db_connection
+from app.repository import deduplicate_listens
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
 LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")

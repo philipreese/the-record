@@ -11,25 +11,22 @@
     fetchStreak,
     fetchHeatmap,
     fetchHourlyTrends,
-    fetchMonthlyTrends,
-    type StatsInfo,
-    type StreakInfo
+    fetchMonthlyTrends
   } from '../services/api';
+  
+  import { appCache } from '../services/store.svelte';
 
-  let stats = $state<StatsInfo>({ total_listens: 0, unique_artists: 0, unique_tracks: 0, days_active: 0, avg_per_day: 0, top_source: 'None' });
-  let streak = $state<StreakInfo>({ current_streak: 0, longest_streak: 0 });
-  let heatmapData = $state<Record<string, number>>({});
-  let hourlyTrends = $state<Record<string, number>>({});
-  let monthlyTrends = $state<{ month: string; count: number }[]>([]);
   let heatmapYear = $state(new Date().getFullYear());
-  let loadingStats = $state(true);
+  let loadingStats = $state(!appCache.statsLoaded);
 
   onMount(() => {
     fetchDashboardData();
   });
 
   async function fetchDashboardData() {
-    loadingStats = true;
+    if (!appCache.statsLoaded) {
+      loadingStats = true;
+    }
     try {
       const [statsRes, streakRes, hourlyRes, monthlyRes] = await Promise.all([
         fetchStats(),
@@ -38,10 +35,11 @@
         fetchMonthlyTrends()
       ]);
 
-      stats = statsRes;
-      streak = streakRes;
-      hourlyTrends = hourlyRes;
-      monthlyTrends = monthlyRes;
+      appCache.stats = statsRes;
+      appCache.streak = streakRes;
+      appCache.hourlyTrends = hourlyRes;
+      appCache.monthlyTrends = monthlyRes;
+      appCache.statsLoaded = true;
     } catch (e) {
       console.error("Failed to fetch dashboard data:", e);
     } finally {
@@ -53,9 +51,12 @@
   $effect(() => {
     const year = heatmapYear;
     fetchHeatmap(year)
-      .then(data => { heatmapData = data; })
+      .then(data => { appCache.heatmap[year] = data; })
       .catch(err => console.error(err));
   });
+
+  let currentStats = $derived(appCache.stats || { total_listens: 0, unique_artists: 0, unique_tracks: 0, days_active: 0, avg_per_day: 0, top_source: 'None' });
+  let currentStreak = $derived(appCache.streak || { current_streak: 0, longest_streak: 0 });
 </script>
 
 <div class="flex flex-col gap-6">
@@ -68,7 +69,7 @@
     </div>
     
     <!-- Sync Action -->
-    <SyncControl onSyncComplete={fetchDashboardData} />
+    <SyncControl onSyncComplete={() => { appCache.invalidate(); fetchDashboardData(); }} />
   </div>
 
   <!-- Stats Grid -->
@@ -77,7 +78,7 @@
       <span class="loading loading-spinner loading-md text-primary"></span>
     </div>
   {:else}
-    <StatsGrid {stats} />
+    <StatsGrid stats={currentStats} />
   {/if}
 
   <!-- Heatmap Contribution Board -->
@@ -94,13 +95,13 @@
         </button>
       </div>
     </div>
-    <Heatmap data={heatmapData} year={heatmapYear} />
+    <Heatmap data={appCache.heatmap[heatmapYear] || {}} year={heatmapYear} />
   </div>
 
   <!-- Sub Grid for Hourly clock + Streaks -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <HourlyHeatClock hourlyData={hourlyTrends} />
-    <StreakTracker streakData={streak} />
+    <HourlyHeatClock hourlyData={appCache.hourlyTrends} />
+    <StreakTracker streakData={currentStreak} />
   </div>
 
 </div>

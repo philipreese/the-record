@@ -242,4 +242,4 @@ backend/*.db-wal
 
 # Vite dev server cache and timestamp files
 frontend/.vite/
-frontend/vite.config.js.timestamp-*.mjs
+frontend/vite.config.js.timestamp-*

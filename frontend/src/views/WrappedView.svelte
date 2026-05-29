@@ -1,13 +1,16 @@
 <script lang="ts">
   import { generateWrapped, type WrappedDataInfo } from '../services/api';
+  import { appCache } from '../services/store.svelte';
 
   let wrappedPeriod = $state<'year' | 'quarter' | 'month'>('year');
   let wrappedYear = $state(2025);
   let wrappedQuarter = $state('Q1');
   let wrappedMonth = $state('M1');
-  let wrappedData = $state<WrappedDataInfo | null>(null);
   let loadingWrapped = $state(false);
   let wrappedError = $state<string | null>(null);
+
+  // Unique key to cache different review periods
+  let cacheKey = $derived(`${wrappedPeriod}-${wrappedYear}-${wrappedQuarter}-${wrappedMonth}`);
 
   // Auto trigger Wrapped when controls change
   $effect(() => {
@@ -15,27 +18,35 @@
     const year = wrappedYear;
     const quarter = wrappedQuarter;
     const month = wrappedMonth;
+    const key = cacheKey;
     
-    runGenerateWrapped(period, year, quarter, month);
+    runGenerateWrapped(period, year, quarter, month, key);
   });
 
   async function runGenerateWrapped(
     period: 'year' | 'quarter' | 'month',
     year: number,
     quarter: string,
-    month: string
+    month: string,
+    key: string
   ) {
+    if (appCache.wrapped[key]) {
+      wrappedError = null;
+      return;
+    }
     loadingWrapped = true;
     wrappedError = null;
-    wrappedData = null;
     try {
-      wrappedData = await generateWrapped(period, year, quarter, month);
+      const data = await generateWrapped(period, year, quarter, month);
+      appCache.wrapped[key] = data;
     } catch (e) {
       wrappedError = e instanceof Error ? e.message : String(e);
     } finally {
       loadingWrapped = false;
     }
   }
+
+  let currentWrappedData = $derived(appCache.wrapped[cacheKey] || null);
 </script>
 
 <div class="flex flex-col gap-6 text-base-content">
@@ -102,7 +113,7 @@
         </select>
       </div>
     {/if}
-    </div>
+  </div>
 
   <!-- Wrapped Result Card -->
   {#if loadingWrapped}
@@ -114,7 +125,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       <span>{wrappedError}</span>
     </div>
-  {:else if wrappedData}
+  {:else if currentWrappedData}
     <div class="card max-w-xl mx-auto w-full bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-pink-900/40 border border-white/10 p-8 rounded-3xl relative overflow-hidden shadow-2xl group">
       <!-- Glow backings -->
       <div class="absolute -top-12 -left-12 w-40 h-40 bg-primary/20 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
@@ -132,10 +143,8 @@
           <span class="badge badge-accent uppercase font-black text-[10px] text-accent-content">
             {#if wrappedPeriod === 'year'}
               {wrappedYear}
-            {:else if wrappedPeriod === 'quarter'}
-              {wrappedYear} {wrappedQuarter}
             {:else}
-              {wrappedYear} {wrappedMonth.replace('M', 'Month ')}
+              {wrappedYear} {wrappedQuarter || wrappedMonth.replace('M', 'Month ')}
             {/if}
           </span>
         </div>
@@ -144,10 +153,10 @@
         <div class="flex flex-col items-center justify-center py-4 text-center">
           <div class="text-[11px] font-extrabold uppercase tracking-widest opacity-60 text-white">Total Plays</div>
           <div class="text-5xl font-black mt-2 text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent">
-            {wrappedData.total_plays.toLocaleString()}
+            {currentWrappedData.total_plays.toLocaleString()}
           </div>
           <div class="text-xs font-semibold opacity-70 mt-2 text-white">
-            Approximately <span class="text-pink-400 font-extrabold">{wrappedData.minutes_listened.toLocaleString()}</span> minutes of music
+            Approximately <span class="text-pink-400 font-extrabold">{currentWrappedData.minutes_listened.toLocaleString()}</span> minutes of music
           </div>
         </div>
 
@@ -157,9 +166,9 @@
           <!-- Top Artist -->
           <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col">
             <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Top Creator</span>
-            {#if wrappedData.top_artist}
-              <span class="text-md font-extrabold text-white mt-1 truncate">{wrappedData.top_artist.name}</span>
-              <span class="text-xs opacity-60 mt-1 text-white/80">{wrappedData.top_artist.plays.toLocaleString()} plays</span>
+            {#if currentWrappedData.top_artist}
+              <span class="text-md font-extrabold text-white mt-1 truncate">{currentWrappedData.top_artist.name}</span>
+              <span class="text-xs opacity-60 mt-1 text-white/80">{currentWrappedData.top_artist.plays.toLocaleString()} plays</span>
             {:else}
               <span class="text-sm opacity-40 mt-1 text-white/40">No plays logged.</span>
             {/if}
@@ -168,10 +177,10 @@
           <!-- Top Track -->
           <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col">
             <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Top Track</span>
-            {#if wrappedData.top_track}
-              <span class="text-md font-extrabold text-white mt-1 truncate">{wrappedData.top_track.title}</span>
-              <span class="text-xs opacity-60 truncate mt-0.5 text-white/80">{wrappedData.top_track.artist}</span>
-              <span class="text-xs opacity-40 mt-1 text-white/50">{wrappedData.top_track.plays.toLocaleString()} plays</span>
+            {#if currentWrappedData.top_track}
+              <span class="text-md font-extrabold text-white mt-1 truncate">{currentWrappedData.top_track.title}</span>
+              <span class="text-xs opacity-60 truncate mt-0.5 text-white/80">{currentWrappedData.top_track.artist}</span>
+              <span class="text-xs opacity-40 mt-1 text-white/50">{currentWrappedData.top_track.plays.toLocaleString()} plays</span>
             {:else}
               <span class="text-sm opacity-40 mt-1 text-white/40">No plays logged.</span>
             {/if}
@@ -180,16 +189,16 @@
         </div>
 
         <!-- Peak Day -->
-        {#if wrappedData.peak_day}
+        {#if currentWrappedData.peak_day}
           <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between mt-2">
             <div class="flex flex-col">
               <span class="text-[9px] font-bold uppercase tracking-wider opacity-50 text-white">Peak Listening Day</span>
               <span class="text-sm font-extrabold text-white mt-1">
-                {new Date(wrappedData.peak_day.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(currentWrappedData.peak_day.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             <div class="text-right">
-              <span class="text-lg font-black text-secondary">{wrappedData.peak_day.plays}</span>
+              <span class="text-lg font-black text-secondary">{currentWrappedData.peak_day.plays}</span>
               <span class="text-[9px] block uppercase opacity-40 font-bold text-white">plays</span>
             </div>
           </div>
