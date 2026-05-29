@@ -105,13 +105,52 @@ def main():
     submitted_set = checkpoint["submitted"]
     print(f"Loaded checkpoint. {len(submitted_set):,} entries already imported.")
 
+    # Load existing database plays to avoid importing duplicates
+    db_plays = {}  # key: (artist, title) -> list of unix_ts
+    db_path = os.path.join("backend", "history.db")
+    if os.path.exists(db_path):
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT artist, title, unix_ts FROM listens")
+            for artist, title, unix_ts in cursor.fetchall():
+                key = (artist.lower().strip(), title.lower().strip())
+                if key not in db_plays:
+                    db_plays[key] = []
+                db_plays[key].append(unix_ts)
+            conn.close()
+            print(f"Loaded {sum(len(v) for v in db_plays.values()):,} existing listens from local database to prevent duplicates.")
+        except Exception as e:
+            print(f"Warning: Could not read local database to check duplicates ({e}).")
+
     # Filter to pending entries
-    # We identify entries by a unique signature: (unix_ts, artist, title)
     pending = []
+    skipped_duplicates = 0
     for entry in history:
         sig = (entry["unix_ts"], entry["artist"], entry["title"])
-        if sig not in submitted_set:
+        if sig in submitted_set:
+            continue
+
+        # Check if the song was already scrobbled within 5 seconds in the database
+        key = (entry["artist"].lower().strip(), entry["title"].lower().strip())
+        is_already_scrobbled = False
+        if key in db_plays:
+            for db_ts in db_plays[key]:
+                if abs(db_ts - entry["unix_ts"]) <= 5:
+                    is_already_scrobbled = True
+                    break
+
+        if is_already_scrobbled:
+            submitted_set.add(sig)
+            skipped_duplicates += 1
+        else:
             pending.append(entry)
+
+    if skipped_duplicates > 0:
+        print(f"Skipped {skipped_duplicates:,} entries that are already in the database (e.g. scrobbled by Pano Scrobbler).")
+        checkpoint["submitted"] = submitted_set
+        save_checkpoint(checkpoint)
 
     print(f"Pending entries to import: {len(pending):,}")
     if not pending:
