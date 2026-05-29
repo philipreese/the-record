@@ -37,10 +37,15 @@
     minutes_listened: number;
   }
 
-  interface SyncResultInfo {
-    status: string;
+  interface SyncStatusInfo {
+    running: boolean;
+    finished: boolean;
+    mode: string;
+    batches_fetched: number;
     synced_count: number;
-    latest_timestamp: number;
+    lb_total: number;
+    local_total: number;
+    error: string | null;
   }
 
   // Navigation state
@@ -77,9 +82,10 @@
 
   // Sync state
   let syncing = false;
-  let syncResult: SyncResultInfo | null = null;
+  let syncStatus: SyncStatusInfo | null = null;
   let syncError: string | null = null;
   let forceFullSync = false;
+  let syncPollInterval: ReturnType<typeof setInterval> | null = null;
 
   onMount(() => {
     // Load theme from localStorage or fallback to default
@@ -168,23 +174,49 @@
   async function runSync() {
     syncing = true;
     syncError = null;
-    syncResult = null;
+    syncStatus = null;
+
+    // Clear any previous poll
+    if (syncPollInterval !== null) {
+      clearInterval(syncPollInterval);
+      syncPollInterval = null;
+    }
+
     try {
       const url = forceFullSync ? '/api/sync?mode=full' : '/api/sync';
       const res = await fetch(url, { method: 'POST' });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.detail || "Synchronization failed.");
+        throw new Error(errData.detail || 'Sync failed to start.');
       }
-      syncResult = await res.json();
-      
-      // Refresh dashboard data
-      await fetchDashboardData();
-      forceFullSync = false;
+      // Returned immediately — now poll for status
+      syncPollInterval = setInterval(async () => {
+        try {
+          const statusRes = await fetch('/api/sync/status');
+          const data: SyncStatusInfo = await statusRes.json();
+          syncStatus = data;
+          if (data.finished) {
+            clearInterval(syncPollInterval!);
+            syncPollInterval = null;
+            syncing = false;
+            forceFullSync = false;
+            if (data.error) {
+              syncError = data.error;
+            } else {
+              // Refresh dashboard now that new scrobbles are in the DB
+              await fetchDashboardData();
+            }
+          }
+        } catch (e) {
+          clearInterval(syncPollInterval!);
+          syncPollInterval = null;
+          syncing = false;
+          syncError = e instanceof Error ? e.message : String(e);
+        }
+      }, 2000);
     } catch (e) {
-      syncError = e instanceof Error ? e.message : String(e);
-    } finally {
       syncing = false;
+      syncError = e instanceof Error ? e.message : String(e);
     }
   }
 
@@ -271,9 +303,15 @@
                 </button>
               </div>
               
-              {#if syncResult}
+              {#if syncing && syncStatus}
+                <span class="text-[10px] opacity-70 font-semibold">
+                  Batch {syncStatus.batches_fetched} {#if syncStatus.lb_total}of {Math.ceil(syncStatus.lb_total / 1000)}{/if} · {syncStatus.synced_count} new
+                </span>
+              {/if}
+              {#if !syncing && syncStatus?.finished && !syncStatus.error}
                 <span class="text-[10px] text-success font-semibold">
-                  Successfully synced {syncResult.synced_count} new plays!
+                  ✓ Synced {syncStatus.synced_count} new play{syncStatus.synced_count === 1 ? '' : 's'}
+                  ({syncStatus.batches_fetched} batch{syncStatus.batches_fetched === 1 ? '' : 'es'})
                 </span>
               {/if}
               {#if syncError}
