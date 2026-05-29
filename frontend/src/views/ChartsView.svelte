@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
 
@@ -8,7 +9,9 @@
   // Automatically fetch when the selected range changes
   $effect(() => {
     const range = topRange;
-    fetchTopCharts(range);
+    untrack(() => {
+      fetchTopCharts(range);
+    });
   });
 
   async function fetchTopCharts(range: string) {

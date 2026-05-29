@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { generateWrapped, type WrappedDataInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
 
@@ -20,7 +21,9 @@
     const month = wrappedMonth;
     const key = cacheKey;
     
-    runGenerateWrapped(period, year, quarter, month, key);
+    untrack(() => {
+      runGenerateWrapped(period, year, quarter, month, key);
+    });
   });
 
   async function runGenerateWrapped(
