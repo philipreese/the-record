@@ -1,176 +1,146 @@
-import sqlite3
 from datetime import datetime, timezone, timedelta
-from typing import Any, List, Dict
-
-from app.db import get_db_connection
+from typing import Any, List
+from sqlalchemy import select, func, desc, distinct, text
+from app.db import get_engine, Listen
+from app.db_helpers import get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
 
 def get_stats_summary() -> dict[str, Any]:
     """Calculate overall statistics from the scrobble database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Total count
-    cursor.execute("SELECT COUNT(*) FROM listens")
-    total_listens = cursor.fetchone()[0]
-    
-    if total_listens == 0:
-        conn.close()
-        return {
-            "total_listens": 0, "unique_artists": 0, "unique_tracks": 0,
-            "days_active": 0, "avg_per_day": 0.0, "top_source": "None"
-        }
+    with get_engine().connect() as conn:
+        # Total count
+        total_listens = conn.execute(select(func.count(Listen.id))).scalar() or 0
         
-    # Unique artists
-    cursor.execute("SELECT COUNT(DISTINCT artist) FROM listens")
-    unique_artists = cursor.fetchone()[0]
-    
-    # Unique tracks
-    cursor.execute("SELECT COUNT(DISTINCT artist || ' - ' || title) FROM listens")
-    unique_tracks = cursor.fetchone()[0]
-    
-    # Days active
-    cursor.execute("SELECT COUNT(DISTINCT date(unix_ts, 'unixepoch', 'localtime')) FROM listens")
-    days_active = cursor.fetchone()[0]
-    
-    # Top source
-    cursor.execute("SELECT source, COUNT(*) as cnt FROM listens GROUP BY source ORDER BY cnt DESC LIMIT 1")
-    source_row = cursor.fetchone()
-    top_source = source_row["source"] if source_row else "unknown"
-    
-    # Average per day
-    avg_per_day = round(total_listens / days_active, 1) if days_active > 0 else 0
-    
-    conn.close()
-    return {
-        "total_listens": total_listens,
-        "unique_artists": unique_artists,
-        "unique_tracks": unique_tracks,
-        "days_active": days_active,
-        "avg_per_day": avg_per_day,
-        "top_source": top_source
-    }
+        if total_listens == 0:
+            return {
+                "total_listens": 0, "unique_artists": 0, "unique_tracks": 0,
+                "days_active": 0, "avg_per_day": 0.0, "top_source": "None"
+            }
+            
+        # Unique artists
+        unique_artists = conn.execute(select(func.count(distinct(Listen.artist)))).scalar() or 0
+        
+        # Unique tracks
+        unique_tracks = conn.execute(select(func.count(distinct(Listen.artist + " - " + Listen.title)))).scalar() or 0
+        
+        # Days active
+        date_exp = get_date_expr(Listen.unix_ts)
+        days_active = conn.execute(select(func.count(distinct(date_exp)))).scalar() or 0
+        
+        # Top source
+        stmt_source = select(Listen.source, func.count(Listen.id).label("cnt"))\
+            .group_by(Listen.source)\
+            .order_by(desc("cnt"))\
+            .limit(1)
+        source_row = conn.execute(stmt_source).first()
+        top_source = source_row.source if source_row else "unknown"
+        
+        # Average per day
+        avg_per_day = round(total_listens / days_active, 1) if days_active > 0 else 0
+        
+        return {
+            "total_listens": total_listens,
+            "unique_artists": unique_artists,
+            "unique_tracks": unique_tracks,
+            "days_active": days_active,
+            "avg_per_day": avg_per_day,
+            "top_source": top_source
+        }
 
-def get_time_range_clause(time_range_days: str) -> tuple[str, list[Any]]:
-    """Generate SQL WHERE subclause and parameters for a day-based time range."""
+def get_time_range_filter(time_range_days: str):
+    """Generate SQLAlchemy filter condition for a day-based time range."""
     if not time_range_days or time_range_days == "all":
-        return "", []
+        return None
     try:
         days = int(time_range_days)
-        # Calculate cut-off timestamp
         cutoff = int(datetime.now(timezone.utc).timestamp()) - (days * 86400)
-        return "WHERE unix_ts >= ?", [cutoff]
+        return Listen.unix_ts >= cutoff
     except ValueError:
-        return "", []
+        return None
 
 def get_top_artists(time_range: str = "all", limit: int = 10) -> list[dict[str, Any]]:
     """Retrieve top artists for a given time range."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    where_clause, params = get_time_range_clause(time_range)
-    params.append(limit)
-    
-    query = f"""
-        SELECT artist, COUNT(*) as play_count 
-        FROM listens 
-        {where_clause} 
-        GROUP BY artist 
-        ORDER BY play_count DESC 
-        LIMIT ?
-    """
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-    return [{"artist": r["artist"], "play_count": r["play_count"]} for r in rows]
+    with get_engine().connect() as conn:
+        stmt = select(Listen.artist, func.count(Listen.id).label("play_count"))
+        filter_cond = get_time_range_filter(time_range)
+        if filter_cond is not None:
+            stmt = stmt.where(filter_cond)
+        stmt = stmt.group_by(Listen.artist)\
+            .order_by(desc("play_count"))\
+            .limit(limit)
+        
+        rows = conn.execute(stmt).all()
+        return [{"artist": r.artist, "play_count": r.play_count} for r in rows]
 
 def get_top_tracks(time_range: str = "all", limit: int = 10) -> list[dict[str, Any]]:
     """Retrieve top tracks for a given time range."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    where_clause, params = get_time_range_clause(time_range)
-    params.append(limit)
-    
-    query = f"""
-        SELECT artist, title, COUNT(*) as play_count 
-        FROM listens 
-        {where_clause} 
-        GROUP BY artist, title 
-        ORDER BY play_count DESC 
-        LIMIT ?
-    """
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-    return [{"artist": r["artist"], "title": r["title"], "play_count": r["play_count"]} for r in rows]
+    with get_engine().connect() as conn:
+        stmt = select(Listen.artist, Listen.title, func.count(Listen.id).label("play_count"))
+        filter_cond = get_time_range_filter(time_range)
+        if filter_cond is not None:
+            stmt = stmt.where(filter_cond)
+        stmt = stmt.group_by(Listen.artist, Listen.title)\
+            .order_by(desc("play_count"))\
+            .limit(limit)
+            
+        rows = conn.execute(stmt).all()
+        return [{"artist": r.artist, "title": r.title, "play_count": r.play_count} for r in rows]
 
 def get_heatmap_data(year: int | str | None = None) -> dict[str, int]:
     """Retrieve counts of scrobbles grouped by date (YYYY-MM-DD) for a given year."""
     if not year:
         year = str(datetime.now().year)
         
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    date_expr = get_date_expr(Listen.unix_ts)
+    year_expr = get_year_expr(Listen.unix_ts)
     
-    cursor.execute("""
-        SELECT date(unix_ts, 'unixepoch', 'localtime') as day, COUNT(*) as cnt 
-        FROM listens 
-        WHERE strftime('%Y', unix_ts, 'unixepoch', 'localtime') = ? 
-        GROUP BY day
-    """, [str(year)])
-    rows = cursor.fetchall()
-    conn.close()
-    return {r["day"]: r["cnt"] for r in rows if r["day"]}
+    with get_engine().connect() as conn:
+        stmt = select(date_expr.label("day"), func.count(Listen.id).label("cnt"))\
+            .where(year_expr == str(year))\
+            .group_by(date_expr)
+            
+        rows = conn.execute(stmt).all()
+        return {r.day: r.cnt for r in rows if r.day}
 
 def get_hourly_trends() -> dict[str, int]:
     """Retrieve play counts grouped by hour of the day (00-23) in local time."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    hour_expr = get_hour_expr(Listen.unix_ts)
     
-    cursor.execute("""
-        SELECT strftime('%H', unix_ts, 'unixepoch', 'localtime') as hour, COUNT(*) as cnt 
-        FROM listens 
-        GROUP BY hour 
-        ORDER BY hour ASC
-    """)
-    rows = cursor.fetchall()
-    conn.close()
-    
-    # Initialize all 24 hours
-    trends = {f"{h:02d}": 0 for h in range(24)}
-    for r in rows:
-        if r["hour"]:
-            trends[r["hour"]] = r["cnt"]
-    return trends
+    with get_engine().connect() as conn:
+        stmt = select(hour_expr.label("hour"), func.count(Listen.id).label("cnt"))\
+            .group_by(hour_expr)\
+            .order_by("hour")
+            
+        rows = conn.execute(stmt).all()
+        
+        # Initialize all 24 hours
+        trends = {f"{h:02d}": 0 for h in range(24)}
+        for r in rows:
+            if r.hour:
+                trends[r.hour] = r.cnt
+        return trends
 
 def get_monthly_trends() -> list[dict[str, Any]]:
     """Retrieve play counts grouped by month (YYYY-MM) in local time."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    month_expr = get_month_expr(Listen.unix_ts)
     
-    cursor.execute("""
-        SELECT strftime('%Y-%m', unix_ts, 'unixepoch', 'localtime') as month, COUNT(*) as cnt 
-        FROM listens 
-        GROUP BY month 
-        ORDER BY month ASC
-    """)
-    rows = cursor.fetchall()
-    conn.close()
-    return [{"month": r["month"], "count": r["cnt"]} for r in rows if r["month"]]
+    with get_engine().connect() as conn:
+        stmt = select(month_expr.label("month"), func.count(Listen.id).label("cnt"))\
+            .group_by(month_expr)\
+            .order_by("month")
+            
+        rows = conn.execute(stmt).all()
+        return [{"month": r.month, "count": r.cnt} for r in rows if r.month]
 
 def get_streak_stats() -> dict[str, int]:
     """Calculate the current active streak and all-time longest consecutive listening streak (in days)."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    date_expr = get_date_expr(Listen.unix_ts)
     
-    # Get all distinct active dates sorted
-    cursor.execute("""
-        SELECT DISTINCT date(unix_ts, 'unixepoch', 'localtime') as day 
-        FROM listens 
-        ORDER BY day ASC
-    """)
-    days = [datetime.strptime(r["day"], "%Y-%m-%d").date() for r in cursor.fetchall() if r["day"]]
-    conn.close()
+    with get_engine().connect() as conn:
+        stmt = select(distinct(date_expr).label("day"))\
+            .order_by("day")
+            
+        rows = conn.execute(stmt).all()
+        days = [datetime.strptime(r.day, "%Y-%m-%d").date() for r in rows if r.day]
     
     if not days:
         return {"current_streak": 0, "longest_streak": 0}
@@ -228,97 +198,80 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
     Retrieve highly detailed spotify-wrapped style metrics for custom periods.
     Supports years, quarters (Q1-Q4), specific months (M1-M12).
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    year_expr = get_year_expr(Listen.unix_ts)
+    month_num_expr = get_month_num_expr(Listen.unix_ts)
     
-    where_clauses: list[str] = []
-    params: list[Any] = []
+    filters = []
     
     # 1. Filter by year
     if year is not None:
-        where_clauses.append("strftime('%Y', unix_ts, 'unixepoch', 'localtime') = ?")
-        params.append(str(year))
+        filters.append(year_expr == str(year))
         
     # 2. Filter by quarter
     if quarter:
-        # quarters Q1: 01-03, Q2: 04-06, Q3: 07-09, Q4: 10-12
         if quarter == "Q1":
-            where_clauses.append("strftime('%m', unix_ts, 'unixepoch', 'localtime') IN ('01', '02', '03')")
+            filters.append(month_num_expr.in_([1, 2, 3]))
         elif quarter == "Q2":
-            where_clauses.append("strftime('%m', unix_ts, 'unixepoch', 'localtime') IN ('04', '05', '06')")
+            filters.append(month_num_expr.in_([4, 5, 6]))
         elif quarter == "Q3":
-            where_clauses.append("strftime('%m', unix_ts, 'unixepoch', 'localtime') IN ('07', '08', '09')")
+            filters.append(month_num_expr.in_([7, 8, 9]))
         elif quarter == "Q4":
-            where_clauses.append("strftime('%m', unix_ts, 'unixepoch', 'localtime') IN ('10', '11', '12')")
+            filters.append(month_num_expr.in_([10, 11, 12]))
             
     # 3. Filter by month
     if month:
-        # expect month format like '01' to '12' or 'M1' to 'M12'
-        m_str = month.replace("M", "").zfill(2)
-        where_clauses.append("strftime('%m', unix_ts, 'unixepoch', 'localtime') = ?")
-        params.append(m_str)
+        m_int = int(month.replace("M", ""))
+        filters.append(month_num_expr == m_int)
         
-    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-    
-    # ── Queries ──
-    # A. Total plays
-    cursor.execute(f"SELECT COUNT(*) FROM listens {where_sql}", params)
-    total_plays = cursor.fetchone()[0]
-    
-    if total_plays == 0:
-        conn.close()
+    with get_engine().connect() as conn:
+        # A. Total plays
+        stmt_count = select(func.count(Listen.id)).where(*filters)
+        total_plays = conn.execute(stmt_count).scalar() or 0
+        
+        if total_plays == 0:
+            return {
+                "total_plays": 0, "top_artist": None, "top_track": None,
+                "peak_day": None, "minutes_listened": 0
+            }
+            
+        # B. Top Artist
+        stmt_artist = select(Listen.artist, func.count(Listen.id).label("cnt"))\
+            .where(*filters)\
+            .group_by(Listen.artist)\
+            .order_by(desc("cnt"))\
+            .limit(1)
+        artist_row = conn.execute(stmt_artist).first()
+        top_artist = {"name": artist_row.artist, "plays": artist_row.cnt} if artist_row else None
+        
+        # C. Top Track
+        stmt_track = select(Listen.artist, Listen.title, func.count(Listen.id).label("cnt"))\
+            .where(*filters)\
+            .group_by(Listen.artist, Listen.title)\
+            .order_by(desc("cnt"))\
+            .limit(1)
+        track_row = conn.execute(stmt_track).first()
+        top_track = {"artist": track_row.artist, "title": track_row.title, "plays": track_row.cnt} if track_row else None
+        
+        # D. Peak Listening Day
+        date_expr = get_date_expr(Listen.unix_ts)
+        stmt_peak = select(date_expr.label("day"), func.count(Listen.id).label("cnt"))\
+            .where(*filters)\
+            .group_by(date_expr)\
+            .order_by(desc("cnt"))\
+            .limit(1)
+        day_row = conn.execute(stmt_peak).first()
+        peak_day = {"date": day_row.day, "plays": day_row.cnt} if day_row else None
+        
+        # E. Minutes Listened Estimate (industry average 3.5 minutes per play)
+        minutes_listened = round(total_plays * 3.5)
+        
         return {
-            "total_plays": 0, "top_artist": None, "top_track": None,
-            "peak_day": None, "minutes_listened": 0
+            "total_plays": total_plays,
+            "top_artist": top_artist,
+            "top_track": top_track,
+            "peak_day": peak_day,
+            "minutes_listened": minutes_listened
         }
-        
-    # B. Top Artist
-    cursor.execute(f"""
-        SELECT artist, COUNT(*) as cnt 
-        FROM listens 
-        {where_sql} 
-        GROUP BY artist 
-        ORDER BY cnt DESC 
-        LIMIT 1
-    """, params)
-    artist_row = cursor.fetchone()
-    top_artist = {"name": artist_row["artist"], "plays": artist_row["cnt"]} if artist_row else None
-    
-    # C. Top Track
-    cursor.execute(f"""
-        SELECT artist, title, COUNT(*) as cnt 
-        FROM listens 
-        {where_sql} 
-        GROUP BY artist, title 
-        ORDER BY cnt DESC 
-        LIMIT 1
-    """, params)
-    track_row = cursor.fetchone()
-    top_track = {"artist": track_row["artist"], "title": track_row["title"], "plays": track_row["cnt"]} if track_row else None
-    
-    # D. Peak Listening Day
-    cursor.execute(f"""
-        SELECT date(unix_ts, 'unixepoch', 'localtime') as day, COUNT(*) as cnt 
-        FROM listens 
-        {where_sql} 
-        GROUP BY day 
-        ORDER BY cnt DESC 
-        LIMIT 1
-    """, params)
-    day_row = cursor.fetchone()
-    peak_day = {"date": day_row["day"], "plays": day_row["cnt"]} if day_row else None
-    
-    # E. Minutes Listened Estimate (industry average 3.5 minutes per play)
-    minutes_listened = round(total_plays * 3.5)
-    
-    conn.close()
-    return {
-        "total_plays": total_plays,
-        "top_artist": top_artist,
-        "top_track": top_track,
-        "peak_day": peak_day,
-        "minutes_listened": minutes_listened
-    }
 
 def deduplicate_listens() -> int:
     """
@@ -326,20 +279,17 @@ def deduplicate_listens() -> int:
     within 60 seconds of each other. Keeps the entry with the lower ID.
     Returns the number of deleted duplicate rows.
     """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        DELETE FROM listens 
-        WHERE id IN (
-            SELECT b.id 
-            FROM listens a 
-            JOIN listens b ON a.artist = b.artist 
-                          AND a.title = b.title 
-                          AND a.id < b.id 
-                          AND abs(a.unix_ts - b.unix_ts) <= 60
-        )
-    """)
-    deleted_count = cursor.rowcount
-    conn.commit()
-    conn.close()
-    return deleted_count
+    with get_engine().begin() as conn:
+        stmt = """
+            DELETE FROM listens 
+            WHERE id IN (
+                SELECT b.id 
+                FROM listens a 
+                JOIN listens b ON a.artist = b.artist 
+                              AND a.title = b.title 
+                              AND a.id < b.id 
+                              AND abs(a.unix_ts - b.unix_ts) <= 60
+            )
+        """
+        res = conn.execute(text(stmt))
+        return res.rowcount

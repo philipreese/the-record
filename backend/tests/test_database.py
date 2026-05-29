@@ -18,6 +18,7 @@ class TestDatabaseQueries(unittest.TestCase):
         
         self.conn = db.get_db_connection()
         self.cursor = self.conn.cursor()
+        self.cursor.execute("DELETE FROM listens")
         
         # Populate in-memory database with test data
         # Let's seed plays relative to current date to test ranges

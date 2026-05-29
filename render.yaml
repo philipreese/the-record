@@ -2,13 +2,7 @@ services:
   - type: web
     name: the-record-api
     runtime: docker
-    plan: starter
+    plan: free
     envVars:
-      - key: DATABASE_PATH
-        value: /data/history.db
-      - key: JSON_PATH
-        value: /data/merged_history.json
-    disk:
-      name: record-data
-      mountPath: /data
-      sizeGB: 1
+      - key: DATABASE_URL
+        sync: false

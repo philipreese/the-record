@@ -18,6 +18,8 @@ python = "3.13.*"
 fastapi = "*"
 uvicorn = "*"
 httpx = "*"
+psycopg = ">=3.3.4,<4"
+sqlalchemy = ">=2.0.50,<3"
 
 [pypi-dependencies]
 pylast = ">=7.0.2, <8"
