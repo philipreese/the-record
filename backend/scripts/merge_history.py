@@ -15,7 +15,10 @@ import urllib.parse
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=".env")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+
+load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
 LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
 LASTFM_API_SECRET = os.getenv("LASTFM_API_SECRET")
@@ -291,7 +294,7 @@ def merge_histories(ytm_list, lfm_list):
 
 def main():
     # 1. Load watch-history.json (base history)
-    watch_path = "watch-history.json"
+    watch_path = os.path.join(PROJECT_ROOT, "watch-history.json")
     watch_parsed = []
     if os.path.exists(watch_path):
         print(f"Loading {watch_path}...")
@@ -315,7 +318,7 @@ def main():
             print(f"Warning: Error reading/parsing watch-history.json: {e}")
 
     # 2. Load MyActivity.json (for recovering missing/older plays)
-    myact_path = "MyActivity.json"
+    myact_path = os.path.join(PROJECT_ROOT, "MyActivity.json")
     myact_parsed = []
     if os.path.exists(myact_path):
         print(f"Loading {myact_path}...")
@@ -370,7 +373,7 @@ def main():
     merged = merge_histories(combined_ytm, lfm_scrobbles)
 
     # Output results
-    output_path = os.path.join("backend", "merged_history.json")
+    output_path = os.path.join(PROJECT_ROOT, "backend", "merged_history.json")
     print(f"Saving merged history to {output_path}...")
     try:
         with open(output_path, "w", encoding="utf-8") as f:

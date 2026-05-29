@@ -6,16 +6,15 @@
     weight: number;
   }
 
-  export let data: Record<string, number> = {};
-  export let year: number = new Date().getFullYear();
+  let { data = {}, year = new Date().getFullYear() }: { data?: Record<string, number>, year?: number } = $props();
 
   // Color palettes for weights (0-4) based on DaisyUI theme variables or manual colors
   // Here we use css opacity of the primary/secondary theme color to match any theme perfectly!
   // Weight 0: opacity 10% of base-300 or border-content
   // Weight 1-4: opacity 30%, 50%, 75%, 100% of primary color
 
-  $: daysOfYear = getDaysOfYear(year);
-  $: weeks = chunkIntoWeeks(daysOfYear);
+  let daysOfYear = $derived(getDaysOfYear(year));
+  let weeks = $derived(chunkIntoWeeks(daysOfYear));
 
   function getDaysOfYear(y: number): (DayInfo | null)[] {
     const days: (DayInfo | null)[] = [];
@@ -67,7 +66,7 @@
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   
   // Find which week column each month starts in
-  $: monthHeaders = getMonthHeaders(weeks);
+  let monthHeaders = $derived(getMonthHeaders(weeks));
   
   function getMonthHeaders(weeksList: (DayInfo | null)[][]) {
     const headers: { name: string; x: number }[] = [];

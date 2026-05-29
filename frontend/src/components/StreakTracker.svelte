@@ -4,13 +4,13 @@
     longest_streak: number;
   }
 
-  export let streakData: StreakInfo = { current_streak: 0, longest_streak: 0 };
+  let { streakData = { current_streak: 0, longest_streak: 0 } }: { streakData?: StreakInfo } = $props();
   
-  $: current = streakData.current_streak || 0;
-  $: longest = streakData.longest_streak || 0;
+  let current = $derived(streakData.current_streak || 0);
+  let longest = $derived(streakData.longest_streak || 0);
   
   // Motivational messages depending on active streak
-  $: message = getMotivationalMessage(current);
+  let message = $derived(getMotivationalMessage(current));
   
   function getMotivationalMessage(streak: number): string {
     if (streak === 0) {

@@ -300,10 +300,10 @@ def get_streak_stats() -> dict[str, int]:
         "longest_streak": max(longest, current_streak)
     }
 
-def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None, decade: str | None = None) -> dict[str, Any]:
+def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None) -> dict[str, Any]:
     """
     Retrieve highly detailed spotify-wrapped style metrics for custom periods.
-    Supports years, quarters (Q1-Q4), specific months (M1-M12), and decades (10s, 20s).
+    Supports years, quarters (Q1-Q4), specific months (M1-M12)
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -311,17 +311,8 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
     where_clauses: list[str] = []
     params: list[Any] = []
     
-    # 1. Filter by year or decade
-    if decade:
-        if decade == "10s":
-            where_clauses.append("unix_ts >= ? AND unix_ts <= ?")
-            # 2010-01-01 00:00:00 to 2019-12-31 23:59:59 UTC
-            params.extend([1262304000, 1577836799])
-        elif decade == "20s":
-            where_clauses.append("unix_ts >= ? AND unix_ts <= ?")
-            # 2020-01-01 00:00:00 to 2029-12-31 23:59:59 UTC
-            params.extend([1577836800, 1893455999])
-    elif year is not None:
+    # 1. Filter by year
+    if year is not None:
         where_clauses.append("strftime('%Y', unix_ts, 'unixepoch', 'localtime') = ?")
         params.append(str(year))
         
