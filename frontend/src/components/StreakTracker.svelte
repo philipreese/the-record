@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from './layout/Icon.svelte';
+
   interface StreakInfo {
     current_streak: number;
     longest_streak: number;
@@ -27,47 +29,32 @@
   }
 </script>
 
-<div class="card bg-base-200/50 backdrop-blur-md border border-base-content/10 p-6 flex flex-col justify-between h-full">
-  <div>
-    <h3 class="text-sm font-semibold mb-4 text-base-content opacity-80 uppercase tracking-wider">
-      Listening Streaks
-    </h3>
-    
-    <div class="grid grid-cols-2 gap-4 mt-2">
+<div class="memory-surface flex flex-col justify-between h-full space-y-6">
+  <div class="space-y-4">
+    <div class="grid grid-cols-2 gap-4 divide-x divide-theme-border-soft">
       <!-- Current Streak Card -->
-      <div class="bg-base-300/40 rounded-xl p-4 flex flex-col items-center justify-center border border-base-content/5 relative overflow-hidden group">
-        <!-- Glow backing -->
-        <div class="absolute -right-4 -bottom-4 w-12 h-12 bg-primary/20 rounded-full blur-xl transition-all duration-500 group-hover:scale-150"></div>
-        
-        <!-- Flame Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-10 h-10 stroke-primary fill-primary/20 animate-pulse transition-transform duration-300 group-hover:scale-110">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        
-        <span class="text-2xl font-extrabold mt-2 text-base-content">{current}</span>
-        <span class="text-[10px] font-bold uppercase opacity-60 mt-0.5">Current Streak</span>
-        <span class="text-[9px] opacity-40 mt-1">days in a row</span>
+      <div class="flex flex-col items-center justify-center py-4 relative overflow-hidden group text-center">
+        <div class="p-2.5 rounded-full mb-1 transition-transform duration-300 group-hover:scale-105 bg-theme-accent-soft">
+          <Icon name="flame" size="w-7 h-7" class="text-theme-accent" />
+        </div>
+        <span class="text-display-large mt-3 text-theme-text">{current}</span>
+        <span class="text-caps mt-2 text-xs text-theme-muted">Current Streak</span>
+        <span class="text-detail mt-1 text-xs text-theme-faint">consecutive days</span>
       </div>
       
       <!-- Longest Streak Card -->
-      <div class="bg-base-300/40 rounded-xl p-4 flex flex-col items-center justify-center border border-base-content/5 relative overflow-hidden group">
-        <!-- Glow backing -->
-        <div class="absolute -right-4 -bottom-4 w-12 h-12 bg-secondary/20 rounded-full blur-xl transition-all duration-500 group-hover:scale-150"></div>
-        
-        <!-- Crown/Trophy Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-10 h-10 stroke-secondary fill-secondary/10 transition-transform duration-300 group-hover:scale-110">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-        </svg>
-        
-        <span class="text-2xl font-extrabold mt-2 text-base-content">{longest}</span>
-        <span class="text-[10px] font-bold uppercase opacity-60 mt-0.5">Longest Record</span>
-        <span class="text-[9px] opacity-40 mt-1">days active</span>
+      <div class="flex flex-col items-center justify-center py-4 relative overflow-hidden group text-center pl-4">
+        <div class="p-2.5 rounded-full mb-1 transition-transform duration-300 group-hover:scale-105 bg-theme-secondary-soft">
+          <Icon name="crown" size="w-7 h-7" class="text-theme-secondary" />
+        </div>
+        <span class="text-display-large mt-3 text-theme-text">{longest}</span>
+        <span class="text-caps mt-2 text-xs text-theme-muted">Longest Record</span>
+        <span class="text-detail mt-1 text-xs text-theme-faint">all-time peak</span>
       </div>
     </div>
   </div>
   
-  <p class="text-xs opacity-70 mt-6 bg-base-300/20 border border-base-content/5 rounded-lg p-3 text-center leading-relaxed">
+  <p class="text-sm font-light italic leading-relaxed text-center px-5 py-4 rounded-xl text-theme-secondary bg-theme-neutral-soft border border-theme-border-soft">
     {message}
   </p>
 </div>

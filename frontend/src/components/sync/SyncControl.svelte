@@ -62,8 +62,13 @@
 <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
   <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
     <label class="label cursor-pointer gap-2 py-0">
-      <span class="label-text text-[10px] opacity-60">Force Full Sync</span>
-      <input type="checkbox" bind:checked={forceFullSync} class="checkbox checkbox-xs checkbox-primary" />
+      <span class="label-text text-detail">Force Full Sync</span>
+      <input 
+        type="checkbox" 
+        bind:checked={forceFullSync} 
+        class="checkbox checkbox-primary" 
+        style={!forceFullSync ? "border: 2px solid var(--border);" : ""}
+      />
     </label>
     <button 
       class="btn btn-primary btn-md w-full sm:w-auto shadow-lg" 
@@ -83,18 +88,18 @@
   </div>
   
   {#if syncing && syncStatus}
-    <span class="text-[10px] opacity-70 font-semibold text-base-content">
+    <span class="text-detail font-semibold text-base-content">
       Batch {Math.max(1, syncStatus.batches_fetched)}{syncStatus.mode === 'full' && syncStatus.lb_total ? ' of ' + Math.ceil(syncStatus.lb_total / 1000) : ''} · {syncStatus.synced_count} new
     </span>
   {/if}
   {#if !syncing && syncStatus?.finished && !syncStatus.error}
-    <span class="text-[10px] text-success font-semibold">
+    <span class="text-xs text-success font-semibold">
       ✓ Synced {syncStatus.synced_count} new play{syncStatus.synced_count === 1 ? '' : 's'}
       ({syncStatus.batches_fetched} batch{syncStatus.batches_fetched === 1 ? '' : 'es'})
     </span>
   {/if}
   {#if syncError}
-    <span class="text-[10px] text-error font-semibold max-w-[250px] text-right">
+    <span class="text-xs text-error font-semibold max-w-[250px] text-right">
       {syncError}
     </span>
   {/if}

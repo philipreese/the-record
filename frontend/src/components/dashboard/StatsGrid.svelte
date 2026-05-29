@@ -5,40 +5,42 @@
   let { stats }: { stats: StatsInfo } = $props();
 </script>
 
-<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60">Total Scrobbles</div>
-    <div class="stat-value text-2xl font-black text-primary mt-1">{stats.total_listens.toLocaleString()}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">all-time collection</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 px-2">
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Total Scrobbles</div>
+    <div class="text-display-medium text-theme-text">{stats.total_listens.toLocaleString()}</div>
+    <div class="text-detail text-theme-faint">all-time collection</div>
   </div>
   
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60">Unique Artists</div>
-    <div class="stat-value text-2xl font-black text-secondary mt-1">{stats.unique_artists.toLocaleString()}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">diverse creators</div>
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Unique Creators</div>
+    <div class="text-display-medium text-theme-accent">{stats.unique_artists.toLocaleString()}</div>
+    <div class="text-detail text-theme-faint">diverse artists</div>
   </div>
 
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60">Unique Tracks</div>
-    <div class="stat-value text-2xl font-black text-accent mt-1">{stats.unique_tracks.toLocaleString()}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">different songs</div>
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Unique Tracks</div>
+    <div class="text-display-medium text-theme-secondary">{stats.unique_tracks.toLocaleString()}</div>
+    <div class="text-detail text-theme-faint">different songs</div>
   </div>
 
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4 text-base-content">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60 text-base-content/60">Active Days</div>
-    <div class="stat-value text-2xl font-black mt-1">{stats.days_active.toLocaleString()}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">total days logged</div>
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Active Days</div>
+    <div class="text-display-medium text-theme-text">{stats.days_active.toLocaleString()}</div>
+    <div class="text-detail text-theme-faint">total days logged</div>
   </div>
 
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4 text-base-content">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60 text-base-content/60">Scrobbles/Day</div>
-    <div class="stat-value text-2xl font-black mt-1">{stats.avg_per_day}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">daily play rate</div>
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Daily Play Rate</div>
+    <div class="text-display-medium text-theme-text">{stats.avg_per_day}</div>
+    <div class="text-detail text-theme-faint">plays per day</div>
   </div>
 
-  <div class="stat bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-content/10 p-4 text-base-content">
-    <div class="stat-title text-xs font-semibold uppercase opacity-60 text-base-content/60">Top Source</div>
-    <div class="stat-value text-xl font-bold truncate mt-1 capitalize">{stats.top_source.replace('_', ' ')}</div>
-    <div class="stat-desc text-[9px] opacity-40 mt-1">primary music pipeline</div>
+  <div class="space-y-1.5">
+    <div class="text-caps text-theme-muted">Top Source</div>
+    <div class="text-lg font-light tracking-wide truncate h-[3rem] flex items-center capitalize text-theme-text">
+      {stats.top_source.replace('_', ' ')}
+    </div>
+    <div class="text-detail text-theme-faint">music pipeline</div>
   </div>
 </div>
