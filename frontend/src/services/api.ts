@@ -47,44 +47,51 @@ export interface MonthlyTrendInfo {
   count: number;
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+
+async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  return fetch(url, options);
+}
+
 export async function fetchStats(): Promise<StatsInfo> {
-  const res = await fetch('/api/stats');
+  const res = await apiFetch('/api/stats');
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
 }
 
 export async function fetchStreak(): Promise<StreakInfo> {
-  const res = await fetch('/api/trends/streak');
+  const res = await apiFetch('/api/trends/streak');
   if (!res.ok) throw new Error('Failed to fetch streak');
   return res.json();
 }
 
 export async function fetchHeatmap(year: number): Promise<Record<string, number>> {
-  const res = await fetch(`/api/heatmap?year=${year}`);
+  const res = await apiFetch(`/api/heatmap?year=${year}`);
   if (!res.ok) throw new Error('Failed to fetch heatmap data');
   return res.json();
 }
 
 export async function fetchHourlyTrends(): Promise<Record<string, number>> {
-  const res = await fetch('/api/trends/hourly');
+  const res = await apiFetch('/api/trends/hourly');
   if (!res.ok) throw new Error('Failed to fetch hourly trends');
   return res.json();
 }
 
 export async function fetchMonthlyTrends(): Promise<MonthlyTrendInfo[]> {
-  const res = await fetch('/api/trends/monthly');
+  const res = await apiFetch('/api/trends/monthly');
   if (!res.ok) throw new Error('Failed to fetch monthly trends');
   return res.json();
 }
 
 export async function fetchTopArtists(range: string, limit: number = 15): Promise<ArtistInfo[]> {
-  const res = await fetch(`/api/top-artists?range=${range}&limit=${limit}`);
+  const res = await apiFetch(`/api/top-artists?range=${range}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to fetch top artists');
   return res.json();
 }
 
 export async function fetchTopTracks(range: string, limit: number = 15): Promise<TrackInfo[]> {
-  const res = await fetch(`/api/top-tracks?range=${range}&limit=${limit}`);
+  const res = await apiFetch(`/api/top-tracks?range=${range}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to fetch top tracks');
   return res.json();
 }
@@ -100,7 +107,7 @@ export async function generateWrapped(
   if (period === 'quarter') queryParams.push(`quarter=${quarter}`);
   if (period === 'month') queryParams.push(`month=${month}`);
 
-  const res = await fetch(`/api/wrapped?${queryParams.join('&')}`);
+  const res = await apiFetch(`/api/wrapped?${queryParams.join('&')}`);
   if (!res.ok) {
     const errData = await res.json();
     throw new Error(errData.detail || "Failed to generate Wrapped.");
@@ -110,7 +117,7 @@ export async function generateWrapped(
 
 export async function triggerSync(forceFull: boolean): Promise<any> {
   const url = forceFull ? '/api/sync?mode=full' : '/api/sync';
-  const res = await fetch(url, { method: 'POST' });
+  const res = await apiFetch(url, { method: 'POST' });
   if (!res.ok) {
     const errData = await res.json();
     throw new Error(errData.detail || 'Sync failed to start.');
@@ -119,7 +126,7 @@ export async function triggerSync(forceFull: boolean): Promise<any> {
 }
 
 export async function getSyncStatus(): Promise<SyncStatusInfo> {
-  const res = await fetch('/api/sync/status');
+  const res = await apiFetch('/api/sync/status');
   if (!res.ok) throw new Error('Failed to fetch sync status');
   return res.json();
 }
