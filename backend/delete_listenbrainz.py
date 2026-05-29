@@ -16,6 +16,12 @@ import urllib.error
 from datetime import datetime
 from dotenv import load_dotenv
 
+def safe_str(s):
+    """Encode a string safely for the current terminal, replacing un-encodable chars."""
+    if s is None:
+        return ""
+    return s.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8")
+
 load_dotenv(dotenv_path=".env")
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
@@ -177,7 +183,7 @@ def main():
                         break
                 
                 if match_sig:
-                    print(f"  Deleting: [{datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}] {meta.get('artist_name')} - {meta.get('track_name')}...")
+                    print(f"  Deleting: [{datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}] {safe_str(meta.get('artist_name'))} - {safe_str(meta.get('track_name'))}...")
                     retry_del = True
                     while retry_del:
                         try:

@@ -90,6 +90,60 @@ def parse_ytm_timestamp(time_str):
     except Exception:
         return None
 
+def deduplicate_myactivity(watch_list, myact_list, window=43200):
+    """
+    Deduplicate MyActivity plays against base watch history using a greedy one-to-one matching algorithm.
+    Returns: (added_list, skipped_count)
+    """
+    # Group watch history timestamps by track key
+    watch_tracks = {}
+    for entry in watch_list:
+        key = (normalize(entry["artist"]), normalize(entry["title"]))
+        watch_tracks.setdefault(key, []).append(entry["unix_ts"])
+        
+    # Group MyActivity entries by track key
+    myact_by_track = {}
+    for entry in myact_list:
+        key = (normalize(entry["artist"]), normalize(entry["title"]))
+        myact_by_track.setdefault(key, []).append(entry)
+        
+    added_list = []
+    skipped_dup_count = 0
+    
+    for key, m_entries in myact_by_track.items():
+        w_timestamps = watch_tracks.get(key, [])
+        
+        # Match each w_ts to the closest unmatched m_entry within the window
+        matched_m_indices = set()
+        
+        w_sorted = sorted(w_timestamps)
+        m_sorted_entries = sorted(m_entries, key=lambda e: e["unix_ts"])
+        
+        for w_ts in w_sorted:
+            closest_m_idx = None
+            min_diff = None
+            
+            for i, entry in enumerate(m_sorted_entries):
+                if i in matched_m_indices:
+                    continue
+                diff = abs(w_ts - entry["unix_ts"])
+                if diff <= window:
+                    if min_diff is None or diff < min_diff:
+                        min_diff = diff
+                        closest_m_idx = i
+            
+            if closest_m_idx is not None:
+                matched_m_indices.add(closest_m_idx)
+        
+        # Any entry that was not matched is a truly new recovered play
+        for i, entry in enumerate(m_sorted_entries):
+            if i in matched_m_indices:
+                skipped_dup_count += 1
+            else:
+                added_list.append(entry)
+                
+    return added_list, skipped_dup_count
+
 # ── Fetching Last.fm history ───────────────────────────────────────────────────
 
 def fetch_lastfm_history(api_key, username):
@@ -291,40 +345,14 @@ def main():
         print("Error: No history data found. Please place watch-history.json or MyActivity.json in the repository root.")
         sys.exit(1)
 
-    # 3. Combine both histories, skipping 12-hour duplicates from MyActivity.json
+    # 3. Combine both histories, skipping 12-hour duplicates from MyActivity.json using greedy one-to-one matching
     combined_ytm = list(watch_parsed)
     
     if myact_parsed:
-        print("Deduplicating MyActivity.json against base history (12-hour window)...")
-        # Index watch history tracks to list of timestamps
-        watch_tracks = {}
-        for entry in combined_ytm:
-            key = (normalize(entry["artist"]), normalize(entry["title"]))
-            watch_tracks.setdefault(key, []).append(entry["unix_ts"])
-            
-        added_count = 0
-        skipped_dup_count = 0
-        for entry in myact_parsed:
-            key = (normalize(entry["artist"]), normalize(entry["title"]))
-            ts = entry["unix_ts"]
-            
-            # Check if this track is already in watch history within 12 hours (43200 seconds)
-            is_duplicate = False
-            if key in watch_tracks:
-                for w_ts in watch_tracks[key]:
-                    if abs(w_ts - ts) <= 43200:
-                        is_duplicate = True
-                        break
-            
-            if is_duplicate:
-                skipped_dup_count += 1
-            else:
-                combined_ytm.append(entry)
-                # Keep the index updated to prevent duplicates within myact_parsed itself
-                watch_tracks.setdefault(key, []).append(ts)
-                added_count += 1
-                
-        print(f"  Added {added_count:,} unique recovered plays from MyActivity.json.")
+        print("Deduplicating MyActivity.json against base history (greedy 12-hour window)...")
+        recovered_added, skipped_dup_count = deduplicate_myactivity(combined_ytm, myact_parsed, window=12*3600)
+        combined_ytm.extend(recovered_added)
+        print(f"  Added {len(recovered_added):,} unique recovered plays from MyActivity.json.")
         print(f"  Skipped {skipped_dup_count:,} shifted duplicate plays.")
 
     combined_ytm.sort(key=lambda e: e["unix_ts"])
