@@ -331,11 +331,11 @@ async def _run_sync(mode: str) -> None:
                 local_count, latest_ts, oldest_ts, local_keys = load_local_state()
                 _sync_state.local_total = local_count
 
-            # Pass 2: Backfill Sync (if a gap remains, scan from latest_ts downwards)
+            # Pass 2: Backfill Sync (if a gap remains, scan from oldest_ts downwards)
             print(f"[sync] Pass 2 check: lb_total_count={lb_total_count}, local_count={local_count}, oldest_ts={oldest_ts}")
             if lb_total_count > local_count:
                 missing_remaining = lb_total_count - local_count
-                current_max_ts = latest_ts
+                current_max_ts = oldest_ts
                 print(f"[sync] Pass 2 starting: missing_remaining={missing_remaining}, current_max_ts={current_max_ts}")
                 while True:
                     listens = await _fetch_page(current_max_ts)
