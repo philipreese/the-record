@@ -222,6 +222,7 @@ watch-history.json
 MyActivity.json
 backend/merged_history.json
 backend/import_checkpoint.pkl
+
 # pixi environments
 .pixi/*
 !.pixi/config.toml
@@ -229,8 +230,12 @@ backend/import_checkpoint.pkl
 # database files and cache
 backend/*.db
 backend/*.db-journal
+backend/*.db-shm
+backend/*.db-wal
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 # editor settings
 .vscode/

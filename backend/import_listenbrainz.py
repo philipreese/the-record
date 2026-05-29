@@ -132,12 +132,12 @@ def main():
         if sig in submitted_set:
             continue
 
-        # Check if the song was already scrobbled within 5 seconds in the database
+        # Check if the song was already scrobbled within 60 seconds in the database
         key = (entry["artist"].lower().strip(), entry["title"].lower().strip())
         is_already_scrobbled = False
         if key in db_plays:
             for db_ts in db_plays[key]:
-                if abs(db_ts - entry["unix_ts"]) <= 5:
+                if abs(db_ts - entry["unix_ts"]) <= 60:
                     is_already_scrobbled = True
                     break
 

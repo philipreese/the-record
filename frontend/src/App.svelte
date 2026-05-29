@@ -305,7 +305,7 @@
               
               {#if syncing && syncStatus}
                 <span class="text-[10px] opacity-70 font-semibold">
-                  Batch {syncStatus.batches_fetched}{#if syncStatus.mode === 'full' && syncStatus.lb_total} of {Math.ceil(syncStatus.lb_total / 1000)}{/if} · {syncStatus.synced_count} new
+                  Batch {Math.max(1, syncStatus.batches_fetched)}{syncStatus.mode === 'full' && syncStatus.lb_total ? ' of ' + Math.ceil(syncStatus.lb_total / 1000) : ''} · {syncStatus.synced_count} new
                 </span>
               {/if}
               {#if !syncing && syncStatus?.finished && !syncStatus.error}
