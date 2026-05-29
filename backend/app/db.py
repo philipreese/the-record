@@ -5,8 +5,8 @@ import json
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.dirname(APP_DIR)
 
-DB_PATH = os.path.join(BACKEND_DIR, "history.db")
-JSON_PATH = os.path.join(BACKEND_DIR, "merged_history.json")
+DB_PATH = os.environ.get("DATABASE_PATH", os.path.join(BACKEND_DIR, "history.db"))
+JSON_PATH = os.environ.get("JSON_PATH", os.path.join(BACKEND_DIR, "merged_history.json"))
 
 def get_db_connection() -> sqlite3.Connection:
     """Establish and return an SQLite connection with row factory enabled."""
