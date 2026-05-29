@@ -1,1 +1,8 @@
 python-interpreter-path = ".pixi/envs/default/python.exe"
+search-path = [
+    ".",
+    "backend"
+]
+project_excludes = [
+    "archive/**"
+]
