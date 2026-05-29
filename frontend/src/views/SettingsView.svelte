@@ -8,39 +8,43 @@
   }
 </script>
 
-<div class="flex flex-col gap-6 text-base-content">
+<div class="flex flex-col gap-12 text-base-content">
   
   <!-- Header Card (Spacious with standard padding classes) -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 memory-surface">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
     <div>
-      <h1 class="editorial-text-h1">Interface Settings</h1>
-      <p class="text-sm opacity-60 mt-1">Tailor the visual atmosphere of your music memory space.</p>
+      <h1 class="editorial-text-h1 lowercase italic">interface settings</h1>
+      <p class="text-caps mt-2">Tailor the visual atmosphere of your music memory space.</p>
     </div>
   </div>
 
   <!-- Main Settings Panel (Ensured padding directly via tailwind to prevent overrides) -->
-  <div class="memory-surface p-6 sm:p-8 space-y-10">
+  <div class="space-y-12">
     {#each categories as category}
-      <div class="space-y-5">
-        <h3 class="text-xs font-black uppercase tracking-wider text-base-content/30 border-b border-base-content/5 pb-3">
+      <div class="space-y-6">
+        <h3 class="editorial-text-h2 pb-2 border-b">
           {category} Presets
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           {#each getThemesByCategory(category) as theme}
             <button 
-              class="flex flex-row items-center justify-between gap-4 p-5 rounded-2xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer {themeManager.currentTheme === theme.id ? 'border-primary bg-base-200/50 ring-2 ring-primary/10' : 'border-base-content/10 bg-base-200/20 hover:bg-base-200/40'}"
+              class="flex flex-row items-center justify-between gap-4 p-5 rounded-xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer focus:outline-none"
+              style="
+                border-color: {themeManager.currentTheme === theme.id ? 'var(--accent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'};
+                background-color: {themeManager.currentTheme === theme.id ? 'color-mix(in srgb, var(--accent) 5%, transparent)' : 'transparent'};
+              "
               onclick={() => themeManager.apply(theme.id)}
             >
               <!-- Selector Active Line -->
               {#if themeManager.currentTheme === theme.id}
-                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+                <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--accent);"></div>
               {/if}
 
               <!-- Left Side: Details & Badges -->
-              <div class="flex flex-col gap-2.5 pl-1.5 flex-grow pr-4">
+              <div class="flex flex-col gap-2 pl-1 flex-grow pr-4">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-extrabold text-base-content">
+                  <span class="text-sm font-light" style="color: var(--text-primary);">
                     {theme.name}
                   </span>
                   
@@ -55,17 +59,17 @@
                   </span>
                 </div>
                 
-                <span class="text-xs leading-relaxed text-base-content/60 font-medium max-w-[280px]">
+                <span class="text-xs leading-relaxed font-light max-w-[280px]" style="color: var(--text-secondary);">
                   {theme.description}
                 </span>
               </div>
 
               <!-- Right Side: Clean Connected Color Swatch Pill -->
-              <div class="flex h-10 rounded overflow-hidden border border-base-content/10 flex-shrink-0 shadow-sm">
+              <div class="flex h-10 w-16 rounded overflow-hidden border shrink-0 shadow-sm" style="border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);">
                 <!-- Background Block -->
-                <div class="w-10 flex-grow h-full" style="background-color: {theme.colors.bg}" title="Background"></div>
+                <div class="w-1/2 h-full" style="background-color: {theme.colors.bg}" title="Background"></div>
                 <!-- Accent Block -->
-                <div class="w-10 h-full" style="background-color: {theme.colors.accent}" title="Accent"></div>
+                <div class="w-1/2 h-full" style="background-color: {theme.colors.accent}" title="Accent"></div>
               </div>
             </button>
           {/each}
@@ -75,12 +79,12 @@
   </div>
 
   <!-- Information Footer (Clean & simple) -->
-  <div class="memory-surface-nested flex flex-col sm:flex-row justify-between items-center text-xs text-base-content gap-3">
+  <div class="memory-surface-nested flex flex-col sm:flex-row justify-between items-center text-xs gap-3">
     <div class="flex items-center gap-2.5">
-      <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-      <span>Tonal overlays automatically shift atmospheric temperature based on your historical music trends.</span>
+      <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--accent);"></div>
+      <span style="color: var(--text-secondary);">Tonal overlays automatically shift atmospheric temperature based on your historical music trends.</span>
     </div>
-    <span>All themes verified for contrast comfort.</span>
+    <span style="color: var(--text-muted);">All themes verified for contrast comfort.</span>
   </div>
 
 </div>

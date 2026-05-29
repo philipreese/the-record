@@ -33,19 +33,15 @@
 
   // Get opacity weight based on count
   function getOpacity(count: number): number {
-    if (count === 0) return 0.08;
-    return 0.2 + (count / maxCount) * 0.8;
+    if (count === 0) return 0.05;
+    return 0.15 + (count / maxCount) * 0.85;
   }
 
   // Structure of clock segments: 12 segments for AM (0-11) and 12 for PM (12-23)
   const segments = Array.from({ length: 12 }, (_, i) => {
-    // We want 12 o'clock to be at the top, which is index 0.
-    // Index 0 represents 12 (AM/PM), index 1 represents 1 (AM/PM)
     const hourAM = i === 0 ? "00" : String(i).padStart(2, '0');
     const hourPM = String(i + 12);
     
-    // Angles for the 12 clock ticks (each is 30 degrees)
-    // Add a tiny 2-degree padding between sectors
     const startAngle = i * 30 + 1;
     const endAngle = (i + 1) * 30 - 1;
     
@@ -62,71 +58,84 @@
       hourNumber: i === 0 ? 12 : i
     };
   });
+
+  // Hovered state for center visual core
+  let hoveredSegment = $state<{ label: string; count: number } | null>(null);
 </script>
 
-<div class="memory-surface flex flex-col items-center justify-center">
-  <h3 class="text-sm font-semibold mb-4 text-base-content opacity-80 uppercase tracking-wider text-center">
-    Hourly Listening Density
-  </h3>
-  
-  <div class="relative w-[240px] h-[240px] flex items-center justify-center">
-    <svg width="240" height="240" viewBox="0 0 240 240" class="text-base-content">
+<div class="memory-surface flex flex-col items-center justify-center relative overflow-visible">
+  <div class="relative w-[270px] h-[270px] flex items-center justify-center">
+    <svg width="270" height="270" viewBox="0 0 240 240" style="color: var(--text-primary);">
       <!-- Outer circle boundary -->
-      <circle cx="120" cy="120" r="105" fill="none" class="stroke-base-content/5" stroke-width="1" />
+      <circle cx="120" cy="120" r="105" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.06;" stroke-width="1" />
       <!-- Mid-divider between AM and PM -->
-      <circle cx="120" cy="120" r="71" fill="none" class="stroke-base-content/10" stroke-dasharray="3 3" />
+      <circle cx="120" cy="120" r="71" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.12;" stroke-dasharray="3 3" />
       <!-- Inner boundary -->
-      <circle cx="120" cy="120" r="37" fill="none" class="stroke-base-content/5" stroke-width="1" />
+      <circle cx="120" cy="120" r="37" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.06;" stroke-width="1" />
       
       <!-- Hour text labels (12, 3, 6, 9) -->
-      <text x="120" y="25" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">12</text>
-      <text x="215" y="124" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">3</text>
-      <text x="120" y="222" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">6</text>
-      <text x="25" y="124" text-anchor="middle" class="text-xs font-bold fill-current opacity-60">9</text>
+      <text x="120" y="25" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">12</text>
+      <text x="215" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">3</text>
+      <text x="120" y="222" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">6</text>
+      <text x="25" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">9</text>
 
       <g transform="translate(0, 0)">
         {#each segments as seg}
           <!-- AM Segment (Inner Ring: rInner=40, rOuter=70) -->
           {@const amCount = hourlyData[seg.amKey] || 0}
+          <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 40, 70, seg.startAngle, seg.endAngle)}
-            class="fill-primary transition-all duration-300 hover:scale-103 hover:stroke-primary hover:stroke-1 cursor-pointer"
-            class:opacity-10={amCount === 0}
-            style="opacity: {getOpacity(amCount)};"
-          >
-            <title>{seg.amLabel}: {amCount} plays</title>
-          </path>
+            class="transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            style="fill: var(--accent); opacity: {getOpacity(amCount)};"
+            onmouseenter={() => hoveredSegment = { label: seg.amLabel, count: amCount }}
+            onmouseleave={() => hoveredSegment = null}
+          />
           
           <!-- PM Segment (Outer Ring: rInner=72, rOuter=102) -->
           {@const pmCount = hourlyData[seg.pmKey] || 0}
+          <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 72, 102, seg.startAngle, seg.endAngle)}
-            class="fill-secondary transition-all duration-300 hover:scale-103 hover:stroke-secondary hover:stroke-1 cursor-pointer"
-            class:opacity-10={pmCount === 0}
-            style="opacity: {getOpacity(pmCount)};"
-          >
-            <title>{seg.pmLabel}: {pmCount} plays</title>
-          </path>
+            class="transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            style="fill: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%); opacity: {getOpacity(pmCount)};"
+            onmouseenter={() => hoveredSegment = { label: seg.pmLabel, count: pmCount }}
+            onmouseleave={() => hoveredSegment = null}
+          />
         {/each}
       </g>
     </svg>
     
-    <!-- Center visual core -->
-    <div class="absolute w-[70px] h-[70px] rounded-full bg-base-300 border border-base-content/10 shadow-inner flex flex-col items-center justify-center text-center p-1 select-none">
-      <div class="text-xs font-bold uppercase opacity-50 tracking-wider">AM / PM</div>
-      <div class="text-xs font-extrabold text-primary">Inner / Outer</div>
+    <!-- Center visual core - Displays hovered details or base instructions -->
+    <div 
+      class="absolute w-[84px] h-[84px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+      style="
+        background-color: color-mix(in srgb, var(--bg-base) 96%, transparent);
+        border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+      "
+    >
+      {#if hoveredSegment}
+        <div class="text-micro font-mono uppercase tracking-widest text-zinc-500">{hoveredSegment.label}</div>
+        <div class="text-lg font-light tracking-tight mt-0.5" style="color: var(--text-primary);">{hoveredSegment.count}</div>
+        <div class="text-micro font-mono uppercase tracking-wider text-zinc-400 opacity-60">plays</div>
+      {:else}
+        <div class="text-micro font-mono uppercase tracking-widest text-zinc-500">Diurnal</div>
+        <div class="text-micro font-light leading-snug text-zinc-400 mt-1">am / inner<br/>pm / outer</div>
+      {/if}
     </div>
   </div>
   
   <!-- Heat clock legend -->
-  <div class="flex gap-4 mt-4 text-xs opacity-75">
+  <div class="flex gap-6 mt-4 text-micro font-mono" style="color: var(--text-muted);">
     <div class="flex items-center gap-1.5">
-      <div class="w-2.5 h-2.5 rounded-full bg-primary"></div>
+      <div class="w-2.5 h-2.5 rounded-full" style="background-color: var(--accent);"></div>
       <span>AM (Morning)</span>
     </div>
     <div class="flex items-center gap-1.5">
-      <div class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
-      <span>PM (Afternoon/Night)</span>
+      <div class="w-2.5 h-2.5 rounded-full" style="background-color: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%);"></div>
+      <span>PM (Noon/Night)</span>
     </div>
   </div>
 </div>

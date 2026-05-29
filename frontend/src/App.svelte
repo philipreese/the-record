@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import Sidebar from './components/layout/Sidebar.svelte';
   import Navbar from './components/layout/Navbar.svelte';
   
@@ -33,20 +34,24 @@
     
     <!-- Navbar (Mobile only) -->
     <Navbar bind:activeTab />
-
+ 
     <!-- Main Content Area -->
     <main class="flex-grow p-4 lg:p-8 max-w-[1400px] w-full mx-auto relative z-10">
       
-      <!-- Views conditional rendering -->
-      {#if activeTab === 'dashboard'}
-        <OverviewView />
-      {:else if activeTab === 'charts'}
-        <ChartsView />
-      {:else if activeTab === 'wrapped'}
-        <WrappedView />
-      {:else if activeTab === 'settings'}
-        <SettingsView />
-      {/if}
+      <!-- Views conditional rendering with dissolve-reconfigure transition -->
+      {#key activeTab}
+        <div in:fade={{ duration: 160, delay: 120 }} out:fade={{ duration: 120 }} class="w-full">
+          {#if activeTab === 'dashboard'}
+            <OverviewView />
+          {:else if activeTab === 'charts'}
+            <ChartsView />
+          {:else if activeTab === 'wrapped'}
+            <WrappedView />
+          {:else if activeTab === 'settings'}
+            <SettingsView />
+          {/if}
+        </div>
+      {/key}
       
     </main>
   </div> 

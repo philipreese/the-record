@@ -1,8 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 @import "tailwindcss";
 @plugin "daisyui";
 
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, ui-serif, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-immediate: 48ms;
+  --t-responsive: 160ms;
+  --t-reflective: 380ms;
+
+  /* Theme Color Mappings for Tailwind v4 Utilities */
+  --color-theme-accent: var(--accent);
+  --color-theme-text: var(--text-primary);
+  --color-theme-muted: var(--text-muted);
+  --color-theme-secondary: var(--text-secondary);
+  --color-theme-faint: var(--text-faint);
+
+  /* Consolidated Soft and Border Accent Colors */
+  --color-theme-accent-soft: color-mix(in srgb, var(--accent) 8%, transparent);
+  --color-theme-secondary-soft: color-mix(in srgb, var(--text-secondary) 8%, transparent);
+  --color-theme-neutral-soft: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  --color-theme-border-soft: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  --color-theme-border-heavy: color-mix(in srgb, var(--text-primary) 20%, transparent);
+
+  /* Consolidated Sizing Tokens */
+  --font-size-micro: 0.625rem;
+}
+
 html {
   scrollbar-gutter: stable;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  @apply tracking-tight antialiased transition-colors duration-300;
+  overflow-y: scroll;
 }
 
 /* Define custom themes with audited WCAG AA contrast ratios and DaisyUI v5 mappings */
@@ -249,114 +286,132 @@ html {
 
 /* Layout Utilities for "Adaptive Memory Interface" */
 .memory-surface {
-  background-color: var(--color-base-100);
-  opacity: 0.95;
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 1rem; /* Standardized 16px */
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); /* Standardized Shadow */
-  padding: 1.5rem; /* Standardized Card Padding (24px) */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Standardized Transition */
+  background-color: color-mix(in srgb, var(--bg-base) 94%, transparent);
+  opacity: 0.98;
+  backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+  border-radius: 1.5rem; /* Standardized 24px */
+  padding: 2.25rem; /* Scaled Card Padding */
+  transition: all var(--t-responsive) var(--ease-fluid);
 }
 
 .memory-surface-nested {
-  background-color: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem; /* Standardized 12px */
-  padding: 1rem; /* Standardized Nested Padding (16px) */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Standardized Transition */
+  background-color: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
+  border-radius: 1rem; /* Standardized 16px */
+  padding: 1.375rem; /* Scaled Nested Padding */
+  transition: all var(--t-responsive) var(--ease-fluid);
 }
 
 /* Style light mode nested boxes slightly darker for separation */
 [data-theme="editorial-light"] .memory-surface-nested,
 [data-theme="sepia-warm"] .memory-surface-nested,
 [data-theme="mist-gray"] .memory-surface-nested {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
 .editorial-text-h1 {
-  font-family: inherit;
-  font-size: 1.875rem;
-  font-weight: 800; /* Standardized Title Weight */
-  letter-spacing: -0.025em;
+  font-family: var(--font-serif);
+  font-size: 3.5rem; /* Scaled up */
+  font-weight: 200; /* Light weight for editorial */
+  letter-spacing: -0.015em;
+  line-height: 1.15;
   color: var(--text-primary);
 }
 
 .editorial-text-h2 {
-  font-size: 1.25rem;
-  font-weight: 800; /* Standardized Title Weight */
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.95rem; /* Scaled up */
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .editorial-text-muted {
-  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem; /* Scaled up */
+  font-weight: 300;
+  line-height: 1.6;
   color: var(--text-muted);
 }
 
 .chip-primary {
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 0.25rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem; /* Scaled up */
+  font-weight: 400;
+  padding: 0.25rem 0.6rem;
   border-radius: 0.25rem; /* Standardized 4px */
-  background-color: var(--color-primary);
-  color: var(--color-primary-content);
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--t-immediate) var(--ease-fluid);
 }
 
 .chip-neutral {
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 0.25rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem; /* Scaled up */
+  font-weight: 400;
+  padding: 0.25rem 0.6rem;
   border-radius: 0.25rem; /* Standardized 4px */
-  background-color: var(--color-base-300);
+  background-color: color-mix(in srgb, var(--text-primary) 5%, transparent);
   color: var(--text-secondary);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--t-immediate) var(--ease-fluid);
 }
 
 .text-detail {
-  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem; /* Standardized to text-xs */
   color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 .text-caps {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.75rem; /* Standardized to text-xs */
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   color: var(--text-secondary);
-  opacity: 0.75;
 }
 
 .text-display-large {
-  font-size: 3rem; /* text-5xl equivalent */
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-family: var(--font-sans);
+  font-size: 4.5rem; /* Large quiet numerics scaled up */
+  font-weight: 100;
+  letter-spacing: -0.04em;
   line-height: 1;
+  font-feature-settings: "tnum" on, "lnum" on;
 }
 
 .text-display-medium {
-  font-size: 1.5rem; /* text-2xl equivalent */
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  font-family: var(--font-sans);
+  font-size: 2.5rem; /* Medium quiet numerics scaled up */
+  font-weight: 200;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-feature-settings: "tnum" on, "lnum" on;
 }
 
 .list-row-interactive {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-radius: 0.75rem; /* Standardized 12px */
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-radius: 1.25rem; /* Standardized 20px */
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: transparent;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
+  transition: all var(--t-responsive) var(--ease-fluid);
 }
 
 .list-row-interactive:hover {
-  transform: translateX(4px);
+  transform: translateX(8px);
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
 }
