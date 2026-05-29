@@ -64,7 +64,7 @@
   });
 </script>
 
-<div class="card bg-base-200/50 backdrop-blur-md border border-base-content/10 p-6 flex flex-col items-center justify-center">
+<div class="memory-surface flex flex-col items-center justify-center">
   <h3 class="text-sm font-semibold mb-4 text-base-content opacity-80 uppercase tracking-wider text-center">
     Hourly Listening Density
   </h3>

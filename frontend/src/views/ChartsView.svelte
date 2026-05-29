@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
+  import { themeManager, stringToColor } from '../services/theme.svelte';
 
   let topRange = $state('all'); // 30, 90, 365, all
   let loadingCharts = $state(false);
@@ -67,7 +68,12 @@
         
         <div class="flex flex-col gap-3">
           {#each currentArtists as artist, idx}
-            <div class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-colors duration-300">
+            <div 
+              role="listitem"
+              class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-all duration-300 cursor-pointer"
+              onmouseenter={() => themeManager.setAmbientColor(stringToColor(artist.artist))}
+              onmouseleave={() => themeManager.setAmbientColor(null)}
+            >
               <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
                 {idx + 1}
               </div>
@@ -94,7 +100,12 @@
         
         <div class="flex flex-col gap-3">
           {#each currentTracks as track, idx}
-            <div class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-colors duration-300">
+            <div 
+              role="listitem"
+              class="flex items-center gap-4 bg-base-300/30 rounded-xl p-3 border border-base-content/5 hover:bg-base-300/50 transition-all duration-300 cursor-pointer"
+              onmouseenter={() => themeManager.setAmbientColor(stringToColor(track.artist))}
+              onmouseleave={() => themeManager.setAmbientColor(null)}
+            >
               <div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center font-bold text-secondary text-sm">
                 {idx + 1}
               </div>
