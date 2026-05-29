@@ -110,13 +110,13 @@ def main():
     # Signatures to delete: in checkpoint but not in current clean history
     to_delete_sigs = submitted_set - keep_set
     print(f"Found {len(to_delete_sigs):,} plays to delete from ListenBrainz.")
-    
+
     if not to_delete_sigs:
         print("No plays need to be deleted! Checkpoint is in sync with history.")
         return
 
     # Index deletion signatures by timestamp for quick lookup
-    # key: timestamp -> list of (artist, title, sig)
+    # key: timestamp -> list of (artist_lower, title_lower, sig)
     to_delete_by_time = {}
     for sig in to_delete_sigs:
         ts = sig[0]
@@ -127,31 +127,52 @@ def main():
     total_to_delete = len(to_delete_sigs)
     deleted_count = 0
 
+    # Track rate-limit budget from response headers to avoid hitting 429
+    rl_remaining = 50
+
+    # Track consecutive fetch failures per timestamp to avoid hanging forever
+    fetch_fail_counts: dict[int, int] = {}
+    MAX_FETCH_RETRIES = 2
+
     print("Starting optimized deletion process...")
-    
+
     while target_timestamps:
         # Take the most recent target timestamp to query around it
         curr_ts = target_timestamps[0]
         print(f"\nFetching page around timestamp {curr_ts} ({datetime.fromtimestamp(curr_ts).strftime('%Y-%m-%d %H:%M:%S')})...")
-        
+
         # Request listens starting slightly after the target timestamp to catch it
         max_ts = curr_ts + 5
         try:
             res, headers = fetch_listens_page(LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN, max_ts=max_ts)
+            rl_remaining = int(headers.get("X-RateLimit-Remaining", 50))
+            fetch_fail_counts.pop(curr_ts, None)  # reset on success
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 reset_in = e.headers.get("X-RateLimit-Reset-In", "5")
-                sleep_val = float(reset_in) + 1.0
-                print(f"  ⚠ Rate limited (429). Sleeping for {sleep_val:.1f}s...")
+                sleep_val = float(reset_in) + 0.5
+                print(f"  Rate limited (429). Sleeping for {sleep_val:.1f}s...")
                 time.sleep(sleep_val)
                 continue
             else:
                 print(f"  HTTP Error {e.code}: {e.read().decode('utf-8')}. Retrying in 5s...")
-                time.sleep(5)
+                fetch_fail_counts[curr_ts] = fetch_fail_counts.get(curr_ts, 0) + 1
+                if fetch_fail_counts[curr_ts] >= MAX_FETCH_RETRIES:
+                    print(f"  Giving up on timestamp {curr_ts} after {MAX_FETCH_RETRIES} failures. Skipping.")
+                    target_timestamps = [t for t in target_timestamps if t != curr_ts]
+                    fetch_fail_counts.pop(curr_ts, None)
+                    continue
+                time.sleep(1)
                 continue
         except Exception as e:
             print(f"  Network error: {e}. Retrying in 5s...")
-            time.sleep(5)
+            fetch_fail_counts[curr_ts] = fetch_fail_counts.get(curr_ts, 0) + 1
+            if fetch_fail_counts[curr_ts] >= MAX_FETCH_RETRIES:
+                print(f"  Giving up on timestamp {curr_ts} after {MAX_FETCH_RETRIES} failures. Skipping.")
+                target_timestamps = [t for t in target_timestamps if t != curr_ts]
+                fetch_fail_counts.pop(curr_ts, None)
+                continue
+            time.sleep(1)
             continue
 
         listens = res.get("payload", {}).get("listens", [])
@@ -165,8 +186,10 @@ def main():
         min_ts = min(returned_timestamps) if returned_timestamps else curr_ts
         print(f"  Received {len(listens)} listens in range [{min_ts} -> {max(returned_timestamps)}].")
 
-        # Scan the batch for matches
+        # Scan the batch for matches and delete
         deleted_in_batch = 0
+        sigs_deleted_in_batch = []
+
         for listen in listens:
             ts = listen.get("listened_at")
             meta = listen.get("track_metadata", {})
@@ -181,54 +204,58 @@ def main():
                     if target_art == art and target_tit == tit:
                         match_sig = sig
                         break
-                
+
                 if match_sig:
-                    print(f"  Deleting: [{datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}] {safe_str(meta.get('artist_name'))} - {safe_str(meta.get('track_name'))}...")
+                    print(f"  Deleting: [{datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}] {safe_str(meta.get('artist_name'))} - {safe_str(meta.get('track_name'))}...", end=" ", flush=True)
                     retry_del = True
                     while retry_del:
                         try:
+                            # Proactively wait if rate limit budget is nearly exhausted
+                            if rl_remaining < 3:
+                                time.sleep(1.0)
+
                             del_res, del_headers = delete_listen(LISTENBRAINZ_TOKEN, ts, msid)
+                            rl_remaining = int(del_headers.get("X-RateLimit-Remaining", 50))
+
                             if del_res.get("status") == "ok":
                                 deleted_count += 1
                                 deleted_in_batch += 1
-                                
-                                # Remove from checkpoint and local tracking
-                                submitted_set.discard(match_sig)
-                                checkpoint["submitted"] = submitted_set
-                                save_checkpoint(checkpoint)
-                                
+                                sigs_deleted_in_batch.append(match_sig)
+
                                 # Remove from to_delete_by_time mapping
                                 to_delete_by_time[ts] = [x for x in to_delete_by_time[ts] if x[2] != match_sig]
                                 if not to_delete_by_time[ts]:
                                     del to_delete_by_time[ts]
-                                    
-                                print("    Success.")
+
+                                print("OK")
                                 retry_del = False
-                                time.sleep(0.3)  # Small gap to respect rate limits
                             else:
-                                print(f"    Failed to delete: {del_res}")
+                                print(f"FAILED: {del_res}")
                                 retry_del = False
                         except urllib.error.HTTPError as de:
                             if de.code == 429:
                                 reset_in = de.headers.get("X-RateLimit-Reset-In", "5")
-                                sleep_val = float(reset_in) + 1.0
-                                print(f"    ⚠ Deletion rate-limited (429). Sleeping {sleep_val:.1f}s...")
+                                sleep_val = float(reset_in) + 0.5
+                                print(f"\n    Rate-limited (429). Sleeping {sleep_val:.1f}s...", end=" ", flush=True)
                                 time.sleep(sleep_val)
                             else:
-                                print(f"    HTTP Error on deletion: {de.code}")
+                                print(f"HTTP {de.code}")
                                 retry_del = False
                         except Exception as de:
-                            print(f"    Network error on deletion: {de}. Retrying...")
+                            print(f"Network error: {de}. Retrying...", end=" ", flush=True)
                             time.sleep(2)
 
+        # Save checkpoint once per batch (not per deletion) — much faster
+        if sigs_deleted_in_batch:
+            for sig in sigs_deleted_in_batch:
+                submitted_set.discard(sig)
+            checkpoint["submitted"] = submitted_set
+            save_checkpoint(checkpoint)
+
         print(f"  Batch complete. Deleted {deleted_in_batch} listens. Progress: {deleted_count}/{total_to_delete} deleted.")
-        
+
         # Remove all target timestamps that fell inside this batch range
-        # We also remove curr_ts just in case to avoid infinite loop
         target_timestamps = [t for t in target_timestamps if t < min_ts and t != curr_ts]
-        
-        # Small gap before next batch request
-        time.sleep(1.0)
 
     print(f"\nClean up complete. Deleted {deleted_count} listens from ListenBrainz.")
     print("Checkpoint has been synchronized with the clean history.")
