@@ -1,6 +1,6 @@
 <script lang="ts">
   interface Props {
-    name: 'home' | 'charts' | 'book' | 'sync' | 'flame' | 'crown' | 'clock' | 'calendar' | 'settings' | 'close' | 'logo';
+    name: 'home' | 'charts' | 'book' | 'sync' | 'flame' | 'crown' | 'clock' | 'calendar' | 'settings' | 'close' | 'logo' | 'download';
     size?: string; // e.g. "w-5 h-5" or custom
     class?: string;
     style?: string;
@@ -62,6 +62,8 @@
       <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     {:else if name === 'close'}
       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+    {:else if name === 'download'}
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     {/if}
   </svg>
 {/if}

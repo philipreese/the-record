@@ -1,6 +1,6 @@
 # The Record - Backend Services 🐍
 
-This directory contains the FastAPI-powered Python backend. It handles scrobble database management in SQLite, runs background data synchronization jobs with ListenBrainz, and exposes REST endpoints for the frontend client.
+This directory contains the FastAPI-powered Python backend. Powered by SQLAlchemy, it handles scrobble database management in SQLite or PostgreSQL, runs background data synchronization jobs with ListenBrainz, and exposes REST endpoints for the frontend client.
 
 ---
 
@@ -9,7 +9,7 @@ This directory contains the FastAPI-powered Python backend. It handles scrobble 
 The backend code is organized into a modular FastAPI application layout:
 
 - **API Routes**: Exposes REST endpoints for stats, top charts, heatmaps, and reviews.
-- **Repository Layer**: Encapsulates raw SQL queries on the SQLite database, isolating database interactions from route logic.
+- **Repository Layer**: Encapsulates database queries using SQLAlchemy Core/ORM expressions, isolating database interactions from route logic and supporting multiple SQL dialects (SQLite and PostgreSQL).
 - **Pydantic Validation**: Models request/response structures to enforce validation constraints and auto-generate OpenAPI documentation.
 - **Background Synchronization**: Launches isolated background threads to fetch and deduplicate scrobbles without blocking incoming HTTP requests.
 

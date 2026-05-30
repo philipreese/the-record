@@ -5,9 +5,14 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(APP_DIR))
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+
+sys.path.append(PROJECT_ROOT)
 
 from app.db import bootstrap_db_from_json
 from app.routes import router

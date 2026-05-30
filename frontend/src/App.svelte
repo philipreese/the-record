@@ -10,12 +10,14 @@
   import SettingsView from './views/SettingsView.svelte';
 
   import { themeManager } from './services/theme.svelte';
+  import { appCache } from './services/store.svelte';
 
   // Navigation state using Svelte 5 state rune
   let activeTab = $state<'dashboard' | 'charts' | 'wrapped' | 'settings'>('dashboard');
 
   onMount(() => {
     themeManager.init();
+    appCache.runSync(false); // background normal sync on page load
   });
 </script>
 

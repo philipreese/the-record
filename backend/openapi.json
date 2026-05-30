@@ -484,6 +484,17 @@
           "top_source": {
             "type": "string",
             "title": "Top Source"
+          },
+          "db_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Db Type"
           }
         },
         "type": "object",

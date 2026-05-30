@@ -1,51 +1,12 @@
-export interface StatsInfo {
-  total_listens: number;
-  unique_artists: number;
-  unique_tracks: number;
-  days_active: number;
-  avg_per_day: number;
-  top_source: string;
-}
+import type { components } from './api-types';
 
-export interface StreakInfo {
-  current_streak: number;
-  longest_streak: number;
-}
-
-export interface ArtistInfo {
-  artist: string;
-  play_count: number;
-}
-
-export interface TrackInfo {
-  artist: string;
-  title: string;
-  play_count: number;
-}
-
-export interface WrappedDataInfo {
-  total_plays: number;
-  top_artist: { name: string; plays: number } | null;
-  top_track: { artist: string; title: string; plays: number } | null;
-  peak_day: { date: string; plays: number } | null;
-  minutes_listened: number;
-}
-
-export interface SyncStatusInfo {
-  running: boolean;
-  finished: boolean;
-  mode: string;
-  batches_fetched: number;
-  synced_count: number;
-  lb_total: number;
-  local_total: number;
-  error: string | null;
-}
-
-export interface MonthlyTrendInfo {
-  month: string;
-  count: number;
-}
+export type StatsInfo = components['schemas']['StatsSummaryResponse'];
+export type StreakInfo = components['schemas']['StreakStatsResponse'];
+export type ArtistInfo = components['schemas']['ArtistInfo'];
+export type TrackInfo = components['schemas']['TrackInfo'];
+export type MonthlyTrendInfo = components['schemas']['MonthlyTrendInfo'];
+export type SyncStatusInfo = components['schemas']['SyncStatusResponse'];
+export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 

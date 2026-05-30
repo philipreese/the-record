@@ -242,6 +242,8 @@ export interface components {
             avg_per_day: number;
             /** Top Source */
             top_source: string;
+            /** Db Type */
+            db_type?: string | null;
         };
         /** StreakStatsResponse */
         StreakStatsResponse: {

@@ -1,12 +1,12 @@
 # The Record 🎧
 
-**The Record** is a self-hosted dashboard for syncing, archiving, and analyzing your music listening history. It merges scrobbles from ListenBrainz and play histories from other sources (e.g. YouTube Music / Google Takeout) into a unified SQLite database, offering custom listening trends, activity heatmaps, and Spotify-Wrapped style periodic reviews.
+**The Record** is a self-hosted dashboard for syncing, archiving, and analyzing your music listening history. Powered by SQLAlchemy, it merges scrobbles from ListenBrainz and play histories from other sources (e.g. YouTube Music / Google Takeout) into a unified database (supporting both local SQLite and remote PostgreSQL), offering custom listening trends, activity heatmaps, and Spotify-Wrapped style periodic reviews.
 
 ---
 
 ## 🏗 Project Layout
 
-- `backend/` — FastAPI Python backend managing SQLite, synchronization threads, and REST API endpoints.
+- `backend/` — FastAPI Python backend managing SQLite/PostgreSQL, synchronization threads, and REST API endpoints.
 - `frontend/` — Svelte 5 single-page application built with Vite, TypeScript, Tailwind CSS, and DaisyUI.
 - `pixi.toml` — Converted developer environments and tasks (backend/frontend dependencies, tests, linters).
 
@@ -24,6 +24,12 @@ Create a `.env` file in the root of the project:
 ```env
 LISTENBRAINZ_USERNAME="your_username"
 LISTENBRAINZ_TOKEN="your_token"  # Optional, required for syncing private data
+
+# Database (Optional, defaults to local SQLite backend/history.db if omitted)
+# DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
+
+# Timezone (Optional, defaults to UTC on containers or local system time on host)
+# TZ="America/New_York"
 ```
 
 ### 3. Run the App
