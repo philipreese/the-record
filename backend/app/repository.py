@@ -1,8 +1,20 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, date, timezone, timedelta
 from typing import Any, List
+import os
+from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text
 from app.db import get_engine, Listen
 from app.db_helpers import get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
+
+def get_current_local_date() -> date:
+    """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
+    tz_name = os.environ.get("TZ")
+    if tz_name:
+        try:
+            return datetime.now(ZoneInfo(tz_name)).date()
+        except Exception:
+            pass
+    return datetime.now().date()
 
 def get_stats_summary() -> dict[str, Any]:
     """Calculate overall statistics from the scrobble database."""
@@ -169,7 +181,7 @@ def get_streak_stats() -> dict[str, int]:
     longest = max(streak_list) if streak_list else 0
     
     # Current active streak check (is latest active day today or yesterday?)
-    today = datetime.now().date()
+    today = get_current_local_date()
     current_streak = 0
     if days:
         latest_active_day = days[-1]
