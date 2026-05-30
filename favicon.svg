@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <style>
+    circle {
+      stroke: #111111;
+    }
+    .outer {
+      stroke: #111111;
+      stroke-width: 1.5;
+    }
+    .mid-dash {
+      stroke-width: 0.5;
+      stroke-dasharray: 2 1;
+      opacity: 0.8;
+    }
+    .inner-dash {
+      stroke-width: 0.5;
+      stroke-dasharray: 1 1;
+      opacity: 0.6;
+    }
+    .accent-fill {
+      fill: #c8a96e; /* Brand Accent gold */
+      stroke: none;
+    }
+    .center-dot {
+      fill: #faf9f6; /* light mode base-100 */
+      stroke: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      circle {
+        stroke: #f0e6d3; /* dark mode text */
+      }
+      .outer {
+        stroke: #f0e6d3;
+      }
+      .center-dot {
+        fill: #131009; /* dark mode base-100 */
+      }
+    }
+  </style>
+  <circle class="outer" cx="12" cy="12" r="10" />
+  <circle class="mid-dash" cx="12" cy="12" r="7" />
+  <circle class="inner-dash" cx="12" cy="12" r="4" />
+  <circle class="accent-fill" cx="12" cy="12" r="2.5" />
+  <circle class="center-dot" cx="12" cy="12" r="0.8" />
+</svg>
