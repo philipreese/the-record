@@ -132,15 +132,15 @@
               onclick={() => toggleArtistFocus(artist.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist); }}
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs bg-theme-neutral-soft text-theme-muted">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
               <div class="flex-grow">
-                <div class="font-light tracking-wide text-theme-text">{artist.artist}</div>
+                <div class="text-base md:text-lg font-light tracking-wide text-theme-text">{artist.artist}</div>
               </div>
               <div class="text-right">
-                <div class="text-md font-mono font-light text-theme-text">{artist.play_count.toLocaleString()}</div>
-                <div class="text-micro font-mono tracking-widest text-zinc-500 uppercase mt-0.5">plays</div>
+                <div class="text-lg font-mono font-light text-theme-text">{artist.play_count.toLocaleString()}</div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">plays</div>
               </div>
             </div>
           {:else}
@@ -174,16 +174,16 @@
               onclick={() => toggleTrackFocus(track.title, track.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist); }}
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs bg-theme-neutral-soft text-theme-muted">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
               <div class="flex-grow min-w-0">
-                <div class="font-light tracking-wide truncate text-theme-text">{track.title}</div>
-                <div class="text-xs font-light truncate opacity-60 mt-0.5 text-theme-secondary">{track.artist}</div>
+                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">{track.title}</div>
+                <div class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80">{track.artist}</div>
               </div>
               <div class="text-right flex-shrink-0">
-                <div class="text-md font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>
-                <div class="text-micro font-mono tracking-widest text-zinc-500 uppercase mt-0.5">plays</div>
+                <div class="text-lg font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">plays</div>
               </div>
             </div>
           {:else}

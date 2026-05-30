@@ -134,7 +134,8 @@
   class="w-full memory-surface heatmap-container !p-6 relative overflow-visible" 
   style="min-width: 320px; max-width: 1050px;"
 >
-    <svg viewBox="0 0 835 150" width="100%" preserveAspectRatio="xMidYMid meet" style="color: var(--text-primary);">
+  <div class="w-full overflow-x-auto scrollbar-thin">
+    <svg viewBox="0 0 835 150" class="min-w-[780px] w-full h-auto" preserveAspectRatio="xMidYMid meet" style="color: var(--text-primary);">
       <!-- Month Labels -->
       {#each monthHeaders as header}
         <text x={header.x} y="15" font-size="11" font-family="var(--font-mono)" class="fill-current opacity-60">
@@ -161,7 +162,7 @@
                       width="12"
                       height="12"
                       rx="2.5"
-                      fill="none"
+                      fill="transparent"
                       class="heatmap-cell"
                       style="
                         stroke: var(--text-primary); 
@@ -208,6 +209,7 @@
         {/each}
       </g>
     </svg>
+  </div>
     
     <!-- Legend -->
     <div class="flex items-center justify-end gap-2 mt-4 px-2 text-xs font-mono" style="color: var(--text-muted);">

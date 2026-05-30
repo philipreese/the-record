@@ -73,7 +73,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {#each getThemesByCategory(category) as theme}
               <button 
-                class="flex flex-row items-center justify-between gap-4 p-5 rounded-xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer focus:outline-none"
+                class="flex flex-row items-center justify-between gap-6 p-6 lg:p-8 rounded-2xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer focus:outline-none"
                 style="
                   border-color: {themeManager.currentTheme === theme.id ? 'var(--accent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'};
                   background-color: {themeManager.currentTheme === theme.id ? 'color-mix(in srgb, var(--accent) 5%, transparent)' : 'transparent'};
@@ -82,13 +82,13 @@
               >
                 <!-- Selector Active Line -->
                 {#if themeManager.currentTheme === theme.id}
-                  <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--accent);"></div>
+                  <div class="absolute left-0 top-0 bottom-0 w-1.5" style="background-color: var(--accent);"></div>
                 {/if}
 
                 <!-- Left Side: Details & Badges -->
-                <div class="flex flex-col gap-2 pl-1 flex-grow pr-4">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-light" style="color: var(--text-primary);">
+                <div class="flex flex-col gap-3 pl-1 flex-grow pr-4">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-base lg:text-lg font-light" style="color: var(--text-primary);">
                       {theme.name}
                     </span>
                     
@@ -103,13 +103,13 @@
                     </span>
                   </div>
                   
-                  <span class="text-xs leading-relaxed font-light max-w-[280px]" style="color: var(--text-secondary);">
+                  <span class="text-sm leading-relaxed font-light max-w-[360px]" style="color: var(--text-secondary);">
                     {theme.description}
                   </span>
                 </div>
 
                 <!-- Right Side: Clean Connected Color Swatch Pill -->
-                <div class="flex h-10 w-16 rounded overflow-hidden border shrink-0 shadow-sm" style="border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);">
+                <div class="flex h-12 w-20 rounded overflow-hidden border shrink-0 shadow-sm" style="border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);">
                   <!-- Background Block -->
                   <div class="w-1/2 h-full" style="background-color: {theme.colors.bg}" title="Background"></div>
                   <!-- Accent Block -->
@@ -136,18 +136,18 @@
     <div class="space-y-8">
       
       <!-- Database Info Card -->
-      <div class="p-6 rounded-xl border border-theme-border-soft memory-surface-nested">
-        <h3 class="text-sm font-mono tracking-widest uppercase text-theme-muted mb-4">Database Connection</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-mono text-theme-muted uppercase">Engine Type</span>
-            <span class="text-base font-light text-theme-text">
+      <div class="memory-surface-nested">
+        <h3 class="text-xs md:text-sm font-mono tracking-widest uppercase text-theme-muted mb-6">Database Connection</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-xs font-mono text-theme-muted uppercase tracking-wider">Engine Type</span>
+            <span class="text-lg font-light text-theme-text">
               {appCache.stats?.db_type || 'Resolving engine...'}
             </span>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-mono text-theme-muted uppercase">Archived Plays</span>
-            <span class="text-base font-mono font-semibold text-theme-accent">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-xs font-mono text-theme-muted uppercase tracking-wider">Archived Plays</span>
+            <span class="text-2xl font-mono font-normal text-theme-accent">
               {appCache.stats?.total_listens.toLocaleString() || 'Connecting...'}
             </span>
           </div>
@@ -166,17 +166,17 @@
         <div class="flex flex-col gap-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Incremental Sync Card -->
-          <div class="p-5 rounded-xl border border-theme-border-soft flex flex-col justify-between gap-4 bg-transparent">
-            <div class="space-y-2">
+          <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
+            <div class="space-y-3">
               <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Incremental Sync</span>
-              <h4 class="text-sm font-light text-theme-text">Pull New Scrobbles</h4>
-              <p class="text-xs font-light text-theme-muted leading-relaxed">
+              <h4 class="text-base lg:text-lg font-light text-theme-text">Pull New Scrobbles</h4>
+              <p class="text-sm font-light text-theme-secondary leading-relaxed">
                 Scan for recent tracks since your last sync. Safe and fast. Recommended for daily updates.
               </p>
             </div>
             <div>
               <button 
-                class="btn btn-primary btn-sm flex items-center gap-2 cursor-pointer focus:outline-none"
+                class="btn btn-primary btn-md shadow-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
                 disabled={appCache.isSyncing}
                 onclick={() => handleSync(false)}
               >
@@ -192,17 +192,17 @@
           </div>
 
           <!-- Full Reconstruction Sync Card -->
-          <div class="p-5 rounded-xl border border-theme-border-soft flex flex-col justify-between gap-4 bg-transparent">
-            <div class="space-y-2">
+          <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
+            <div class="space-y-3">
               <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Deep Sync</span>
-              <h4 class="text-sm font-light text-theme-text">Reconstruct Archive</h4>
-              <p class="text-xs font-light text-theme-muted leading-relaxed">
+              <h4 class="text-base lg:text-lg font-light text-theme-text">Reconstruct Archive</h4>
+              <p class="text-sm font-light text-theme-secondary leading-relaxed">
                 Re-scan your entire ListenBrainz history from the beginning. Rebuilds database records and backfills any gaps.
               </p>
             </div>
             <div>
               <button 
-                class="btn btn-outline btn-sm flex items-center gap-2 cursor-pointer focus:outline-none"
+                class="btn btn-outline btn-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
                 disabled={appCache.isSyncing}
                 onclick={() => handleSync(true)}
               >

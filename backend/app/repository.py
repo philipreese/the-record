@@ -51,6 +51,10 @@ def get_stats_summary() -> dict[str, Any]:
         
         # Average per day
         avg_per_day = round(total_listens / days_active, 1) if days_active > 0 else 0
+
+        # Oldest year
+        min_ts = conn.execute(select(func.min(Listen.unix_ts))).scalar()
+        first_year = datetime.fromtimestamp(min_ts, tz=timezone.utc).year if min_ts else datetime.now().year
         
         return {
             "total_listens": total_listens,
@@ -59,7 +63,8 @@ def get_stats_summary() -> dict[str, Any]:
             "days_active": days_active,
             "avg_per_day": avg_per_day,
             "top_source": top_source,
-            "db_type": db_type
+            "db_type": db_type,
+            "first_year": first_year
         }
 
 def get_time_range_filter(time_range_days: str):

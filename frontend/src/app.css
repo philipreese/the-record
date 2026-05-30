@@ -291,7 +291,10 @@ body {
   backdrop-filter: blur(24px);
   border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-radius: 1.5rem; /* Standardized 24px */
-  padding: 2.25rem; /* Scaled Card Padding */
+  padding: 2rem;
+  @media (min-width: 1024px) {
+    padding: 3.25rem; /* Scaled Card Padding */
+  }
   transition: all var(--t-responsive) var(--ease-fluid);
 }
 
@@ -299,7 +302,10 @@ body {
   background-color: color-mix(in srgb, var(--text-primary) 3%, transparent);
   border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
   border-radius: 1rem; /* Standardized 16px */
-  padding: 1.375rem; /* Scaled Nested Padding */
+  padding: 1.25rem;
+  @media (min-width: 1024px) {
+    padding: 2rem; /* Scaled Nested Padding */
+  }
   transition: all var(--t-responsive) var(--ease-fluid);
 }
 
@@ -312,16 +318,22 @@ body {
 
 .editorial-text-h1 {
   font-family: var(--font-serif);
-  font-size: 3.5rem; /* Scaled up */
+  font-size: 3.5rem;
+  @media (min-width: 1024px) {
+    font-size: 5rem; /* Scaled up */
+  }
   font-weight: 200; /* Light weight for editorial */
   letter-spacing: -0.015em;
-  line-height: 1.15;
+  line-height: 1.05;
   color: var(--text-primary);
 }
 
 .editorial-text-h2 {
   font-family: var(--font-mono);
-  font-size: 0.95rem; /* Scaled up */
+  font-size: 0.9rem;
+  @media (min-width: 1024px) {
+    font-size: 1.05rem; /* Scaled up */
+  }
   font-weight: 400;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -382,7 +394,13 @@ body {
 
 .text-display-large {
   font-family: var(--font-sans);
-  font-size: 4.5rem; /* Large quiet numerics scaled up */
+  font-size: 3rem;
+  @media (min-width: 640px) {
+    font-size: 4.25rem;
+  }
+  @media (min-width: 1024px) {
+    font-size: 5.5rem; /* Large quiet numerics scaled up */
+  }
   font-weight: 100;
   letter-spacing: -0.04em;
   line-height: 1;
@@ -391,7 +409,13 @@ body {
 
 .text-display-medium {
   font-family: var(--font-sans);
-  font-size: 2.5rem; /* Medium quiet numerics scaled up */
+  font-size: 2rem;
+  @media (min-width: 640px) {
+    font-size: 2.75rem;
+  }
+  @media (min-width: 1024px) {
+    font-size: 3.25rem; /* Medium quiet numerics scaled up */
+  }
   font-weight: 200;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -402,7 +426,7 @@ body {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 2rem;
   border-radius: 1.25rem; /* Standardized 20px */
   cursor: pointer;
   background-color: transparent;
@@ -414,6 +438,12 @@ body {
   transform: translateX(8px);
   background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
   border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
+}
+
+/* Slide open sidebar mobile overlay blur */
+.drawer-overlay {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 /* --- Premium Scroll-Driven Reveals & Staggers --- */

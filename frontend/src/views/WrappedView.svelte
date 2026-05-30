@@ -160,11 +160,11 @@
       <span class="loading loading-spinner loading-md text-primary"></span>
     </div>
   {:else if wrappedError}
-    <div class="max-w-xl mx-auto w-full p-4 rounded-xl text-center text-sm font-mono text-theme-secondary bg-theme-neutral-soft border border-dashed border-theme-border-heavy">
+    <div class="max-w-4xl mx-auto w-full p-4 rounded-xl text-center text-sm font-mono text-theme-secondary bg-theme-neutral-soft border border-dashed border-theme-border-heavy">
       {wrappedError}
     </div>
   {:else if currentWrappedData}
-    <div class="max-w-xl mx-auto w-full memory-surface relative overflow-visible flex flex-col justify-between min-h-[380px] p-8 shadow-2xl">
+    <div class="max-w-4xl mx-auto w-full memory-surface relative overflow-visible flex flex-col justify-between min-h-[460px] p-10 md:p-12 shadow-2xl">
       <!-- Glow backings for ambient warmth (desaturated) -->
       <div class="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft"></div>
       <div class="absolute -bottom-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft/80"></div>
@@ -176,14 +176,14 @@
             
             {#if currentStep === 0}
               <!-- Slide 0: Cover & Summary Dashboard -->
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-8 items-center py-4">
+              <div class="grid grid-cols-1 xl:grid-cols-5 gap-8 xl:gap-12 items-center py-4">
                 <!-- Left side: Narrative & CTA -->
-                <div class="md:col-span-2 space-y-5 text-center md:text-left">
+                <div class="xl:col-span-2 space-y-5 text-center xl:text-left">
                   <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">01 / The Archeology</span>
-                  <h2 class="editorial-text-h1 lowercase text-3xl">
+                  <h2 class="editorial-text-h1 lowercase text-4xl lg:text-5xl">
                     reviewing the <span class="italic text-theme-accent">resonance</span>
                   </h2>
-                  <p class="text-sm font-light leading-relaxed text-theme-secondary">
+                  <p class="text-base font-light leading-relaxed text-theme-secondary">
                     Unfolding the musical residue of your archive for 
                     <span class="text-theme-accent font-normal">
                     {#if wrappedPeriod === 'year'}
@@ -206,12 +206,12 @@
                 </div>
 
                 <!-- Right side: The Resonance Log Grid -->
-                <div class="md:col-span-3 border-t md:border-t-0 md:border-l border-theme-border-soft pt-6 md:pt-0 md:pl-8">
+                <div class="xl:col-span-3 border-t xl:border-t-0 xl:border-l border-theme-border-soft pt-6 xl:pt-0 xl:pl-12">
                   <div class="grid grid-cols-2 gap-6">
                     <!-- Col 1: Total Plays -->
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Total Plays</span>
-                      <div class="text-xl font-light font-sans tracking-tight text-theme-text">
+                      <div class="text-2xl font-light font-sans tracking-tight text-theme-text">
                         <AnimatedCounter value={currentWrappedData.total_plays} />
                       </div>
                     </div>
@@ -219,7 +219,7 @@
                     <!-- Col 2: Minutes Listened -->
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Minutes Listened</span>
-                      <div class="text-xl font-light font-sans tracking-tight text-theme-text">
+                      <div class="text-2xl font-light font-sans tracking-tight text-theme-text">
                         <AnimatedCounter value={currentWrappedData.minutes_listened} />
                       </div>
                     </div>
@@ -228,14 +228,14 @@
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Top Creator</span>
                       {#if currentWrappedData.top_artist}
-                        <div class="text-base font-light truncate text-theme-text">
+                        <div class="text-lg font-light truncate text-theme-text">
                           {currentWrappedData.top_artist.name}
                         </div>
-                        <div class="text-xs font-mono text-zinc-400">
+                        <div class="text-sm font-mono text-theme-accent mt-0.5">
                           {currentWrappedData.top_artist.plays.toLocaleString()} plays
                         </div>
                       {:else}
-                        <div class="text-xs opacity-40">No records</div>
+                        <div class="text-sm opacity-40">No records</div>
                       {/if}
                     </div>
 
@@ -243,14 +243,14 @@
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Top Track</span>
                       {#if currentWrappedData.top_track}
-                        <div class="text-base font-light truncate text-theme-text">
+                        <div class="text-lg font-light truncate text-theme-text">
                           {currentWrappedData.top_track.title}
                         </div>
-                        <div class="text-xs font-light opacity-60 truncate text-theme-secondary">
+                        <div class="text-sm font-light opacity-80 truncate text-theme-secondary">
                           by {currentWrappedData.top_track.artist}
                         </div>
                       {:else}
-                        <div class="text-xs opacity-40">No records</div>
+                        <div class="text-sm opacity-40">No records</div>
                       {/if}
                     </div>
 
@@ -282,37 +282,37 @@
                   </div>
                   <div class="text-caps text-xs text-theme-muted">Total Plays Logged</div>
                 </div>
-                <div class="pt-4 text-sm font-light max-w-sm mx-auto leading-relaxed text-theme-secondary">
-                  This volume amounts to approximately <span class="font-normal font-mono text-sm text-theme-accent">{currentWrappedData.minutes_listened.toLocaleString()}</span> minutes of active listening, a steady acoustic flow in your memory space.
+                 <div class="pt-4 text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary">
+                  This volume amounts to approximately <span class="font-normal font-mono text-base text-theme-accent">{currentWrappedData.minutes_listened.toLocaleString()}</span> minutes of active listening, a steady acoustic flow in your memory space.
                 </div>
               </div>
 
             {:else if currentStep === 2}
               <!-- Slide 2: Companions (Top Artist / Track) -->
-              <div class="space-y-6 py-2">
+              <div class="space-y-8 py-2">
                 <div class="text-center">
                   <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">03 / Key Companions</span>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                  <div class="p-6 rounded-2xl border text-center space-y-2 border-theme-border-soft bg-theme-neutral-soft">
+                  <div class="p-8 rounded-2xl border text-center space-y-3 border-theme-border-soft bg-theme-neutral-soft">
                     <div class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Top Creator</div>
                     {#if currentWrappedData.top_artist}
-                      <div class="text-lg font-light truncate text-theme-text">{currentWrappedData.top_artist.name}</div>
-                      <div class="text-xs font-mono text-zinc-400 mt-1">{currentWrappedData.top_artist.plays.toLocaleString()} plays</div>
+                      <div class="text-xl md:text-2xl font-light truncate text-theme-text">{currentWrappedData.top_artist.name}</div>
+                      <div class="text-sm font-mono text-theme-accent mt-1">{currentWrappedData.top_artist.plays.toLocaleString()} plays</div>
                     {:else}
-                      <div class="text-sm opacity-40">No records</div>
+                      <div class="text-base opacity-40">No records</div>
                     {/if}
                   </div>
 
-                  <div class="p-6 rounded-2xl border text-center space-y-2 border-theme-border-soft bg-theme-neutral-soft">
+                  <div class="p-8 rounded-2xl border text-center space-y-3 border-theme-border-soft bg-theme-neutral-soft">
                     <div class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Top Track</div>
                     {#if currentWrappedData.top_track}
-                      <div class="text-lg font-light truncate text-theme-text">{currentWrappedData.top_track.title}</div>
-                      <div class="text-xs font-light opacity-60 truncate text-theme-secondary">{currentWrappedData.top_track.artist}</div>
-                      <div class="text-xs font-mono text-zinc-400 mt-0.5">{currentWrappedData.top_track.plays.toLocaleString()} plays</div>
+                      <div class="text-xl md:text-2xl font-light truncate text-theme-text">{currentWrappedData.top_track.title}</div>
+                      <div class="text-sm font-light opacity-80 truncate text-theme-secondary">{currentWrappedData.top_track.artist}</div>
+                      <div class="text-sm font-mono text-theme-accent mt-1">{currentWrappedData.top_track.plays.toLocaleString()} plays</div>
                     {:else}
-                      <div class="text-sm opacity-40">No records</div>
+                      <div class="text-base opacity-40">No records</div>
                     {/if}
                   </div>
                 </div>
@@ -326,14 +326,14 @@
                 {#if currentWrappedData.peak_day}
                   <div class="space-y-2">
                     <div class="text-xs font-mono uppercase tracking-widest text-zinc-500">Peak listening day</div>
-                    <h3 class="text-3xl font-serif italic text-theme-text">
+                    <h3 class="text-4xl lg:text-5xl font-serif italic text-theme-text">
                       {new Date(currentWrappedData.peak_day.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                     </h3>
                   </div>
-                  <div class="text-xl font-light text-theme-accent">
-                    {currentWrappedData.peak_day.plays} plays <span class="text-xs font-mono text-zinc-400">in 24 hours</span>
+                  <div class="text-2xl font-light text-theme-accent">
+                    {currentWrappedData.peak_day.plays} plays <span class="text-sm font-mono text-zinc-400">in 24 hours</span>
                   </div>
-                  <p class="text-sm font-light max-w-sm mx-auto leading-relaxed text-theme-secondary">
+                  <p class="text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary">
                     A day of intense musical immersion, leaving a distinct marker in your temporal archive.
                   </p>
                 {:else}

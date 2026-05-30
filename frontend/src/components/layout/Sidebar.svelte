@@ -134,27 +134,27 @@
           {/if}
         </div>
         {#if appCache.isSyncing}
-          <div class="space-y-0.5">
-            <div class="text-xs font-light leading-relaxed text-theme-accent animate-pulse">
+          <div class="space-y-1.5">
+            <div class="text-sm font-light leading-relaxed text-theme-accent animate-pulse">
               Syncing latest plays...
             </div>
             {#if appCache.stats}
-              <div class="text-[10px] font-mono text-theme-muted">
+              <div class="text-xs font-mono text-theme-muted">
                 Current count: {appCache.stats.total_listens.toLocaleString()}
               </div>
             {/if}
           </div>
         {:else if appCache.stats}
-          <div class="space-y-0.5">
-            <div class="text-xs font-light leading-relaxed text-theme-secondary">
-              Archived <span class="font-mono">{appCache.stats.total_listens.toLocaleString()}</span> plays
+          <div class="space-y-1.5">
+            <div class="text-sm md:text-base font-light leading-relaxed text-theme-secondary">
+              Archived <span class="font-mono font-medium text-theme-accent">{appCache.stats.total_listens.toLocaleString()}</span> plays
             </div>
-            <div class="text-xs font-mono text-theme-muted">
-              Active habit: {appCache.stats.avg_per_day}/day
+            <div class="text-xs font-mono text-theme-muted tracking-wide">
+              Active habit: <span class="text-theme-text font-normal">{appCache.stats.avg_per_day}</span> / day
             </div>
           </div>
         {:else}
-          <div class="text-xs font-mono text-theme-muted">
+          <div class="text-sm font-mono text-theme-muted">
             Connecting to archive...
           </div>
         {/if}

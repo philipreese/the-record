@@ -69,9 +69,11 @@
  
   let currentStats = $derived(appCache.stats || { total_listens: 0, unique_artists: 0, unique_tracks: 0, days_active: 0, avg_per_day: 0, top_source: 'None' });
   let currentStreak = $derived(appCache.streak || { current_streak: 0, longest_streak: 0 });
+  let firstListenYear = $derived(appCache.stats?.first_year || new Date().getFullYear());
+  let currentYear = $derived(new Date().getFullYear());
 </script>
  
-<div class="flex flex-col gap-12 text-base-content">
+<div class="flex flex-col gap-20 lg:gap-24 text-base-content">
   
   <!-- Header / Hero Section -->
   <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 pb-8 border-b border-theme-border-soft">
@@ -107,7 +109,7 @@
   {/if}
 
   <!-- Layer 2: Behavioral Patterns -->
-  <div class="space-y-12">
+  <div class="space-y-20 lg:space-y-24">
     
     <!-- 01 / Heatmap Section -->
     <div 
@@ -122,11 +124,21 @@
         <h2 class="editorial-text-h2">01 / Temporal Archive</h2>
         
         <div class="join border border-theme-border-heavy">
-          <button class="join-item btn btn-xs btn-ghost hover:bg-transparent" aria-label="Previous Year" onclick={() => heatmapYear--}>
+          <button 
+            class="join-item btn btn-xs btn-ghost hover:bg-transparent disabled:opacity-20" 
+            aria-label="Previous Year" 
+            disabled={heatmapYear <= firstListenYear}
+            onclick={() => heatmapYear--}
+          >
             &larr;
           </button>
           <span class="join-item text-xs font-mono font-bold px-4 flex items-center">{heatmapYear}</span>
-          <button class="join-item btn btn-xs btn-ghost hover:bg-transparent" aria-label="Next Year" onclick={() => heatmapYear++}>
+          <button 
+            class="join-item btn btn-xs btn-ghost hover:bg-transparent disabled:opacity-20" 
+            aria-label="Next Year" 
+            disabled={heatmapYear >= currentYear}
+            onclick={() => heatmapYear++}
+          >
             &rarr;
           </button>
         </div>
@@ -137,7 +149,7 @@
     </div>
 
     <!-- 02 / Clock & Streaks Sub Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
       
       <!-- Hourly clock -->
       <div 

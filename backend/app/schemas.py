@@ -9,6 +9,7 @@ class StatsSummaryResponse(BaseModel):
     avg_per_day: float
     top_source: str
     db_type: Optional[str] = None
+    first_year: Optional[int] = None
 
 class ArtistInfo(BaseModel):
     artist: str

@@ -6,7 +6,7 @@
   let { stats }: { stats: StatsInfo } = $props();
 </script>
 
-<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 px-2">
+<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-x-8 gap-y-10 px-2">
   <div class="space-y-1.5">
     <div class="text-caps text-theme-muted">Total Scrobbles</div>
     <div class="text-display-medium text-theme-text">
