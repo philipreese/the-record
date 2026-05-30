@@ -47,6 +47,11 @@ def get_engine():
         connect_args = {}
         if expected_url.startswith("sqlite"):
             connect_args = {"check_same_thread": False}
+        else:
+            # For PostgreSQL, set the session timezone to match TZ env var if present
+            tz = os.environ.get("TZ")
+            if tz:
+                connect_args["options"] = f"-c timezone={tz}"
         _engine = create_engine(expected_url, connect_args=connect_args)
     return _engine
 
