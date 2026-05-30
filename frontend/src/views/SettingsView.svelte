@@ -158,43 +158,65 @@
       <div class="space-y-6">
         <div>
           <h3 class="editorial-text-h2 pb-2 border-b">Archive Synchronization</h3>
-          <p class="text-sm font-light text-theme-muted mt-2">
-            Synchronize your local playback records with your ListenBrainz account history.
+          <p class="text-sm font-light text-theme-muted mt-2 leading-relaxed">
+            Synchronize your local playback records with your ListenBrainz account history. Note: The local database acts as a permanent, cumulative archive—deleting items on ListenBrainz will not delete them here.
           </p>
         </div>
 
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-wrap items-center gap-4">
-            <!-- Normal Sync Button -->
-            <button 
-              class="btn btn-primary btn-md shadow-lg flex items-center gap-2 cursor-pointer focus:outline-none"
-              disabled={appCache.isSyncing}
-              onclick={() => handleSync(false)}
-            >
-              {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode !== 'full'}
-                <span class="loading loading-spinner loading-xs"></span>
-                Syncing...
-              {:else}
-                <Icon name="sync" size="w-5 h-5" />
-                Sync Now
-              {/if}
-            </button>
-
-            <!-- Force Full Sync Button -->
-            <button 
-              class="btn btn-outline btn-md flex items-center gap-2 cursor-pointer focus:outline-none"
-              disabled={appCache.isSyncing}
-              onclick={() => handleSync(true)}
-            >
-              {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode === 'full'}
-                <span class="loading loading-spinner loading-xs"></span>
-                Running Full Sync...
-              {:else}
-                <Icon name="download" size="w-5 h-5" />
-                Force Full Sync
-              {/if}
-            </button>
+        <div class="flex flex-col gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Incremental Sync Card -->
+          <div class="p-5 rounded-xl border border-theme-border-soft flex flex-col justify-between gap-4 bg-transparent">
+            <div class="space-y-2">
+              <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Incremental Sync</span>
+              <h4 class="text-sm font-light text-theme-text">Pull New Scrobbles</h4>
+              <p class="text-xs font-light text-theme-muted leading-relaxed">
+                Scan for recent tracks since your last sync. Safe and fast. Recommended for daily updates.
+              </p>
+            </div>
+            <div>
+              <button 
+                class="btn btn-primary btn-sm flex items-center gap-2 cursor-pointer focus:outline-none"
+                disabled={appCache.isSyncing}
+                onclick={() => handleSync(false)}
+              >
+                {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode !== 'full'}
+                  <span class="loading loading-spinner loading-xs"></span>
+                  Syncing New...
+                {:else}
+                  <Icon name="sync" size="w-4 h-4" />
+                  Sync New Plays
+                {/if}
+              </button>
+            </div>
           </div>
+
+          <!-- Full Reconstruction Sync Card -->
+          <div class="p-5 rounded-xl border border-theme-border-soft flex flex-col justify-between gap-4 bg-transparent">
+            <div class="space-y-2">
+              <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Deep Sync</span>
+              <h4 class="text-sm font-light text-theme-text">Reconstruct Archive</h4>
+              <p class="text-xs font-light text-theme-muted leading-relaxed">
+                Re-scan your entire ListenBrainz history from the beginning. Rebuilds database records and backfills any gaps.
+              </p>
+            </div>
+            <div>
+              <button 
+                class="btn btn-outline btn-sm flex items-center gap-2 cursor-pointer focus:outline-none"
+                disabled={appCache.isSyncing}
+                onclick={() => handleSync(true)}
+              >
+                {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode === 'full'}
+                  <span class="loading loading-spinner loading-xs"></span>
+                  Syncing Entire Archive...
+                {:else}
+                  <Icon name="download" size="w-4 h-4" />
+                  Full Reconstruction
+                {/if}
+              </button>
+            </div>
+          </div>
+        </div>
 
           <!-- Sync Progress and Details -->
           {#if appCache.isSyncing && appCache.syncStatus}

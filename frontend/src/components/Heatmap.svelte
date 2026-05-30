@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { inView } from '../utils/inView';
+
   interface DayInfo {
     date: Date;
     dateStr: string;
@@ -126,7 +128,12 @@
   }
 </script>
 
-<div bind:this={containerElement} class="w-full memory-surface !p-6 relative overflow-visible" style="min-width: 320px; max-width: 1050px;">
+<div 
+  bind:this={containerElement} 
+  use:inView={{ once: true }} 
+  class="w-full memory-surface heatmap-container !p-6 relative overflow-visible" 
+  style="min-width: 320px; max-width: 1050px;"
+>
     <svg viewBox="0 0 835 150" width="100%" preserveAspectRatio="xMidYMid meet" style="color: var(--text-primary);">
       <!-- Month Labels -->
       {#each monthHeaders as header}
@@ -155,7 +162,13 @@
                       height="12"
                       rx="2.5"
                       fill="none"
-                      style="stroke: var(--text-primary); stroke-opacity: 0.15; stroke-width: 1px;"
+                      class="heatmap-cell"
+                      style="
+                        stroke: var(--text-primary); 
+                        stroke-opacity: 0.15; 
+                        stroke-width: 1px;
+                        animation-delay: {wIndex * 12}ms;
+                      "
                       stroke-dasharray="1.5 1.5"
                       onmouseenter={(e) => showPopover(day, e)}
                       onmousemove={movePopover}
@@ -169,12 +182,12 @@
                      width="12"
                      height="12"
                      rx="2.5"
-                     class="transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 cursor-pointer"
+                     class="heatmap-cell transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 cursor-pointer"
                      class:fill-base-300={day.weight === 0}
-                     class:opacity-10={day.weight === 0}
                      style="
                        fill: {day.weight > 0 ? 'var(--accent)' : ''};
-                       opacity: {day.weight === 0 ? '' : day.weight === 1 ? '0.22' : day.weight === 2 ? '0.5' : day.weight === 3 ? '0.75' : '1.0'};
+                       --target-opacity: {day.weight === 0 ? '0.1' : day.weight === 1 ? '0.22' : day.weight === 2 ? '0.5' : day.weight === 3 ? '0.75' : '1.0'};
+                       animation-delay: {wIndex * 12}ms;
                      "
                      onmouseenter={(e) => showPopover(day, e)}
                      onmousemove={movePopover}

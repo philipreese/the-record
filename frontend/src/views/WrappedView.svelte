@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
   import { generateWrapped, type WrappedDataInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
+  import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
 
   let wrappedPeriod = $state<'year' | 'quarter' | 'month'>('year');
   let wrappedYear = $state(2026);
@@ -211,7 +212,7 @@
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Total Plays</span>
                       <div class="text-xl font-light font-sans tracking-tight text-theme-text">
-                        {currentWrappedData.total_plays.toLocaleString()}
+                        <AnimatedCounter value={currentWrappedData.total_plays} />
                       </div>
                     </div>
 
@@ -219,7 +220,7 @@
                     <div class="space-y-1">
                       <span class="text-caps text-xs text-theme-muted">Minutes Listened</span>
                       <div class="text-xl font-light font-sans tracking-tight text-theme-text">
-                        {currentWrappedData.minutes_listened.toLocaleString()}
+                        <AnimatedCounter value={currentWrappedData.minutes_listened} />
                       </div>
                     </div>
 
@@ -276,7 +277,9 @@
               <div class="text-center space-y-4 py-4">
                 <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">02 / Duration & Echo</span>
                 <div class="space-y-1">
-                  <div class="text-display-large text-theme-accent">{currentWrappedData.total_plays.toLocaleString()}</div>
+                  <div class="text-display-large text-theme-accent">
+                    <AnimatedCounter value={currentWrappedData.total_plays} />
+                  </div>
                   <div class="text-caps text-xs text-theme-muted">Total Plays Logged</div>
                 </div>
                 <div class="pt-4 text-sm font-light max-w-sm mx-auto leading-relaxed text-theme-secondary">

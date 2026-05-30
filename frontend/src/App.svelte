@@ -17,7 +17,6 @@
 
   onMount(() => {
     themeManager.init();
-    appCache.runSync(false); // background normal sync on page load
   });
 </script>
 

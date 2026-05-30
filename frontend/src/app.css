@@ -415,3 +415,98 @@ body {
   background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
   border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
 }
+
+/* --- Premium Scroll-Driven Reveals & Staggers --- */
+
+/* Basic reveal container */
+.reveal-container {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s var(--ease-fluid), transform 0.8s var(--ease-fluid);
+}
+.reveal-container.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered section header slide-in */
+.reveal-container .reveal-label {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: opacity 0.6s var(--ease-fluid), transform 0.6s var(--ease-fluid);
+}
+.reveal-container.in-view .reveal-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Main content reveal delay relative to the header label */
+.reveal-container .reveal-content {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.8s var(--ease-fluid) 0.1s, transform 0.8s var(--ease-fluid) 0.1s;
+}
+.reveal-container.in-view .reveal-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Heatmap Staggered Cells Animation */
+@keyframes cell-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: var(--target-opacity);
+    transform: scale(1);
+  }
+}
+.heatmap-container .heatmap-cell {
+  transform-origin: center;
+  transform-box: fill-box;
+  opacity: 0;
+  transform: scale(0.3);
+}
+.heatmap-container.in-view .heatmap-cell {
+  animation: cell-reveal 0.5s var(--ease-fluid) forwards;
+}
+
+/* Hourly Heat Clock Drawing Animation */
+@keyframes clock-segment-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: var(--target-opacity);
+    transform: scale(1);
+  }
+}
+.heatclock-container .clock-segment {
+  opacity: 0;
+  transform-origin: 120px 120px;
+  transform: scale(0.85);
+  transition: stroke var(--t-immediate) var(--ease-fluid), stroke-width var(--t-immediate);
+}
+.heatclock-container.in-view .clock-segment {
+  animation: clock-segment-reveal 0.6s var(--ease-fluid) forwards;
+}
+
+/* General Staggered List Reveal */
+@keyframes list-item-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.reveal-list-container .list-row-interactive {
+  opacity: 0;
+}
+.reveal-list-container.in-view .list-row-interactive {
+  animation: list-item-reveal 0.5s var(--ease-fluid) forwards;
+}

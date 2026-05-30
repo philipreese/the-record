@@ -1,6 +1,7 @@
 <script lang="ts">
   // Layout refresh trigger
   import { onMount, untrack } from 'svelte';
+  import { inView } from '../utils/inView';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
@@ -112,13 +113,17 @@
           Top Creators
         </h2>
         
-        <div class="flex flex-col gap-3">
+        <div 
+          use:inView={{ once: true }}
+          class="flex flex-col gap-3 reveal-list-container"
+        >
           {#each currentArtists as artist, idx}
             <!-- svelte-ignore a11y_mouse_events_have_key_events -->
             <div 
               role="button"
               tabindex="0"
               class="list-row-interactive"
+              style="animation-delay: {idx * 40}ms;"
               class:opacity-35={(hoveredArtist || focusedArtist) && hoveredArtist !== artist.artist && focusedArtist !== artist.artist}
               class:border-theme-accent={focusedArtist === artist.artist}
               class:bg-theme-accent-soft={focusedArtist === artist.artist}
@@ -150,13 +155,17 @@
           Top Tracks
         </h2>
         
-        <div class="flex flex-col gap-3">
+        <div 
+          use:inView={{ once: true }}
+          class="flex flex-col gap-3 reveal-list-container"
+        >
           {#each currentTracks as track, idx}
             <!-- svelte-ignore a11y_mouse_events_have_key_events -->
             <div 
               role="button"
               tabindex="0"
               class="list-row-interactive"
+              style="animation-delay: {idx * 40}ms;"
               class:opacity-35={(hoveredTrack || focusedTrack) && hoveredTrack !== `${track.artist} - ${track.title}` && focusedTrack !== `${track.artist} - ${track.title}`}
               class:border-theme-accent={focusedTrack === `${track.artist} - ${track.title}`}
               class:bg-theme-accent-soft={focusedTrack === `${track.artist} - ${track.title}`}
