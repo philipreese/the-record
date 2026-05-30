@@ -4,7 +4,7 @@ import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text
 from app.db import get_engine, Listen
-from app.db_helpers import get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
+from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
 
 def get_current_local_date() -> date:
     """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
@@ -22,10 +22,13 @@ def get_stats_summary() -> dict[str, Any]:
         # Total count
         total_listens = conn.execute(select(func.count(Listen.id))).scalar() or 0
         
+        db_type = "PostgreSQL (Neon)" if IS_POSTGRES else "SQLite (Local)"
+        
         if total_listens == 0:
             return {
                 "total_listens": 0, "unique_artists": 0, "unique_tracks": 0,
-                "days_active": 0, "avg_per_day": 0.0, "top_source": "None"
+                "days_active": 0, "avg_per_day": 0.0, "top_source": "None",
+                "db_type": db_type
             }
             
         # Unique artists
@@ -55,7 +58,8 @@ def get_stats_summary() -> dict[str, Any]:
             "unique_tracks": unique_tracks,
             "days_active": days_active,
             "avg_per_day": avg_per_day,
-            "top_source": top_source
+            "top_source": top_source,
+            "db_type": db_type
         }
 
 def get_time_range_filter(time_range_days: str):

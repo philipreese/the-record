@@ -5,6 +5,7 @@ export interface StatsInfo {
   days_active: number;
   avg_per_day: number;
   top_source: string;
+  db_type?: string;
 }
 
 export interface StreakInfo {

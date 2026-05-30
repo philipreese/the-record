@@ -5,7 +5,6 @@
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import StreakTracker from '../components/StreakTracker.svelte';
   import StatsGrid from '../components/dashboard/StatsGrid.svelte';
-  import SyncControl from '../components/sync/SyncControl.svelte';
   
   import {
     fetchStats,
@@ -51,6 +50,13 @@
     }
   }
  
+  // Automatically refresh stats when background sync finishes and invalidates the cache
+  $effect(() => {
+    if (!appCache.isSyncing && !appCache.statsLoaded) {
+      fetchDashboardData();
+    }
+  });
+
   // Handle heatmap refresh automatically when selected year changes (including mount)
   $effect(() => {
     const year = heatmapYear;
@@ -65,15 +71,12 @@
  
 <div class="flex flex-col gap-12 text-base-content">
   
-  <!-- Header and Sync -->
+  <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">music journal</h1>
       <p class="text-caps mt-2">Self-hosted scrobble archives and listening insights.</p>
     </div>
-    
-    <!-- Sync Action -->
-    <SyncControl onSyncComplete={() => { appCache.invalidate(); fetchDashboardData(); }} />
   </div>
 
   <!-- Layer 1: High-Signal Emotional/Reflective Narrative Summary -->

@@ -119,13 +119,32 @@
     <!-- Bottom Stable Memory Anchor -->
     <div class="border-t border-theme-border-soft pt-6">
       <div class="space-y-2">
-        <div class="flex items-center gap-2">
-          <div class="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse"></div>
-          <span class="text-xs font-mono tracking-widest uppercase text-theme-muted">
-            Memory Surface
-          </span>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse"></div>
+            <span class="text-xs font-mono tracking-widest uppercase text-theme-muted">
+              Memory Surface
+            </span>
+          </div>
+          {#if appCache.isSyncing}
+            <span class="flex h-2 w-2 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-theme-accent opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-theme-accent"></span>
+            </span>
+          {/if}
         </div>
-        {#if appCache.stats}
+        {#if appCache.isSyncing}
+          <div class="space-y-0.5">
+            <div class="text-xs font-light leading-relaxed text-theme-accent animate-pulse">
+              Syncing latest plays...
+            </div>
+            {#if appCache.stats}
+              <div class="text-[10px] font-mono text-theme-muted">
+                Current count: {appCache.stats.total_listens.toLocaleString()}
+              </div>
+            {/if}
+          </div>
+        {:else if appCache.stats}
           <div class="space-y-0.5">
             <div class="text-xs font-light leading-relaxed text-theme-secondary">
               Archived <span class="font-mono">{appCache.stats.total_listens.toLocaleString()}</span> plays

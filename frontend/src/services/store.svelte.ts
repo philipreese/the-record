@@ -1,4 +1,14 @@
-import type { StatsInfo, StreakInfo, ArtistInfo, TrackInfo, WrappedDataInfo, MonthlyTrendInfo } from './api';
+import { 
+  triggerSync, 
+  getSyncStatus, 
+  type StatsInfo, 
+  type StreakInfo, 
+  type ArtistInfo, 
+  type TrackInfo, 
+  type WrappedDataInfo, 
+  type MonthlyTrendInfo,
+  type SyncStatusInfo 
+} from './api';
 
 class AppCache {
   // Dashboard / Stats Cache
@@ -15,6 +25,12 @@ class AppCache {
   // Wrapped/Reviews Cache (keyed by period + parameters)
   wrapped = $state<Record<string, WrappedDataInfo>>({});
 
+  // Centralized Sync State
+  isSyncing = $state(false);
+  syncStatus = $state<SyncStatusInfo | null>(null);
+  syncError = $state<string | null>(null);
+  private pollInterval: any = null;
+
   // Clear cache on sync completion
   invalidate() {
     this.stats = null;
@@ -26,6 +42,54 @@ class AppCache {
     this.charts = {};
     this.wrapped = {};
     console.log("[cache] Store cache cleared.");
+  }
+
+  // Centralized sync task runner
+  async runSync(forceFull = false) {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    this.syncError = null;
+    this.syncStatus = null;
+
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+
+    try {
+      await triggerSync(forceFull);
+      
+      // Poll every 2 seconds
+      this.pollInterval = setInterval(async () => {
+        try {
+          const status = await getSyncStatus();
+          this.syncStatus = status;
+
+          if (status.finished) {
+            if (this.pollInterval) {
+              clearInterval(this.pollInterval);
+              this.pollInterval = null;
+            }
+            this.isSyncing = false;
+            if (status.error) {
+              this.syncError = status.error;
+            } else {
+              this.invalidate(); // Clear cache so views will refetch fresh data
+            }
+          }
+        } catch (err) {
+          if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
+          }
+          this.isSyncing = false;
+          this.syncError = err instanceof Error ? err.message : String(err);
+        }
+      }, 2000);
+    } catch (err) {
+      this.isSyncing = false;
+      this.syncError = err instanceof Error ? err.message : String(err);
+    }
   }
 }
 
