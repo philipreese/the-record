@@ -4,6 +4,7 @@
   import { inView } from '../utils/inView';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
   import Heatmap from '../components/Heatmap.svelte';
+  import MonthlyBarChart from '../components/MonthlyBarChart.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import StreakTracker from '../components/StreakTracker.svelte';
   import StatsGrid from '../components/dashboard/StatsGrid.svelte';
@@ -79,7 +80,7 @@
   <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 pb-8 border-b border-theme-border-soft">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">music journal</h1>
-      <p class="text-caps mt-2">Self-hosted scrobble archives and listening insights.</p>
+      <p class="editorial-subtitle">Self-hosted scrobble archives and listening insights.</p>
     </div>
     
     <!-- Hero Total Counter (Highly Prominent) -->
@@ -100,7 +101,7 @@
   {#if !loadingStats && appCache.statsLoaded}
     <div 
       use:inView={{ once: true }} 
-      class="max-w-4xl px-2 reveal-container"
+      class="max-w-4xl px-2 reveal-container my-30"
     >
       <p class="text-3xl md:text-4xl font-serif font-light leading-relaxed italic text-theme-secondary">
         A period of active musical recollection. You have integrated music into &nbsp;<span class="font-sans font-normal text-theme-accent">{currentStats.days_active} days</span>&nbsp; of your journey, averaging &nbsp;<span class="font-sans font-normal text-theme-accent">{currentStats.avg_per_day} tracks</span>&nbsp; daily. Your primary sonic gateway is &nbsp;<span class="font-sans font-normal capitalize text-theme-accent">{currentStats.top_source.replace('_', ' ')}</span>,&nbsp; sustaining a continuous streak of &nbsp;<span class="font-sans font-normal text-theme-accent">{currentStreak.current_streak} days</span>&nbsp; of conscious listening.
@@ -109,7 +110,7 @@
   {/if}
 
   <!-- Layer 2: Behavioral Patterns -->
-  <div class="space-y-20 lg:space-y-24">
+  <div class="space-y-60 lg:space-y-60">
     
     <!-- 01 / Heatmap Section -->
     <div 
@@ -123,18 +124,18 @@
       <div class="flex justify-between items-center px-2 reveal-label">
         <h2 class="editorial-text-h2">01 / Temporal Archive</h2>
         
-        <div class="join border border-theme-border-heavy">
+        <div class="flex items-center gap-6">
           <button 
-            class="join-item btn btn-xs btn-ghost hover:bg-transparent disabled:opacity-20" 
+            class="btn-nav-text text-xl!" 
             aria-label="Previous Year" 
             disabled={heatmapYear <= firstListenYear}
             onclick={() => heatmapYear--}
           >
             &larr;
           </button>
-          <span class="join-item text-xs font-mono font-bold px-4 flex items-center">{heatmapYear}</span>
+          <span class="text-2xl font-mono tracking-wider font-light text-theme-text">{heatmapYear}</span>
           <button 
-            class="join-item btn btn-xs btn-ghost hover:bg-transparent disabled:opacity-20" 
+            class="btn-nav-text text-xl!" 
             aria-label="Next Year" 
             disabled={heatmapYear >= currentYear}
             onclick={() => heatmapYear++}
@@ -144,7 +145,14 @@
         </div>
       </div>
       <div class="reveal-content">
-        <Heatmap data={appCache.heatmap[heatmapYear] || {}} year={heatmapYear} />
+        <div class="flex flex-col xl:flex-row gap-8 items-stretch">
+          <div class="flex-grow min-w-0">
+            <Heatmap data={appCache.heatmap[heatmapYear] || {}} year={heatmapYear} />
+          </div>
+          <div class="w-full xl:w-80 xl:shrink-0">
+            <MonthlyBarChart monthlyTrends={appCache.monthlyTrends} year={heatmapYear} />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -192,13 +200,13 @@
   <!-- Layer 3: Telemetry & Raw Counts -->
   <div 
     use:inView={{ once: true }}
-    class="pt-12 border-t border-theme-border-soft transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container" 
+    class="mt-30 mb-60 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container" 
     class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
     role="region"
     onmouseenter={() => currentFocusZone = 'telemetry'}
     onmouseleave={() => currentFocusZone = null}
   >
-    <div class="mb-6 reveal-label">
+    <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h2 class="editorial-text-h2">03 / Telemetry & Volumes</h2>
     </div>
     <div class="reveal-content">

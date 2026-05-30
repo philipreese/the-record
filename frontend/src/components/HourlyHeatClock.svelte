@@ -132,16 +132,16 @@
       "
     >
       {#if hoveredSegment}
-        <div class="text-xs font-mono uppercase text-zinc-500 leading-none">{hoveredSegment.label}</div>
+        <div class="text-xs font-mono uppercase text-theme-muted leading-none">{hoveredSegment.label}</div>
         <div class="text-[16px] font-light tracking-tight mt-1.5 text-theme-text leading-none">
-          {hoveredSegment.count} <span class="text-[10px] font-mono uppercase tracking-normal text-zinc-400 opacity-70">plays</span>
+          {hoveredSegment.count} <span class="text-[10px] font-mono uppercase tracking-normal text-theme-faint">plays</span>
         </div>
-        <div class="text-[11px] font-mono text-zinc-400 opacity-80 mt-1.5 leading-none">
+        <div class="text-[11px] font-mono text-theme-muted mt-1.5 leading-none">
           {formattedAverage} <span class="opacity-60">/ day</span>
         </div>
       {:else}
-        <div class="text-xs font-mono uppercase tracking-wider text-zinc-500 leading-none">Diurnal</div>
-        <div class="text-[11px] font-light leading-normal text-zinc-400 mt-1.5">
+        <div class="text-xs font-mono uppercase tracking-wider text-theme-muted leading-none">Diurnal</div>
+        <div class="text-[11px] font-light leading-normal text-theme-secondary mt-1.5">
           inner &bull; am<br/>outer &bull; pm
         </div>
       {/if}

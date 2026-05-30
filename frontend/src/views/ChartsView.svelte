@@ -5,6 +5,7 @@
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
+  import { tooltip } from '../utils/tooltip';
 
   let topRange = $state('all'); // 30, 90, 365, all
   let loadingCharts = $state(false);
@@ -82,16 +83,15 @@
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">top charts</h1>
-      <p class="text-caps mt-2">Your most played creators and tracks over time.</p>
+      <p class="editorial-subtitle">Your most played creators and tracks over time.</p>
     </div>
     
     <!-- Range Selector Options -->
-    <div class="flex items-center gap-6 font-mono text-xs tracking-widest uppercase py-1">
+    <div class="nav-selector">
       {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
         <button 
-          class="hover:text-theme-accent cursor-pointer transition-colors duration-200 focus:outline-none" 
-          class:text-theme-accent={topRange === val}
-          class:text-theme-muted={topRange !== val}
+          class="nav-selector-item" 
+          class:active={topRange === val}
           onclick={() => topRange = val}
         >
           {label}
@@ -178,8 +178,8 @@
                 {String(idx + 1).padStart(2, '0')}
               </div>
               <div class="flex-grow min-w-0">
-                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">{track.title}</div>
-                <div class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80">{track.artist}</div>
+                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text" use:tooltip>{track.title}</div>
+                <div class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80" use:tooltip>{track.artist}</div>
               </div>
               <div class="text-right flex-shrink-0">
                 <div class="text-lg font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>

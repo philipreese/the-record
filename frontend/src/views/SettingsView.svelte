@@ -32,7 +32,7 @@
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">settings</h1>
-      <p class="text-caps mt-2">Configure system settings and personalize your interface.</p>
+      <p class="editorial-subtitle">Configure system settings and personalize your interface.</p>
     </div>
   </div>
 
@@ -137,17 +137,17 @@
       
       <!-- Database Info Card -->
       <div class="memory-surface-nested">
-        <h3 class="text-xs md:text-sm font-mono tracking-widest uppercase text-theme-muted mb-6">Database Connection</h3>
+        <h3 class="text-sm md:text-base font-mono tracking-widest uppercase text-theme-muted mb-6">Database Connection</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div class="flex flex-col gap-1.5">
-            <span class="text-xs font-mono text-theme-muted uppercase tracking-wider">Engine Type</span>
-            <span class="text-lg font-light text-theme-text">
+            <span class="text-sm font-mono text-theme-muted uppercase tracking-wider">Engine Type</span>
+            <span class="text-xl font-light text-theme-text">
               {appCache.stats?.db_type || 'Resolving engine...'}
             </span>
           </div>
           <div class="flex flex-col gap-1.5">
-            <span class="text-xs font-mono text-theme-muted uppercase tracking-wider">Archived Plays</span>
-            <span class="text-2xl font-mono font-normal text-theme-accent">
+            <span class="text-sm font-mono text-theme-muted uppercase tracking-wider">Archived Plays</span>
+            <span class="text-3xl font-mono font-normal text-theme-accent">
               {appCache.stats?.total_listens.toLocaleString() || 'Connecting...'}
             </span>
           </div>
@@ -158,7 +158,7 @@
       <div class="space-y-6">
         <div>
           <h3 class="editorial-text-h2 pb-2 border-b">Archive Synchronization</h3>
-          <p class="text-sm font-light text-theme-muted mt-2 leading-relaxed">
+          <p class="text-base font-light text-theme-muted mt-2 leading-relaxed">
             Synchronize your local playback records with your ListenBrainz account history. Note: The local database acts as a permanent, cumulative archive—deleting items on ListenBrainz will not delete them here.
           </p>
         </div>
@@ -168,9 +168,9 @@
           <!-- Incremental Sync Card -->
           <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
             <div class="space-y-3">
-              <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Incremental Sync</span>
-              <h4 class="text-base lg:text-lg font-light text-theme-text">Pull New Scrobbles</h4>
-              <p class="text-sm font-light text-theme-secondary leading-relaxed">
+              <span class="text-sm font-mono tracking-widest text-theme-muted uppercase">Incremental Sync</span>
+              <h4 class="text-lg lg:text-xl font-light text-theme-text">Pull New Scrobbles</h4>
+              <p class="text-base font-light text-theme-secondary leading-relaxed">
                 Scan for recent tracks since your last sync. Safe and fast. Recommended for daily updates.
               </p>
             </div>
@@ -194,9 +194,9 @@
           <!-- Full Reconstruction Sync Card -->
           <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
             <div class="space-y-3">
-              <span class="text-xs font-mono tracking-widest text-zinc-500 uppercase">Deep Sync</span>
-              <h4 class="text-base lg:text-lg font-light text-theme-text">Reconstruct Archive</h4>
-              <p class="text-sm font-light text-theme-secondary leading-relaxed">
+              <span class="text-sm font-mono tracking-widest text-theme-muted uppercase">Deep Sync</span>
+              <h4 class="text-lg lg:text-xl font-light text-theme-text">Reconstruct Archive</h4>
+              <p class="text-base font-light text-theme-secondary leading-relaxed">
                 Re-scan your entire ListenBrainz history from the beginning. Rebuilds database records and backfills any gaps.
               </p>
             </div>
