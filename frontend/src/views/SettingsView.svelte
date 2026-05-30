@@ -29,15 +29,15 @@
 <div class="flex flex-col gap-8 text-base-content">
   
   <!-- Header Card (Spacious and lowercase italic) -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
+  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">settings</h1>
-      <p class="text-caps mt-2">Configure system settings and personalize your interface.</p>
+      <p class="editorial-subtitle">Configure system settings and personalize your interface.</p>
     </div>
   </div>
 
   <!-- Tab Switcher Navigation -->
-  <div class="flex border-b border-theme-border-soft gap-6">
+  <div class="flex border-b border-theme-border-soft mt-6 gap-6">
     <button 
       class="pb-3 text-sm font-mono tracking-wider uppercase transition-all relative cursor-pointer focus:outline-none"
       style="color: {activeSettingsTab === 'interface' ? 'var(--accent)' : 'var(--text-secondary)'};"
@@ -73,7 +73,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {#each getThemesByCategory(category) as theme}
               <button 
-                class="flex flex-row items-center justify-between gap-4 p-5 rounded-xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer focus:outline-none"
+                class="flex flex-row items-center justify-between gap-6 p-6 lg:p-8 rounded-2xl border text-left transition-all duration-300 w-full relative overflow-hidden group cursor-pointer focus:outline-none"
                 style="
                   border-color: {themeManager.currentTheme === theme.id ? 'var(--accent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'};
                   background-color: {themeManager.currentTheme === theme.id ? 'color-mix(in srgb, var(--accent) 5%, transparent)' : 'transparent'};
@@ -82,13 +82,13 @@
               >
                 <!-- Selector Active Line -->
                 {#if themeManager.currentTheme === theme.id}
-                  <div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: var(--accent);"></div>
+                  <div class="absolute left-0 top-0 bottom-0 w-1.5" style="background-color: var(--accent);"></div>
                 {/if}
 
                 <!-- Left Side: Details & Badges -->
-                <div class="flex flex-col gap-2 pl-1 flex-grow pr-4">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-light" style="color: var(--text-primary);">
+                <div class="flex flex-col gap-3 pl-1 flex-grow pr-4">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-base lg:text-lg font-light" style="color: var(--text-primary);">
                       {theme.name}
                     </span>
                     
@@ -103,13 +103,13 @@
                     </span>
                   </div>
                   
-                  <span class="text-xs leading-relaxed font-light max-w-[280px]" style="color: var(--text-secondary);">
+                  <span class="text-sm leading-relaxed font-light max-w-[360px]" style="color: var(--text-secondary);">
                     {theme.description}
                   </span>
                 </div>
 
                 <!-- Right Side: Clean Connected Color Swatch Pill -->
-                <div class="flex h-10 w-16 rounded overflow-hidden border shrink-0 shadow-sm" style="border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);">
+                <div class="flex h-12 w-20 rounded overflow-hidden border shrink-0 shadow-sm" style="border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);">
                   <!-- Background Block -->
                   <div class="w-1/2 h-full" style="background-color: {theme.colors.bg}" title="Background"></div>
                   <!-- Accent Block -->
@@ -136,18 +136,18 @@
     <div class="space-y-8">
       
       <!-- Database Info Card -->
-      <div class="p-6 rounded-xl border border-theme-border-soft memory-surface-nested">
-        <h3 class="text-sm font-mono tracking-widest uppercase text-theme-muted mb-4">Database Connection</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-mono text-theme-muted uppercase">Engine Type</span>
-            <span class="text-base font-light text-theme-text">
+      <div class="memory-surface-nested">
+        <h3 class="text-sm md:text-base font-mono tracking-widest uppercase text-theme-muted mb-6">Database Connection</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-sm font-mono text-theme-muted uppercase tracking-wider">Engine Type</span>
+            <span class="text-xl font-light text-theme-text">
               {appCache.stats?.db_type || 'Resolving engine...'}
             </span>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs font-mono text-theme-muted uppercase">Archived Plays</span>
-            <span class="text-base font-mono font-semibold text-theme-accent">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-sm font-mono text-theme-muted uppercase tracking-wider">Archived Plays</span>
+            <span class="text-3xl font-mono font-normal text-theme-accent">
               {appCache.stats?.total_listens.toLocaleString() || 'Connecting...'}
             </span>
           </div>
@@ -158,43 +158,65 @@
       <div class="space-y-6">
         <div>
           <h3 class="editorial-text-h2 pb-2 border-b">Archive Synchronization</h3>
-          <p class="text-sm font-light text-theme-muted mt-2">
-            Synchronize your local playback records with your ListenBrainz account history.
+          <p class="text-base font-light text-theme-muted mt-2 leading-relaxed">
+            Synchronize your local playback records with your ListenBrainz account history. Note: The local database acts as a permanent, cumulative archive—deleting items on ListenBrainz will not delete them here.
           </p>
         </div>
 
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-wrap items-center gap-4">
-            <!-- Normal Sync Button -->
-            <button 
-              class="btn btn-primary btn-md shadow-lg flex items-center gap-2 cursor-pointer focus:outline-none"
-              disabled={appCache.isSyncing}
-              onclick={() => handleSync(false)}
-            >
-              {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode !== 'full'}
-                <span class="loading loading-spinner loading-xs"></span>
-                Syncing...
-              {:else}
-                <Icon name="sync" size="w-5 h-5" />
-                Sync Now
-              {/if}
-            </button>
-
-            <!-- Force Full Sync Button -->
-            <button 
-              class="btn btn-outline btn-md flex items-center gap-2 cursor-pointer focus:outline-none"
-              disabled={appCache.isSyncing}
-              onclick={() => handleSync(true)}
-            >
-              {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode === 'full'}
-                <span class="loading loading-spinner loading-xs"></span>
-                Running Full Sync...
-              {:else}
-                <Icon name="download" size="w-5 h-5" />
-                Force Full Sync
-              {/if}
-            </button>
+        <div class="flex flex-col gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Incremental Sync Card -->
+          <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
+            <div class="space-y-3">
+              <span class="text-sm font-mono tracking-widest text-theme-muted uppercase">Incremental Sync</span>
+              <h4 class="text-lg lg:text-xl font-light text-theme-text">Pull New Scrobbles</h4>
+              <p class="text-base font-light text-theme-secondary leading-relaxed">
+                Scan for recent tracks since your last sync. Safe and fast. Recommended for daily updates.
+              </p>
+            </div>
+            <div>
+              <button 
+                class="btn btn-primary btn-md shadow-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
+                disabled={appCache.isSyncing}
+                onclick={() => handleSync(false)}
+              >
+                {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode !== 'full'}
+                  <span class="loading loading-spinner loading-xs"></span>
+                  Syncing New...
+                {:else}
+                  <Icon name="sync" size="w-4 h-4" />
+                  Sync New Plays
+                {/if}
+              </button>
+            </div>
           </div>
+
+          <!-- Full Reconstruction Sync Card -->
+          <div class="memory-surface-nested flex flex-col justify-between gap-6 bg-transparent">
+            <div class="space-y-3">
+              <span class="text-sm font-mono tracking-widest text-theme-muted uppercase">Deep Sync</span>
+              <h4 class="text-lg lg:text-xl font-light text-theme-text">Reconstruct Archive</h4>
+              <p class="text-base font-light text-theme-secondary leading-relaxed">
+                Re-scan your entire ListenBrainz history from the beginning. Rebuilds database records and backfills any gaps.
+              </p>
+            </div>
+            <div>
+              <button 
+                class="btn btn-outline btn-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
+                disabled={appCache.isSyncing}
+                onclick={() => handleSync(true)}
+              >
+                {#if appCache.isSyncing && appCache.syncStatus && appCache.syncStatus.mode === 'full'}
+                  <span class="loading loading-spinner loading-xs"></span>
+                  Syncing Entire Archive...
+                {:else}
+                  <Icon name="download" size="w-4 h-4" />
+                  Full Reconstruction
+                {/if}
+              </button>
+            </div>
+          </div>
+        </div>
 
           <!-- Sync Progress and Details -->
           {#if appCache.isSyncing && appCache.syncStatus}

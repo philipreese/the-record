@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
   import Sidebar from './components/layout/Sidebar.svelte';
   import Navbar from './components/layout/Navbar.svelte';
+  import Footer from './components/layout/Footer.svelte';
   
   import OverviewView from './views/OverviewView.svelte';
   import ChartsView from './views/ChartsView.svelte';
@@ -17,7 +18,6 @@
 
   onMount(() => {
     themeManager.init();
-    appCache.runSync(false); // background normal sync on page load
   });
 </script>
 
@@ -55,6 +55,7 @@
         </div>
       {/key}
       
+      <Footer />
     </main>
   </div> 
 

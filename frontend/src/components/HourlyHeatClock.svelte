@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { inView } from '../utils/inView';
   import { appCache } from '../services/store.svelte';
 
   let { hourlyData = {} }: { hourlyData?: Record<string, number> } = $props();
@@ -74,9 +75,12 @@
   );
 </script>
 
-<div class="memory-surface flex flex-col items-center justify-center relative overflow-visible">
-  <div class="relative w-[270px] h-[270px] flex items-center justify-center">
-    <svg width="270" height="270" viewBox="0 0 240 240" style="color: var(--text-primary);">
+<div 
+  use:inView={{ once: true }} 
+  class="memory-surface heatclock-container flex flex-col items-center justify-center relative overflow-visible"
+>
+  <div class="relative w-[320px] h-[320px] flex items-center justify-center">
+    <svg width="320" height="320" viewBox="0 0 240 240" style="color: var(--text-primary);">
       <!-- Outer circle boundary -->
       <circle cx="120" cy="120" r="105" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.06;" stroke-width="1" />
       <!-- Mid-divider between AM and PM -->
@@ -91,15 +95,15 @@
       <text x="7" y="124" text-anchor="middle" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-40">9</text>
 
       <g transform="translate(0, 0)">
-        {#each segments as seg}
+        {#each segments as seg, idx}
           <!-- AM Segment (Inner Ring: rInner=40, rOuter=70) -->
           {@const amCount = hourlyData[seg.amKey] || 0}
           <!-- svelte-ignore a11y_mouse_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 40, 70, seg.startAngle, seg.endAngle)}
-            class="transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
-            style="fill: var(--accent); opacity: {getOpacity(amCount)};"
+            class="clock-segment transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            style="fill: var(--accent); --target-opacity: {getOpacity(amCount)}; animation-delay: {idx * 40}ms;"
             onmouseenter={() => hoveredSegment = { label: seg.amLabel, count: amCount }}
             onmouseleave={() => hoveredSegment = null}
           />
@@ -110,8 +114,8 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 72, 102, seg.startAngle, seg.endAngle)}
-            class="transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
-            style="fill: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%); opacity: {getOpacity(pmCount)};"
+            class="clock-segment transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            style="fill: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%); --target-opacity: {getOpacity(pmCount)}; animation-delay: {(idx + 12) * 40}ms;"
             onmouseenter={() => hoveredSegment = { label: seg.pmLabel, count: pmCount }}
             onmouseleave={() => hoveredSegment = null}
           />
@@ -121,23 +125,23 @@
     
     <!-- Center visual core - Displays hovered details or base instructions -->
     <div 
-      class="absolute w-[90px] h-[90px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+      class="absolute w-[106px] h-[106px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
       style="
         background-color: color-mix(in srgb, var(--bg-base) 96%, transparent);
         border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
       "
     >
       {#if hoveredSegment}
-        <div class="text-xs font-mono uppercase text-zinc-500 leading-none">{hoveredSegment.label}</div>
+        <div class="text-xs font-mono uppercase text-theme-muted leading-none">{hoveredSegment.label}</div>
         <div class="text-[16px] font-light tracking-tight mt-1.5 text-theme-text leading-none">
-          {hoveredSegment.count} <span class="text-[10px] font-mono uppercase tracking-normal text-zinc-400 opacity-70">plays</span>
+          {hoveredSegment.count} <span class="text-[10px] font-mono uppercase tracking-normal text-theme-faint">plays</span>
         </div>
-        <div class="text-[11px] font-mono text-zinc-400 opacity-80 mt-1.5 leading-none">
+        <div class="text-[11px] font-mono text-theme-muted mt-1.5 leading-none">
           {formattedAverage} <span class="opacity-60">/ day</span>
         </div>
       {:else}
-        <div class="text-xs font-mono uppercase tracking-wider text-zinc-500 leading-none">Diurnal</div>
-        <div class="text-[11px] font-light leading-normal text-zinc-400 mt-1.5">
+        <div class="text-xs font-mono uppercase tracking-wider text-theme-muted leading-none">Diurnal</div>
+        <div class="text-[11px] font-light leading-normal text-theme-secondary mt-1.5">
           inner &bull; am<br/>outer &bull; pm
         </div>
       {/if}

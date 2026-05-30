@@ -1,9 +1,11 @@
 <script lang="ts">
   // Layout refresh trigger
   import { onMount, untrack } from 'svelte';
+  import { inView } from '../utils/inView';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
+  import { tooltip } from '../utils/tooltip';
 
   let topRange = $state('all'); // 30, 90, 365, all
   let loadingCharts = $state(false);
@@ -78,19 +80,18 @@
 </script>
 
 <div class="flex flex-col gap-12 text-base-content">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
+  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">top charts</h1>
-      <p class="text-caps mt-2">Your most played creators and tracks over time.</p>
+      <p class="editorial-subtitle">Your most played creators and tracks over time.</p>
     </div>
     
     <!-- Range Selector Options -->
-    <div class="flex items-center gap-6 font-mono text-xs tracking-widest uppercase py-1">
+    <div class="nav-selector">
       {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
         <button 
-          class="hover:text-theme-accent cursor-pointer transition-colors duration-200 focus:outline-none" 
-          class:text-theme-accent={topRange === val}
-          class:text-theme-muted={topRange !== val}
+          class="nav-selector-item" 
+          class:active={topRange === val}
           onclick={() => topRange = val}
         >
           {label}
@@ -112,13 +113,17 @@
           Top Creators
         </h2>
         
-        <div class="flex flex-col gap-3">
+        <div 
+          use:inView={{ once: true }}
+          class="flex flex-col gap-3 reveal-list-container"
+        >
           {#each currentArtists as artist, idx}
             <!-- svelte-ignore a11y_mouse_events_have_key_events -->
             <div 
               role="button"
               tabindex="0"
               class="list-row-interactive"
+              style="animation-delay: {idx * 40}ms;"
               class:opacity-35={(hoveredArtist || focusedArtist) && hoveredArtist !== artist.artist && focusedArtist !== artist.artist}
               class:border-theme-accent={focusedArtist === artist.artist}
               class:bg-theme-accent-soft={focusedArtist === artist.artist}
@@ -127,15 +132,15 @@
               onclick={() => toggleArtistFocus(artist.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist); }}
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs bg-theme-neutral-soft text-theme-muted">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
               <div class="flex-grow">
-                <div class="font-light tracking-wide text-theme-text">{artist.artist}</div>
+                <div class="text-base md:text-lg font-light tracking-wide text-theme-text">{artist.artist}</div>
               </div>
               <div class="text-right">
-                <div class="text-md font-mono font-light text-theme-text">{artist.play_count.toLocaleString()}</div>
-                <div class="text-micro font-mono tracking-widest text-zinc-500 uppercase mt-0.5">plays</div>
+                <div class="text-lg font-mono font-light text-theme-text">{artist.play_count.toLocaleString()}</div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">plays</div>
               </div>
             </div>
           {:else}
@@ -150,13 +155,17 @@
           Top Tracks
         </h2>
         
-        <div class="flex flex-col gap-3">
+        <div 
+          use:inView={{ once: true }}
+          class="flex flex-col gap-3 reveal-list-container"
+        >
           {#each currentTracks as track, idx}
             <!-- svelte-ignore a11y_mouse_events_have_key_events -->
             <div 
               role="button"
               tabindex="0"
               class="list-row-interactive"
+              style="animation-delay: {idx * 40}ms;"
               class:opacity-35={(hoveredTrack || focusedTrack) && hoveredTrack !== `${track.artist} - ${track.title}` && focusedTrack !== `${track.artist} - ${track.title}`}
               class:border-theme-accent={focusedTrack === `${track.artist} - ${track.title}`}
               class:bg-theme-accent-soft={focusedTrack === `${track.artist} - ${track.title}`}
@@ -165,16 +174,16 @@
               onclick={() => toggleTrackFocus(track.title, track.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist); }}
             >
-              <div class="w-8 h-8 rounded-full flex items-center justify-center font-mono text-xs bg-theme-neutral-soft text-theme-muted">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
               <div class="flex-grow min-w-0">
-                <div class="font-light tracking-wide truncate text-theme-text">{track.title}</div>
-                <div class="text-xs font-light truncate opacity-60 mt-0.5 text-theme-secondary">{track.artist}</div>
+                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text" use:tooltip>{track.title}</div>
+                <div class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80" use:tooltip>{track.artist}</div>
               </div>
               <div class="text-right flex-shrink-0">
-                <div class="text-md font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>
-                <div class="text-micro font-mono tracking-widest text-zinc-500 uppercase mt-0.5">plays</div>
+                <div class="text-lg font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">plays</div>
               </div>
             </div>
           {:else}

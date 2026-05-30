@@ -244,6 +244,8 @@ export interface components {
             top_source: string;
             /** Db Type */
             db_type?: string | null;
+            /** First Year */
+            first_year?: number | null;
         };
         /** StreakStatsResponse */
         StreakStatsResponse: {
