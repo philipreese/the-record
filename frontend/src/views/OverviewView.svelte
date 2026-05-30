@@ -9,6 +9,7 @@
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import StreakTracker from '../components/StreakTracker.svelte';
   import StatsGrid from '../components/dashboard/StatsGrid.svelte';
+  import listeningJournalImg from '../assets/listening_journal.png';
   
   import {
     fetchStats,
@@ -160,7 +161,7 @@
       <!-- Background artwork watermark -->
       <div class="absolute -right-8 -bottom-10 lg:right-12 lg:bottom-0 w-[260px] md:w-[340px] lg:w-[400px] aspect-square opacity-[0.06] dark:opacity-[0.09] pointer-events-none select-none overflow-hidden rounded-full">
         <img 
-          src="/listening_journal.png" 
+          src={listeningJournalImg} 
           alt="" 
           class="w-full h-full object-cover"
         />
