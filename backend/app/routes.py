@@ -75,7 +75,8 @@ def debug_streak() -> Any:
         days = [dt.datetime.strptime(r.day, "%Y-%m-%d").date() for r in rows if r.day]
         
     tz = os.environ.get("TZ")
-    today = dt.datetime.now().date()
+    from app.repository import get_current_local_date
+    today = get_current_local_date()
     
     latest_active_day = days[-1] if days else None
     days_diff = (today - latest_active_day).days if latest_active_day else None
