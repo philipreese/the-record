@@ -12,7 +12,7 @@
   }
 </script>
 
-<div class="navbar border-b border-theme-border-soft lg:hidden flex justify-between px-4 text-theme-text" style="background-color: var(--bg-sidebar);">
+<div class="navbar sticky top-0 z-40 border-b border-theme-border-soft lg:hidden flex justify-between px-4 text-theme-text" style="background-color: color-mix(in srgb, var(--bg-sidebar) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
   <div class="flex items-center gap-2">
     <label for="sidebar-drawer" class="btn btn-ghost btn-square drawer-button cursor-pointer">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current">

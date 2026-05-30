@@ -40,7 +40,7 @@
   </div>
 
   <!-- Chart Area -->
-  <div class="flex-grow flex items-end gap-1.5 h-36 px-1 relative">
+  <div class="flex-grow flex items-end gap-1.5 h-52 px-1 relative">
     {#each monthsData as month}
       <div class="flex-grow h-full flex flex-col justify-end items-center group relative">
         

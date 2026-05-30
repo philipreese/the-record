@@ -29,7 +29,7 @@
 <div class="flex flex-col gap-8 text-base-content">
   
   <!-- Header Card (Spacious and lowercase italic) -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
+  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">settings</h1>
       <p class="editorial-subtitle">Configure system settings and personalize your interface.</p>
@@ -37,7 +37,7 @@
   </div>
 
   <!-- Tab Switcher Navigation -->
-  <div class="flex border-b border-theme-border-soft gap-6">
+  <div class="flex border-b border-theme-border-soft mt-6 gap-6">
     <button 
       class="pb-3 text-sm font-mono tracking-wider uppercase transition-all relative cursor-pointer focus:outline-none"
       style="color: {activeSettingsTab === 'interface' ? 'var(--accent)' : 'var(--text-secondary)'};"

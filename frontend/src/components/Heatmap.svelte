@@ -132,7 +132,7 @@
   bind:this={containerElement} 
   use:inView={{ once: true }} 
   class="w-full memory-surface heatmap-container !p-6 relative overflow-visible" 
-  style="min-width: 320px; max-width: 1050px;"
+  style="min-width: 320px; max-width: 100%;"
 >
   <div class="w-full overflow-x-auto scrollbar-thin">
     <svg viewBox="0 0 835 150" class="min-w-[780px] w-full h-auto" preserveAspectRatio="xMidYMid meet" style="color: var(--text-primary);">
@@ -144,9 +144,9 @@
       {/each}
 
       <!-- Weekday Labels -->
-      <text x="5" y="38" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Mon</text>
-      <text x="5" y="68" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Wed</text>
-      <text x="5" y="98" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Fri</text>
+      <text x="5" y="44" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Mon</text>
+      <text x="5" y="74" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Wed</text>
+      <text x="5" y="104" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Fri</text>
 
       <!-- Heatmap Grid -->
       <g transform="translate(30, 20)">

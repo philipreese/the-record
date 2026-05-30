@@ -80,7 +80,7 @@
 </script>
 
 <div class="flex flex-col gap-12 text-base-content">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4 border-b">
+  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
     <div>
       <h1 class="editorial-text-h1 lowercase italic">top charts</h1>
       <p class="editorial-subtitle">Your most played creators and tracks over time.</p>
