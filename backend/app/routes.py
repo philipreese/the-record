@@ -59,39 +59,6 @@ def read_streak() -> Any:
     """Retrieve active and historical daily listening streaks."""
     return repo.get_streak_stats()
 
-@router.get("/debug-streak")
-def debug_streak() -> Any:
-    import datetime as dt
-    import os
-    import app.db as db
-    from sqlalchemy import select, distinct
-    from app.db_helpers import get_date_expr
-    
-    date_expr = get_date_expr(db.Listen.unix_ts)
-    with db.get_engine().connect() as conn:
-        stmt = select(distinct(date_expr).label("day")).order_by("day")
-        rows = conn.execute(stmt).all()
-        days_str = [r.day for r in rows if r.day]
-        days = [dt.datetime.strptime(r.day, "%Y-%m-%d").date() for r in rows if r.day]
-        
-    tz = os.environ.get("TZ")
-    from app.repository import get_current_local_date
-    today = get_current_local_date()
-    
-    latest_active_day = days[-1] if days else None
-    days_diff = (today - latest_active_day).days if latest_active_day else None
-    
-    return {
-        "tz_env": tz,
-        "python_now": str(dt.datetime.now()),
-        "python_today": str(today),
-        "db_latest_day": str(latest_active_day),
-        "days_diff": days_diff,
-        "last_5_days": [str(d) for d in days[-5:]] if days else [],
-        "days_str_last_5": days_str[-5:] if days_str else [],
-        "total_days_count": len(days)
-    }
-
 @router.get("/wrapped", response_model=WrappedDataResponse)
 def read_wrapped(
     year: Optional[int] = Query(None, description="Filter by year (e.g. 2025)"),
