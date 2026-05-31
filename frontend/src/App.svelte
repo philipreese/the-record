@@ -32,7 +32,7 @@
   <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
   
   <!-- Drawer content (Main Screen) -->
-  <div class="drawer-content flex flex-col bg-transparent min-h-screen">
+  <div class="drawer-content flex flex-col bg-transparent min-h-screen max-lg:pt-16">
     
     <!-- Navbar (Mobile only) -->
     <Navbar bind:activeTab />

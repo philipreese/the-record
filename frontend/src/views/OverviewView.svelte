@@ -9,6 +9,7 @@
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import StreakTracker from '../components/StreakTracker.svelte';
   import StatsGrid from '../components/dashboard/StatsGrid.svelte';
+  import PageHeader from '../components/layout/PageHeader.svelte';
   import listeningJournalImg from '../assets/listening_journal.png';
   
   import {
@@ -133,25 +134,29 @@
 <div class="flex flex-col gap-12 text-base-content">
   
   <!-- Sticky Header Section -->
-  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-4">
-    <div>
-      <h1 class="editorial-text-h1 lowercase italic">music journal</h1>
-      <p class="editorial-subtitle text-xs!">Self-hosted scrobble archives and listening insights.</p>
-    </div>
-    
-    <!-- Prominent Play Count -->
-    {#if !loadingStats && appCache.statsLoaded}
-      <div class="flex flex-col items-start sm:items-end gap-1">
-        <span class="text-caps text-[10px] text-theme-muted uppercase tracking-widest">Archived Volume</span>
-        <div class="flex items-baseline gap-1.5">
-          <span class="text-4xl md:text-5xl font-light font-sans tracking-tighter text-theme-accent">
-            <AnimatedCounter value={currentStats.total_listens} />
-          </span>
-          <span class="text-md font-serif italic text-theme-secondary">plays</span>
+  <PageHeader title="music journal" subtitle="Self-hosted scrobble archives and listening insights.">
+    {#snippet actions(isShrunk)}
+      {#if !loadingStats && appCache.statsLoaded}
+        <div class="flex items-center gap-4 transition-all duration-300">
+          {#if !isShrunk}
+            <span transition:fade={{ duration: 120 }} class="text-caps text-[10px] text-theme-muted uppercase tracking-widest hidden md:inline">Archived Volume</span>
+          {/if}
+          <div class="flex items-baseline gap-1.5">
+            <span 
+              class="font-light font-sans tracking-tighter text-theme-accent transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+              class:text-2xl={isShrunk}
+              class:text-4xl={!isShrunk}
+              class:lg:text-3xl={isShrunk}
+              class:lg:text-5xl={!isShrunk}
+            >
+              <AnimatedCounter value={currentStats.total_listens} />
+            </span>
+            <span class="text-xs font-serif italic text-theme-secondary">plays</span>
+          </div>
         </div>
-      </div>
-    {/if}
-  </div>
+      {/if}
+    {/snippet}
+  </PageHeader>
 
   <!-- Layer 1: High-Signal Emotional/Reflective Narrative Hero Splash -->
   <div class="hero-splash-container min-h-[62vh] lg:min-h-[72vh] flex flex-col justify-between">

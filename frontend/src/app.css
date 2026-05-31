@@ -554,6 +554,9 @@ body {
   padding-top: 0.375rem;
   padding-bottom: 0.375rem;
 }
+.nav-selector.hidden {
+  display: none;
+}
 
 .nav-selector-item {
   color: var(--text-muted);
@@ -681,17 +684,65 @@ body {
   }
 }
 
-/* Glassmorphic sticky header class for main page headers */
+/* Glassmorphic sticky header class for main page headers (sticky on desktop only, static on mobile) */
 .sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background-color: color-mix(in srgb, var(--bg-base) 85%, transparent);
-  backdrop-filter: blur(12px);
+  position: static;
+  background-color: transparent;
+  backdrop-filter: none;
   border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
   transition: all var(--t-responsive) var(--ease-fluid);
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
-  margin-top: -0.75rem;
 }
 
+@media (min-width: 1024px) {
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: color-mix(in srgb, var(--bg-base) 85%, transparent);
+    backdrop-filter: blur(12px);
+    margin-top: -0.75rem;
+  }
+}
+
+/* Sub-header controls that stick below the mobile navbar */
+.sticky-sub-header {
+  position: sticky;
+  top: 64px; /* height of mobile navbar */
+  z-index: 20;
+  background-color: color-mix(in srgb, var(--bg-base) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  transition: all var(--t-responsive) var(--ease-fluid);
+}
+
+@media (min-width: 1024px) {
+  .sticky-sub-header {
+    position: sticky;
+    top: 60px; /* height of sticky desktop header */
+    z-index: 20;
+    background-color: color-mix(in srgb, var(--bg-base) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding-top: 1.75rem;
+    padding-bottom: 0.75rem;
+    margin-left: -2rem;
+    margin-right: -2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  }
+}
+
+/* Ensure mobile drawer overlays everything correctly (like the sticky navbar) */
+.drawer-side {
+  z-index: 100 !important;
+}

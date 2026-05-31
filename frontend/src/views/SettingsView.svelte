@@ -3,6 +3,7 @@
   import { appCache } from '../services/store.svelte';
   import { fetchStats } from '../services/api';
   import Icon from '../components/layout/Icon.svelte';
+  import PageHeader from '../components/layout/PageHeader.svelte';
 
   let activeSettingsTab = $state<'interface' | 'data'>('interface');
 
@@ -21,23 +22,16 @@
     if (!appCache.isSyncing && !appCache.stats) {
       fetchStats()
         .then(data => { appCache.stats = data; })
-        .catch(err => console.error("Failed to load stats in settings:", err));
     }
   });
 </script>
 
+<PageHeader title="settings" subtitle="Configure system settings and personalize your interface." />
+ 
 <div class="flex flex-col gap-8 text-base-content">
-  
-  <!-- Header Card (Spacious and lowercase italic) -->
-  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
-    <div>
-      <h1 class="editorial-text-h1 lowercase italic">settings</h1>
-      <p class="editorial-subtitle">Configure system settings and personalize your interface.</p>
-    </div>
-  </div>
 
   <!-- Tab Switcher Navigation -->
-  <div class="flex border-b border-theme-border-soft mt-6 gap-6">
+  <div class="sticky-sub-header flex mt-6 gap-6">
     <button 
       class="pb-3 text-sm font-mono tracking-wider uppercase transition-all relative cursor-pointer focus:outline-none"
       style="color: {activeSettingsTab === 'interface' ? 'var(--accent)' : 'var(--text-secondary)'};"
