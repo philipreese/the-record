@@ -6,6 +6,7 @@
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
   import SelectDropdown from '../components/layout/SelectDropdown.svelte';
   import { tooltip } from '../utils/tooltip';
+  import PageHeader from '../components/layout/PageHeader.svelte';
 
   const yearOptions = [
     { value: 2026, label: '2026' },
@@ -106,15 +107,9 @@
   }
 </script>
 
-<div class="flex flex-col gap-12 text-base-content">
-  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
-    <div>
-      <h1 class="editorial-text-h1 lowercase italic">periodic reviews</h1>
-      <p class="editorial-subtitle">Spotify Wrapped style summaries for custom time ranges.</p>
-    </div>
-    
-    <!-- Type Selector Options -->
-    <div class="nav-selector">
+<PageHeader title="periodic reviews" subtitle="Spotify Wrapped style summaries for custom time ranges.">
+  {#snippet actions(isShrunk)}
+    <div class="nav-selector hidden lg:flex transition-all duration-300" class:text-xs={isShrunk} class:text-sm={!isShrunk}>
       {#each [['year', 'Year'], ['quarter', 'Quarter'], ['month', 'Month']] as [period, label]}
         <button 
           class="nav-selector-item" 
@@ -125,10 +120,50 @@
         </button>
       {/each}
     </div>
-  </div>
+  {/snippet}
+</PageHeader>
 
-  <!-- Review Controls (Borderless Selects) -->
-  <div class="flex flex-wrap gap-8 items-center px-2">
+<!-- Mobile Sticky Controls -->
+<div class="sticky-sub-header lg:hidden flex flex-col gap-3">
+  <div class="nav-selector w-full justify-between gap-1">
+    {#each [['year', 'Year'], ['quarter', 'Quarter'], ['month', 'Month']] as [period, label]}
+      <button 
+        class="nav-selector-item flex-1 text-center justify-center py-1 text-xs" 
+        class:active={wrappedPeriod === period}
+        onclick={() => { wrappedPeriod = period as 'year' | 'quarter' | 'month'; }}
+      >
+        {label}
+      </button>
+    {/each}
+  </div>
+  
+  <div class="flex flex-wrap gap-4 items-center justify-start px-1 text-xs">
+    <!-- Always show Year Selector -->
+    <div class="flex items-center gap-2">
+      <span class="text-caps text-[10px] text-theme-muted uppercase tracking-wider">Year</span>
+      <SelectDropdown bind:value={wrappedYear} options={yearOptions} />
+    </div>
+
+    {#if wrappedPeriod === 'quarter'}
+      <div class="flex items-center gap-2">
+        <span class="text-caps text-[10px] text-theme-muted uppercase tracking-wider">Quarter</span>
+        <SelectDropdown bind:value={wrappedQuarter} options={quarterOptions} />
+      </div>
+    {/if}
+
+    {#if wrappedPeriod === 'month'}
+      <div class="flex items-center gap-2">
+        <span class="text-caps text-[10px] text-theme-muted uppercase tracking-wider">Month</span>
+        <SelectDropdown bind:value={wrappedMonth} options={monthOptions} />
+      </div>
+    {/if}
+  </div>
+</div>
+ 
+<div class="flex flex-col gap-12 text-base-content">
+
+  <!-- Review Controls (Borderless Selects - Desktop only) -->
+  <div class="hidden lg:flex flex-wrap gap-8 items-center px-2">
     
     <!-- Always show Year Selector -->
     <div class="flex items-center gap-3">

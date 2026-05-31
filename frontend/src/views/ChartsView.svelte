@@ -1,11 +1,13 @@
 <script lang="ts">
   // Layout refresh trigger
   import { onMount, untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { inView } from '../utils/inView';
   import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
   import { tooltip } from '../utils/tooltip';
+  import PageHeader from '../components/layout/PageHeader.svelte';
 
   let topRange = $state('all'); // 30, 90, 365, all
   let loadingCharts = $state(false);
@@ -79,15 +81,9 @@
   }
 </script>
 
-<div class="flex flex-col gap-12 text-base-content">
-  <div class="sticky-header flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 pb-4">
-    <div>
-      <h1 class="editorial-text-h1 lowercase italic">top charts</h1>
-      <p class="editorial-subtitle">Your most played creators and tracks over time.</p>
-    </div>
-    
-    <!-- Range Selector Options -->
-    <div class="nav-selector">
+<PageHeader title="top charts" subtitle="Your most played creators and tracks over time.">
+  {#snippet actions(isShrunk)}
+    <div class="nav-selector hidden lg:flex transition-all duration-300" class:text-xs={isShrunk} class:text-sm={!isShrunk}>
       {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
         <button 
           class="nav-selector-item" 
@@ -98,14 +94,32 @@
         </button>
       {/each}
     </div>
+  {/snippet}
+</PageHeader>
+
+<!-- Mobile Sticky Range Selector -->
+<div class="sticky-sub-header lg:hidden">
+  <div class="nav-selector w-full justify-between gap-1">
+    {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
+      <button 
+        class="nav-selector-item flex-1 text-center justify-center py-1 text-xs" 
+        class:active={topRange === val}
+        onclick={() => topRange = val}
+      >
+        {label}
+      </button>
+    {/each}
   </div>
+</div>
+ 
+<div class="flex flex-col gap-12 text-base-content">
 
   {#if loadingCharts}
     <div class="flex justify-center items-center py-20">
       <span class="loading loading-spinner loading-md text-primary"></span>
     </div>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
       
       <!-- Top Artists List -->
       <div class="space-y-6">

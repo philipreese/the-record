@@ -20,10 +20,10 @@
   }
 </script>
 
-<div class="drawer-side border-r border-theme-border-soft" style="background-color: var(--bg-sidebar);">
+<div class="drawer-side z-50">
   <label for="sidebar-drawer" class="drawer-overlay" aria-label="Close sidebar"></label> 
   
-  <div class="p-6 w-64 min-h-screen flex flex-col justify-between text-theme-text">
+  <div class="p-6 w-64 min-h-full relative z-50 flex flex-col justify-between text-theme-text border-r border-theme-border-soft" style="background-color: var(--bg-sidebar);">
     
     <!-- Top Section -->
     <div>
