@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CHANGELOG**: Initialized this file
 - **`.env.example`**: Added example environment variable file
 
-## [0.1.0] - 2026-06-11
+## [0.1.0] - 2026-05-30
 
 ### Added
 - **Phase 1 — Data pipeline**: Pixi environment setup, `merge_history.py` to consolidate ListenBrainz and Google Takeout/YouTube Music exports, and `import_listenbrainz.py` for incremental scrobble imports
