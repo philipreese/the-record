@@ -9,6 +9,7 @@
 - `backend/` — FastAPI Python backend managing SQLite/PostgreSQL, synchronization threads, and REST API endpoints.
 - `frontend/` — Svelte 5 single-page application built with Vite, TypeScript, Tailwind CSS, and DaisyUI.
 - `pixi.toml` — Converted developer environments and tasks (backend/frontend dependencies, tests, linters).
+- [`spec/`](spec/README.md) — Modular project specification (product, architecture, data models).
 
 ---
 
