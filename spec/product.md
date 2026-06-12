@@ -8,11 +8,11 @@ A self-hosted dashboard that gives you a complete, unified view of your music li
 
 ## Supported sources
 
-| Source | Import method |
-|---|---|
-| ListenBrainz | Live background sync (incremental or full rescan) |
-| YouTube Music | Historical export import script |
-| Google Takeout | Historical export import script |
+| Source         | Import method                                     |
+| -------------- | ------------------------------------------------- |
+| ListenBrainz   | Live background sync (incremental or full rescan) |
+| YouTube Music  | Historical export import script                   |
+| Google Takeout | Historical export import script                   |
 
 ## Core features
 
@@ -31,4 +31,4 @@ A self-hosted dashboard that gives you a complete, unified view of your music li
 - Music recommendations or discovery
 - Playlist management or playback
 - Real-time scrobbling (the app reads history, it does not capture it)
-- Last.fm integration (credentials available in env but not implemented)
+- Last.fm integration

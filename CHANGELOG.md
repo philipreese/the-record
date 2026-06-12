@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-11
+
+### Documentation
+- **Roadmap**: Added `spec/roadmap.md` covering Phases 2–4 (chart power-ups, artist explorer, multi-tenant auth), a Code Health backlog from the June 2026 codebase analysis, and a note that Phase 1 (features + hardening) is tracked as GitHub issues
+- **AI agent config**: Added `CLAUDE.md` (project-level workspace instructions) and `GEMINI.md`
+
+### Added
+- **Verify script**: Added `scripts/verify-project.ps1` — standardized multi-runtime project verification script with secret scanning, git/commit convention checks, and auto-detection for Pixi, Node, Python, .NET, and Go environments
+
+### Planning
+- **GitHub issues #19–#25**: Opened Phase 1 feature issues (recently played journal #24, now playing widget #25) and hardening issues (sync token + race fix #19, param validation #20, CI tests #21, Alembic migrations #22, structured logging #23) with native GitHub dependency links
+
 ## [0.2.0] - 2026-06-11
 
 ### Documentation

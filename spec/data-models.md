@@ -101,14 +101,11 @@ interface SyncStatusResponse {
 
 **Source of truth:** [backend/app/db.py](../backend/app/db.py), [backend/app/sync.py](../backend/app/sync.py)
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `DATABASE_URL` | _(unset)_ | PostgreSQL connection string. If set, overrides SQLite. Schemes `postgres://` and `postgresql://` are normalized to `postgresql+psycopg://`. |
-| `DATABASE_PATH` | `backend/history.db` | Path to SQLite file. Ignored when `DATABASE_URL` is set. |
-| `JSON_PATH` | `backend/merged_history.json` | Path to bootstrap JSON for initial DB population. |
-| `TZ` | _(unset)_ | Timezone applied to PostgreSQL sessions (`SET timezone=…`). No effect on SQLite. |
-| `LISTENBRAINZ_USERNAME` | _(required for sync)_ | ListenBrainz account username. |
-| `LISTENBRAINZ_TOKEN` | _(required for sync)_ | ListenBrainz user token. |
-| `LASTFM_API_KEY` | _(unset)_ | Last.fm API key — available but not implemented. |
-| `LASTFM_API_SECRET` | _(unset)_ | Last.fm API secret — available but not implemented. |
-| `LASTFM_USERNAME` | _(unset)_ | Last.fm username — available but not implemented. |
+| Variable                | Default                       | Purpose                                                                                                                                      |
+| ----------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | _(unset)_                     | PostgreSQL connection string. If set, overrides SQLite. Schemes `postgres://` and `postgresql://` are normalized to `postgresql+psycopg://`. |
+| `DATABASE_PATH`         | `backend/history.db`          | Path to SQLite file. Ignored when `DATABASE_URL` is set.                                                                                     |
+| `JSON_PATH`             | `backend/merged_history.json` | Path to bootstrap JSON for initial DB population.                                                                                            |
+| `TZ`                    | _(unset)_                     | Timezone applied to PostgreSQL sessions (`SET timezone=…`). No effect on SQLite.                                                             |
+| `LISTENBRAINZ_USERNAME` | _(required for sync)_         | ListenBrainz account username.                                                                                                               |
+| `LISTENBRAINZ_TOKEN`    | _(required for sync)_         | ListenBrainz user token.                                                                                                                     |
