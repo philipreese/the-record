@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-12
+
+### Changed
+- **API validation**: All query params now constrained with `Literal` types and `Query` bounds — invalid input returns 422 instead of 500 or silently misbehaving (`range`, `limit`, `quarter`, `month`, `mode`, `year`)
+- **Frontend type safety**: Regenerated `api-types.ts` with tighter union types; extracted `TimeRange`, `WrappedQuarter`, `WrappedMonth`, `SyncMode` from the `paths` interface into `api.ts` function signatures for end-to-end TypeScript enforcement through to Svelte components
+
 ## [0.3.0] - 2026-06-11
 
 ### Documentation

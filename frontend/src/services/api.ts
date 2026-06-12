@@ -1,4 +1,14 @@
-import type { components } from './api-types';
+import type { components, paths } from './api-types';
+
+type _TopArtistsQuery = NonNullable<paths["/api/top-artists"]["get"]["parameters"]["query"]>;
+export type TimeRange = NonNullable<_TopArtistsQuery["range"]>;
+
+type _SyncQuery = NonNullable<paths["/api/sync"]["post"]["parameters"]["query"]>;
+export type SyncMode = NonNullable<_SyncQuery["mode"]>;
+
+type _WrappedQuery = NonNullable<paths["/api/wrapped"]["get"]["parameters"]["query"]>;
+export type WrappedQuarter = NonNullable<_WrappedQuery["quarter"]>;
+export type WrappedMonth = NonNullable<_WrappedQuery["month"]>;
 
 export type StatsInfo = components['schemas']['StatsSummaryResponse'];
 export type StreakInfo = components['schemas']['StreakStatsResponse'];
@@ -45,13 +55,13 @@ export async function fetchMonthlyTrends(): Promise<MonthlyTrendInfo[]> {
   return res.json();
 }
 
-export async function fetchTopArtists(range: string, limit: number = 15): Promise<ArtistInfo[]> {
+export async function fetchTopArtists(range: TimeRange, limit: number = 15): Promise<ArtistInfo[]> {
   const res = await apiFetch(`/api/top-artists?range=${range}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to fetch top artists');
   return res.json();
 }
 
-export async function fetchTopTracks(range: string, limit: number = 15): Promise<TrackInfo[]> {
+export async function fetchTopTracks(range: TimeRange, limit: number = 15): Promise<TrackInfo[]> {
   const res = await apiFetch(`/api/top-tracks?range=${range}&limit=${limit}`);
   if (!res.ok) throw new Error('Failed to fetch top tracks');
   return res.json();
@@ -60,8 +70,8 @@ export async function fetchTopTracks(range: string, limit: number = 15): Promise
 export async function generateWrapped(
   period: 'year' | 'quarter' | 'month',
   year: number,
-  quarter: string,
-  month: string
+  quarter: WrappedQuarter,
+  month: WrappedMonth
 ): Promise<WrappedDataInfo> {
   const queryParams: string[] = [];
   queryParams.push(`year=${year}`);

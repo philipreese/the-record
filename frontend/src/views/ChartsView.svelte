@@ -3,13 +3,20 @@
   import { onMount, untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { inView } from '../utils/inView';
-  import { fetchTopArtists, fetchTopTracks, type ArtistInfo, type TrackInfo } from '../services/api';
+  import { fetchTopArtists, fetchTopTracks, type TimeRange, type ArtistInfo, type TrackInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
 
-  let topRange = $state('all'); // 30, 90, 365, all
+  let topRange = $state<TimeRange>('all');
+
+  const rangeOptions: [TimeRange, string][] = [
+    ['30', '30 Days'],
+    ['90', '90 Days'],
+    ['365', '1 Year'],
+    ['all', 'All Time'],
+  ];
   let loadingCharts = $state(false);
 
   // Automatically fetch when the selected range changes
@@ -20,7 +27,7 @@
     });
   });
 
-  async function fetchTopCharts(range: string) {
+  async function fetchTopCharts(range: TimeRange) {
     if (!appCache.charts[range]) {
       loadingCharts = true;
     }
@@ -84,7 +91,7 @@
 <PageHeader title="top charts" subtitle="Your most played creators and tracks over time.">
   {#snippet actions(isShrunk)}
     <div class="nav-selector hidden lg:flex transition-all duration-300" class:text-xs={isShrunk} class:text-sm={!isShrunk}>
-      {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
+      {#each rangeOptions as [val, label]}
         <button 
           class="nav-selector-item" 
           class:active={topRange === val}
@@ -100,7 +107,7 @@
 <!-- Mobile Sticky Range Selector -->
 <div class="sticky-sub-header lg:hidden">
   <div class="nav-selector w-full justify-between gap-1">
-    {#each [['30', '30 Days'], ['90', '90 Days'], ['365', '1 Year'], ['all', 'All Time']] as [val, label]}
+    {#each rangeOptions as [val, label]}
       <button 
         class="nav-selector-item flex-1 text-center justify-center py-1 text-xs" 
         class:active={topRange === val}

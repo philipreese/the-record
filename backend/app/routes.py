@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Query, HTTPException
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Literal, Optional, Dict
 
 import app.repository as repo
 import app.sync as sync_worker
@@ -23,23 +23,23 @@ def read_stats() -> Any:
 
 @router.get("/top-artists", response_model=List[ArtistInfo])
 def read_top_artists(
-    range_param: str = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
-    limit: int = Query(15, description="Max results to return"),
+    range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
+    limit: int = Query(15, ge=1, le=100, description="Max results to return"),
 ) -> Any:
     """Retrieve top artists for a specified time range."""
     return repo.get_top_artists(time_range=range_param, limit=limit)
 
 @router.get("/top-tracks", response_model=List[TrackInfo])
 def read_top_tracks(
-    range_param: str = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
-    limit: int = Query(15, description="Max results to return"),
+    range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
+    limit: int = Query(15, ge=1, le=100, description="Max results to return"),
 ) -> Any:
     """Retrieve top tracks for a specified time range."""
     return repo.get_top_tracks(time_range=range_param, limit=limit)
 
 @router.get("/heatmap", response_model=Dict[str, int])
 def read_heatmap(
-    year: Optional[int] = Query(None, description="The calendar year to display"),
+    year: Optional[int] = Query(None, ge=2000, le=2100, description="The calendar year to display"),
 ) -> Any:
     """Retrieve daily play counts for a calendar heatmap visualization."""
     return repo.get_heatmap_data(year=year)
@@ -61,9 +61,9 @@ def read_streak() -> Any:
 
 @router.get("/wrapped", response_model=WrappedDataResponse)
 def read_wrapped(
-    year: Optional[int] = Query(None, description="Filter by year (e.g. 2025)"),
-    quarter: Optional[str] = Query(None, description="Filter by quarter: Q1, Q2, Q3, Q4"),
-    month: Optional[str] = Query(None, description="Filter by month: M1 to M12"),
+    year: Optional[int] = Query(None, ge=2000, le=2100, description="Filter by year (e.g. 2025)"),
+    quarter: Optional[Literal["Q1", "Q2", "Q3", "Q4"]] = Query(None, description="Filter by quarter: Q1, Q2, Q3, Q4"),
+    month: Optional[Literal["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"]] = Query(None, description="Filter by month: M1 to M12"),
 ) -> Any:
     """Retrieve aggregated review stats for custom time intervals (Spotify Wrapped style)."""
     if not year:
@@ -76,7 +76,7 @@ def read_wrapped(
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(
     background_tasks: BackgroundTasks,
-    mode: str = Query("normal", description="Sync mode: 'normal' or 'full'"),
+    mode: Literal["normal", "full"] = Query("normal", description="Sync mode: 'normal' or 'full'"),
 ) -> Any:
     """
     Kick off a background sync with ListenBrainz and return immediately.

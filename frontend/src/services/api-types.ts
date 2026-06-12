@@ -370,7 +370,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Time range in days: 30, 90, 365, or 'all' */
-                range?: string;
+                range?: "30" | "90" | "365" | "all";
                 /** @description Max results to return */
                 limit?: number;
             };
@@ -404,7 +404,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Time range in days: 30, 90, 365, or 'all' */
-                range?: string;
+                range?: "30" | "90" | "365" | "all";
                 /** @description Max results to return */
                 limit?: number;
             };
@@ -536,9 +536,9 @@ export interface operations {
                 /** @description Filter by year (e.g. 2025) */
                 year?: number | null;
                 /** @description Filter by quarter: Q1, Q2, Q3, Q4 */
-                quarter?: string | null;
+                quarter?: ("Q1" | "Q2" | "Q3" | "Q4") | null;
                 /** @description Filter by month: M1 to M12 */
-                month?: string | null;
+                month?: ("M1" | "M2" | "M3" | "M4" | "M5" | "M6" | "M7" | "M8" | "M9" | "M10" | "M11" | "M12") | null;
             };
             header?: never;
             path?: never;
@@ -570,7 +570,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Sync mode: 'normal' or 'full' */
-                mode?: string;
+                mode?: "normal" | "full";
             };
             header?: never;
             path?: never;
