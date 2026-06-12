@@ -10,6 +10,7 @@ Self-hosted music listening history dashboard that aggregates scrobbles from mul
 | [architecture.md](architecture.md) | Stack, layer map, REST API, sync strategy |
 | [data-models.md](data-models.md) | Listen entity, all Pydantic schemas, environment config |
 | [standards.md](standards.md) | Git, commit, issue/PR workflow, project board, changelog, code conventions |
+| [roadmap.md](roadmap.md) | Planned phases: chart power-ups, artist explorer, multi-tenant auth |
 
 ## Reading order
 
