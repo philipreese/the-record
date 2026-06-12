@@ -6,14 +6,14 @@
 
 Never commit directly to `main`. All work happens on a purpose-prefixed branch.
 
-| Prefix | Use |
-|---|---|
-| `feat/` | New feature |
-| `fix/` | Bug fix |
+| Prefix      | Use                                      |
+| ----------- | ---------------------------------------- |
+| `feat/`     | New feature                              |
+| `fix/`      | Bug fix                                  |
 | `refactor/` | Code restructure with no behavior change |
-| `docs/` | Documentation only |
-| `test/` | Tests only |
-| `chore/` | Maintenance (config, tooling, CI) |
+| `docs/`     | Documentation only                       |
+| `test/`     | Tests only                               |
+| `chore/`    | Maintenance (config, tooling, CI)        |
 
 Recommended branch name format: `<prefix>/issue-<n>-brief-title`
 
@@ -43,7 +43,7 @@ chore(spec): Add standards.md to modular spec
 gh issue create --title "..." --body "..."
 
 # 2. Branch from the issue
-gh issue develop <n> --checkout --name "<prefix>/issue-<n>-brief-title"
+gh issue develop <n> --checkout --name "<prefix>/<n>-brief-title"
 
 # 3. Implement and commit
 
@@ -51,7 +51,7 @@ gh issue develop <n> --checkout --name "<prefix>/issue-<n>-brief-title"
 gh pr create --fill
 ```
 
-Always include `Closes #<n>` in the **PR body** (not in commit messages). Merging the PR auto-closes the issue and moves its board card to Done.
+Always include `Closes #<n>` in the **PR body** (not in commit messages (or in issue bodies)). Merging the PR auto-closes the issue and moves its board card to Done.
 
 ## Project board setup
 
@@ -59,10 +59,10 @@ Project: **The Record** — https://github.com/users/philipreese/projects/2
 
 Two automations must be enabled under the project's **Settings → Workflows**:
 
-| Automation | Trigger | Action |
-|---|---|---|
+| Automation          | Trigger                               | Action         |
+| ------------------- | ------------------------------------- | -------------- |
 | Auto-add to project | Item added to repository (`is:issue`) | Add to project |
-| Item closed | Issue or PR closed | Move to Done |
+| Item closed         | Issue or PR closed                    | Move to Done   |
 
 These run natively via GitHub Projects — no GitHub Actions required.
 
@@ -76,10 +76,10 @@ These run natively via GitHub Projects — no GitHub Actions required.
 
 ## Code conventions
 
-| Concern | Rule |
-|---|---|
-| Python typing | All functions annotated; no bare `Any` without justification |
-| TypeScript | No `any`; types generated from OpenAPI via `pixi run generate-api-types` |
-| Secrets | Store in `.env`; never hardcode; `.env` is gitignored |
-| Tests | Run via `pixi run test`; no network calls in unit tests |
-| Linting | Run via `pixi run lint` before opening a PR |
+| Concern       | Rule                                                                     |
+| ------------- | ------------------------------------------------------------------------ |
+| Python typing | All functions annotated; no bare `Any` without justification             |
+| TypeScript    | No `any`; types generated from OpenAPI via `pixi run generate-api-types` |
+| Secrets       | Store in `.env`; never hardcode; `.env` is gitignored                    |
+| Tests         | Run via `pixi run test`; no network calls in unit tests                  |
+| Linting       | Run via `pixi run lint` before opening a PR                              |
