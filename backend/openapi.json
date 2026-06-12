@@ -35,6 +35,12 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": [
+                "30",
+                "90",
+                "365",
+                "all"
+              ],
               "type": "string",
               "description": "Time range in days: 30, 90, 365, or 'all'",
               "default": "all",
@@ -48,6 +54,8 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
               "description": "Max results to return",
               "default": 15,
               "title": "Limit"
@@ -94,6 +102,12 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": [
+                "30",
+                "90",
+                "365",
+                "all"
+              ],
               "type": "string",
               "description": "Time range in days: 30, 90, 365, or 'all'",
               "default": "all",
@@ -107,6 +121,8 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
               "description": "Max results to return",
               "default": 15,
               "title": "Limit"
@@ -155,7 +171,9 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
                 },
                 {
                   "type": "null"
@@ -273,7 +291,9 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
                 },
                 {
                   "type": "null"
@@ -291,6 +311,12 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "Q1",
+                    "Q2",
+                    "Q3",
+                    "Q4"
+                  ],
                   "type": "string"
                 },
                 {
@@ -309,6 +335,20 @@
             "schema": {
               "anyOf": [
                 {
+                  "enum": [
+                    "M1",
+                    "M2",
+                    "M3",
+                    "M4",
+                    "M5",
+                    "M6",
+                    "M7",
+                    "M8",
+                    "M9",
+                    "M10",
+                    "M11",
+                    "M12"
+                  ],
                   "type": "string"
                 },
                 {
@@ -356,6 +396,10 @@
             "in": "query",
             "required": false,
             "schema": {
+              "enum": [
+                "normal",
+                "full"
+              ],
               "type": "string",
               "description": "Sync mode: 'normal' or 'full'",
               "default": "normal",
@@ -495,6 +539,17 @@
               }
             ],
             "title": "Db Type"
+          },
+          "first_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Year"
           }
         },
         "type": "object",

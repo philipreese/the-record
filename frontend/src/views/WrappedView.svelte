@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { generateWrapped, type WrappedDataInfo } from '../services/api';
+  import { generateWrapped, type WrappedDataInfo, type WrappedQuarter, type WrappedMonth } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
   import SelectDropdown from '../components/layout/SelectDropdown.svelte';
@@ -42,8 +42,8 @@
 
   let wrappedPeriod = $state<'year' | 'quarter' | 'month'>('year');
   let wrappedYear = $state(2026);
-  let wrappedQuarter = $state('Q1');
-  let wrappedMonth = $state('M1');
+  let wrappedQuarter = $state<WrappedQuarter>('Q1');
+  let wrappedMonth = $state<WrappedMonth>('M1');
   let loadingWrapped = $state(false);
   let wrappedError = $state<string | null>(null);
 
@@ -75,8 +75,8 @@
   async function runGenerateWrapped(
     period: 'year' | 'quarter' | 'month',
     year: number,
-    quarter: string,
-    month: string,
+    quarter: WrappedQuarter,
+    month: WrappedMonth,
     key: string
   ) {
     if (appCache.wrapped[key]) {
