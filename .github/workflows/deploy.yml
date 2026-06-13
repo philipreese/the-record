@@ -1,9 +1,10 @@
 name: Deploy Frontend to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -14,6 +15,7 @@ permissions:
 
 jobs:
   build-and-deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
 

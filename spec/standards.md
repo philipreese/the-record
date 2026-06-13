@@ -52,12 +52,6 @@ gh issue develop <n> --checkout --name "<prefix>/<n>-brief-title"
 
 # 5. Open PR — include "Closes #<n>" so merge auto-closes the issue
 gh pr create --title "..." --body "..."
-
-# 6. Before merging: update CHANGELOG.md
-#    - Add entries under [Unreleased] throughout development
-#    - When ready to merge: move [Unreleased] entries to a new versioned section
-#      and bump the version (patch for chore/fix, minor for feat, major for breaking)
-#    - Commit as: docs(changelog): release vX.Y.Z
 ```
 
 Always include `Closes #<n>` in the **PR body** (not in commit messages (or in issue bodies)). Merging the PR auto-closes the issue and moves its board card to Done.
@@ -86,13 +80,33 @@ Two automations must be enabled under the project's **Settings → Workflows**:
 
 These run natively via GitHub Projects — no GitHub Actions required.
 
-## Changelog
+## Changelog & releases
 
 `CHANGELOG.md` at the repo root follows [Keep a Changelog](https://keepachangelog.com/) + [Semantic Versioning](https://semver.org/).
 
-- Add an entry to `[Unreleased]` for every merged change
-- Move entries to a versioned section at release time
-- Categories (in order): `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`, `Documentation`
+CHANGELOG entries are generated automatically from conventional commit messages — **do not write to `[Unreleased]` manually**. Write descriptive commit subjects; those become the changelog.
+
+### Automated release flow (release-please)
+
+On every push to `main`, `release-please` inspects the conventional commit history since the last tag and either:
+- **Updates the open Release PR** (new commits added since last update), or
+- **Creates a Release PR** that auto-generates a versioned CHANGELOG section and bumps the version in `CHANGELOG.md` and `pixi.toml`
+
+When the Release PR merges (auto-merge is enabled — see below), release-please creates a GitHub release and git tag.
+
+Version bump rules:
+| Commit type | Bump |
+|---|---|
+| `feat` | minor |
+| `fix`, `perf` | patch |
+| any `BREAKING CHANGE` footer or `!` suffix | major |
+| `docs`, `chore`, `refactor`, `ci`, `test` | no bump (appear in CHANGELOG only) |
+
+### Required repo settings
+
+For auto-merge of the Release PR to work, these must be enabled in the repository:
+1. **Settings → General → Allow auto-merge** — enables the feature globally
+2. **Settings → Branches → Branch protection for `main`** — require the **CI / test** status check to pass before merging
 
 ## Code conventions
 
