@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 from sqlalchemy import create_engine, Column, Integer, String, Index
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -24,6 +25,7 @@ class Listen(Base):
     __table_args__ = (
         Index("idx_listens_unix_ts", "unix_ts"),
         Index("idx_listens_artist", "artist"),
+        Index("idx_listens_dedup", "artist", "title", "unix_ts"),
     )
 
 # Internal engine caching to support unit test overrides of DB_PATH
@@ -47,12 +49,20 @@ def get_engine():
         connect_args = {}
         if expected_url.startswith("sqlite"):
             connect_args = {"check_same_thread": False}
+            _engine = create_engine(expected_url, connect_args=connect_args)
         else:
             # For PostgreSQL, set the session timezone to match TZ env var if present
             tz = os.environ.get("TZ")
             if tz:
                 connect_args["options"] = f"-c timezone={tz}"
-        _engine = create_engine(expected_url, connect_args=connect_args)
+            # pool_pre_ping detects stale connections after Neon serverless suspend;
+            # pool_recycle preemptively replaces connections older than 5 minutes.
+            _engine = create_engine(
+                expected_url,
+                connect_args=connect_args,
+                pool_pre_ping=True,
+                pool_recycle=300,
+            )
     return _engine
 
 def get_session():
@@ -78,8 +88,14 @@ def get_db_session():
         session.close()
 
 def init_db() -> None:
-    """Initialize database schema, tables, and indices."""
-    Base.metadata.create_all(get_engine())
+    """Run all pending Alembic migrations to bring the schema to head."""
+    from alembic.config import Config
+    from alembic import command
+    backend_dir = Path(__file__).parent.parent
+    alembic_cfg = Config(str(backend_dir / "alembic.ini"))
+    # Set absolute path so migrations resolve correctly regardless of CWD.
+    alembic_cfg.set_main_option("script_location", str(backend_dir / "migrations"))
+    command.upgrade(alembic_cfg, "head")
 
 def bootstrap_db_from_json() -> bool:
     """Bootstrap the database from merged_history.json if the database is empty."""
