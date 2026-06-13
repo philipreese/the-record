@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **CI workflow** (`.github/workflows/ci.yml`): Runs backend tests (`pixi run test`), pyrefly type check, and svelte-check as separate steps on every PR and push to `main`
+- **Release-please workflow** (`.github/workflows/release-please.yml`): Automates CHANGELOG versioning, `pixi.toml` version bump, git tags, and GitHub releases on merge to `main`; Release PR is configured for auto-merge
+- **`pixi run check-types`**: New pixi task alias for `pyrefly check` — enables CI to surface pyrefly failures as a distinct annotated step
+
+### Changed
+- **`deploy.yml`**: Now triggers via `workflow_run` so GitHub Pages deploy only fires after CI passes on `main`; `workflow_dispatch` preserved for manual deploys
+- **`pyrefly.toml`**: Removed Windows-only `python-interpreter-path`; pyrefly now auto-detects the interpreter from the active pixi environment (cross-platform)
+- **`spec/standards.md`**: Replaced manual `docs(changelog): release vX.Y.Z` step with automated release-please flow; documents version bump rules and required repo settings
+
+### Fixed
+- **`test_database.py`**: `tearDown` now calls `db.get_engine().dispose()` before deleting the test DB file, preventing SQLite lock errors on Linux when the SQLAlchemy pool held open connections across tests
+
 ## [0.3.2] - 2026-06-12
 
 ### Added
