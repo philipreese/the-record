@@ -3,13 +3,14 @@ authors = ["Philip Reese <philipreese@mail.com>"]
 channels = ["conda-forge"]
 name = "the-record"
 platforms = ["win-64", "linux-64"]
-version = "0.3.0"
+version = "0.3.2"  # x-release-please-version
 
 [tasks]
 dev = "python backend/scripts/run_dev.py"
 dev-backend = "uvicorn --app-dir backend app.main:app --reload"
 dev-frontend = "npm --prefix frontend run dev"
 test = "python -m unittest discover -s backend/tests"
+check-types = "pyrefly check"
 lint = "pyrefly check && npm --prefix frontend run lint"
 generate-api-types = "python backend/scripts/generate_openapi.py && npx openapi-typescript backend/openapi.json -o frontend/src/services/api-types.ts"
 alembic = "python -m alembic --config backend/alembic.ini"
