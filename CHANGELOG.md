@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3](https://github.com/philipreese/the-record/compare/v0.3.2...v0.3.3) (2026-06-13)
+
+
+### Bug Fixes
+
+* **ci:** Extract PR number from release-please JSON output; use rebase merge ([9ba2597](https://github.com/philipreese/the-record/commit/9ba25977090c6d561d6dabf3f69db6322d6f8085))
+* **ci:** Remove Windows-only python-interpreter-path from pyrefly.toml ([c844406](https://github.com/philipreese/the-record/commit/c844406b3b5a157408321b6cb7f5d8ca7b94e540))
+* **ci:** Use packages block in release-please-config for correct manifest matching ([6a2f001](https://github.com/philipreese/the-record/commit/6a2f001c8ea7669700829b3667897b1950fce86f))
+* **ci:** Use TOML updater with correct jsonpath for pixi.toml version ([ac5e024](https://github.com/philipreese/the-record/commit/ac5e024bbe1e94a67c86cf16c38945b885e2a511))
+* **tests:** Dispose SQLAlchemy engine in tearDown to prevent SQLite lock ([c4595c0](https://github.com/philipreese/the-record/commit/c4595c03226b224cf3753bf42ce82e5ce752f3fd))
+
+
+### Documentation
+
+* **changelog:** Add [Unreleased] entries for issue 21 ([3732c03](https://github.com/philipreese/the-record/commit/3732c036cf063df4266d71a04d1e8df1a55449f3))
+* **spec:** Remove manual changelog step; release-please auto-generates from commits ([eb6c296](https://github.com/philipreese/the-record/commit/eb6c2960dd2008523b744526efd4e6300b39d59d))
+
+
+### Continuous Integration
+
+* Run backend tests, pyrefly, and svelte-check on pull requests ([b622576](https://github.com/philipreese/the-record/commit/b62257607ffd7955333e7a66765cb69c3d8a3add))
+
 ## [Unreleased]
 
 ## [0.3.2] - 2026-06-12
