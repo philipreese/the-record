@@ -52,9 +52,6 @@ gh issue develop <n> --checkout --name "<prefix>/<n>-brief-title"
 
 # 5. Open PR — include "Closes #<n>" so merge auto-closes the issue
 gh pr create --title "..." --body "..."
-
-# 6. Before merging: add changelog entries under [Unreleased] in CHANGELOG.md
-#    release-please owns the version bump and versioned section — no manual release commit
 ```
 
 Always include `Closes #<n>` in the **PR body** (not in commit messages (or in issue bodies)). Merging the PR auto-closes the issue and moves its board card to Done.
@@ -87,15 +84,13 @@ These run natively via GitHub Projects — no GitHub Actions required.
 
 `CHANGELOG.md` at the repo root follows [Keep a Changelog](https://keepachangelog.com/) + [Semantic Versioning](https://semver.org/).
 
-- Add entries to `[Unreleased]` throughout development (one entry per PR is fine)
-- Categories (in order): `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`, `Documentation`
-- **Do not** manually move entries to a versioned section or commit `docs(changelog): release vX.Y.Z` — release-please owns all of that
+CHANGELOG entries are generated automatically from conventional commit messages — **do not write to `[Unreleased]` manually**. Write descriptive commit subjects; those become the changelog.
 
 ### Automated release flow (release-please)
 
 On every push to `main`, `release-please` inspects the conventional commit history since the last tag and either:
-- **Updates the open Release PR** (no new version-bumping commits since last update), or
-- **Creates / refreshes a Release PR** that moves `[Unreleased]` to a new versioned section and bumps the version in `CHANGELOG.md` and `pixi.toml`
+- **Updates the open Release PR** (new commits added since last update), or
+- **Creates a Release PR** that auto-generates a versioned CHANGELOG section and bumps the version in `CHANGELOG.md` and `pixi.toml`
 
 When the Release PR merges (auto-merge is enabled — see below), release-please creates a GitHub release and git tag.
 
