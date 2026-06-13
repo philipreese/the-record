@@ -52,6 +52,12 @@ gh issue develop <n> --checkout --name "<prefix>/<n>-brief-title"
 
 # 5. Open PR — include "Closes #<n>" so merge auto-closes the issue
 gh pr create --title "..." --body "..."
+
+# 6. Before merging: update CHANGELOG.md
+#    - Add entries under [Unreleased] throughout development
+#    - When ready to merge: move [Unreleased] entries to a new versioned section
+#      and bump the version (patch for chore/fix, minor for feat, major for breaking)
+#    - Commit as: docs(changelog): release vX.Y.Z
 ```
 
 Always include `Closes #<n>` in the **PR body** (not in commit messages (or in issue bodies)). Merging the PR auto-closes the issue and moves its board card to Done.

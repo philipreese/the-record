@@ -8,6 +8,7 @@
 |---|---|
 | Backend | Python 3.13, FastAPI, Uvicorn |
 | ORM / persistence | SQLAlchemy 2.0, SQLite (local) or PostgreSQL via psycopg v3 |
+| Migrations | Alembic — `backend/migrations/`; `env.py` uses `get_engine()` so `DATABASE_URL`/`DATABASE_PATH` drive both app and CLI |
 | HTTP client (sync) | httpx (async) |
 | Frontend | Svelte 5, TypeScript, Vite |
 | Styling | Tailwind CSS + DaisyUI |
@@ -21,10 +22,11 @@ routes.py          — HTTP handlers, request validation, background task dispat
     ↓
 repository.py      — All SQL queries (stats, charts, heatmap, trends, streak, wrapped)
     ↓
-db.py              — SQLAlchemy engine/session setup, Listen model, DB bootstrap
+db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
 sync.py            — ListenBrainz sync worker (async, background)
 schemas.py         — Pydantic request/response models
+migrations/        — Alembic env + versioned migration scripts
 ```
 
 **Source of truth:** [backend/app/](../backend/app/)
@@ -96,5 +98,6 @@ The frontend posts to `POST /api/sync`, then polls `GET /api/sync/status` every 
 | Run tests | `pixi run test` |
 | Lint | `pixi run lint` |
 | Regenerate TS types from OpenAPI | `pixi run generate-api-types` |
+| Run Alembic commands | `pixi run alembic <cmd>` (e.g. `upgrade head`, `current`, `stamp 001`) |
 
 **Source of truth:** [pixi.toml](../pixi.toml)
