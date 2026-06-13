@@ -13,7 +13,13 @@
         {"type": "test",     "section": "Tests"},
         {"type": "chore",    "section": "Miscellaneous"}
       ],
-      "extra-files": ["pixi.toml"]
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "pixi.toml",
+          "jsonpath": "$.workspace.version"
+        }
+      ]
     }
   }
 }
