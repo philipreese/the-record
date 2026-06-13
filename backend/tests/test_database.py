@@ -50,6 +50,7 @@ class TestDatabaseQueries(unittest.TestCase):
 
     def tearDown(self):
         self.conn.close()
+        db.get_engine().dispose()
         # Clean up database file
         if os.path.exists(self.test_db_path):
             try:
