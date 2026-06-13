@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-12
+
+### Added
+- **Alembic migrations**: Migration framework adopted (`backend/migrations/`); `env.py` wired to `get_engine()` so `DATABASE_URL`/`DATABASE_PATH` drive migrations and app identically
+- **Baseline migration (001)**: Captures current `listens` schema for fresh deployments; existing deployments stamp with `pixi run alembic stamp 001`
+- **Dedup index migration (002)**: Composite `idx_listens_dedup (artist, title, unix_ts)` supporting the post-sync dedup self-join in `repository.deduplicate_listens()`
+- **`pixi run alembic`**: Task alias for `python -m alembic --config backend/alembic.ini` — works from any working directory
+- **`scripts/set-issue-status.ps1`**: Helper to move a GitHub project board item to any status via `gh project item-edit`
+
+### Changed
+- **`init_db()`**: Now runs `alembic upgrade head` instead of `Base.metadata.create_all()` — schema is always migration-controlled
+- **PostgreSQL engine**: `pool_pre_ping=True, pool_recycle=300` added to survive Neon serverless suspend/resume
+- **Issue workflow**: `spec/standards.md` updated with "move to In Progress" step and project board field ID reference
+
 ## [0.3.1] - 2026-06-12
 
 ### Changed

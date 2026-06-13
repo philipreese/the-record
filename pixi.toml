@@ -12,6 +12,7 @@ dev-frontend = "npm --prefix frontend run dev"
 test = "python -m unittest discover -s backend/tests"
 lint = "pyrefly check && npm --prefix frontend run lint"
 generate-api-types = "python backend/scripts/generate_openapi.py && npx openapi-typescript backend/openapi.json -o frontend/src/services/api-types.ts"
+alembic = "python -m alembic --config backend/alembic.ini"
 
 [dependencies]
 python = "3.13.*"
@@ -20,6 +21,7 @@ uvicorn = "*"
 httpx = "*"
 psycopg = ">=3.3.4,<4"
 sqlalchemy = ">=2.0.50,<3"
+alembic = ">=1.14,<2"
 tzdata = "*"
 
 [pypi-dependencies]

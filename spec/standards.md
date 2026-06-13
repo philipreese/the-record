@@ -45,13 +45,33 @@ gh issue create --title "..." --body "..."
 # 2. Branch from the issue
 gh issue develop <n> --checkout --name "<prefix>/<n>-brief-title"
 
-# 3. Implement and commit
+# 3. Move issue to In Progress on the project board
+.\scripts\set-issue-status.ps1 -Issue <n> -Status "In Progress"
 
-# 4. Open PR — include "Closes #<n>" so merge auto-closes the issue
-gh pr create --fill
+# 4. Implement and commit
+
+# 5. Open PR — include "Closes #<n>" so merge auto-closes the issue
+gh pr create --title "..." --body "..."
+
+# 6. Before merging: update CHANGELOG.md
+#    - Add entries under [Unreleased] throughout development
+#    - When ready to merge: move [Unreleased] entries to a new versioned section
+#      and bump the version (patch for chore/fix, minor for feat, major for breaking)
+#    - Commit as: docs(changelog): release vX.Y.Z
 ```
 
 Always include `Closes #<n>` in the **PR body** (not in commit messages (or in issue bodies)). Merging the PR auto-closes the issue and moves its board card to Done.
+
+**Project board field IDs** (stable, do not change):
+
+| Field | ID |
+|---|---|
+| Project node ID | `PVT_kwHOALMvNM4BaahH` |
+| Status field ID | `PVTSSF_lAHOALMvNM4BaahHzhVSUB8` |
+| Todo option | `f75ad846` |
+| In Progress option | `47fc9ee4` |
+| In Review option | `ccc97365` |
+| Done option | `98236657` |
 
 ## Project board setup
 
