@@ -8,8 +8,10 @@ COPY pixi.toml pixi.lock ./
 # Install default environment (locked for exact reproduction)
 RUN pixi install --locked -v
 
-# Copy backend app source code
+# Copy backend source code and migration scripts
 COPY backend/app ./backend/app
+COPY backend/alembic.ini ./backend/alembic.ini
+COPY backend/migrations ./backend/migrations
 
 # Expose default port
 EXPOSE 8000
