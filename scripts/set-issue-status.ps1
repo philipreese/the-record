@@ -20,7 +20,7 @@ if (-not $optionId) {
     exit 1
 }
 
-$items = gh project item-list 2 --owner philipreese --format json | ConvertFrom-Json
+$items = gh project item-list 2 --owner philipreese --format json --limit 200 | ConvertFrom-Json
 $item = $items.items | Where-Object { $_.content.number -eq $Issue }
 if (-not $item) {
     Write-Error "Issue #$Issue not found in project board"
