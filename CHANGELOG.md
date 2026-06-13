@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5](https://github.com/philipreese/the-record/compare/v0.3.4...v0.3.5) (2026-06-13)
+
+
+### Bug Fixes
+
+* **ci:** Pass --repo to gh pr merge so it works without a checkout ([af0d02c](https://github.com/philipreese/the-record/commit/af0d02cb6f91e5f31cab3a0f4d3530d3a30c2ec0))
+
 ## [0.3.4](https://github.com/philipreese/the-record/compare/v0.3.3...v0.3.4) (2026-06-13)
 
 
