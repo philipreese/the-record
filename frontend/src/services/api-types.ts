@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Recent
+         * @description Retrieve recent listens in reverse-chronological order with cursor-based pagination.
+         */
+        get: operations["read_recent_api_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sync": {
         parameters: {
             query?: never;
@@ -220,6 +240,19 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ListenEntry */
+        ListenEntry: {
+            /** Id */
+            id: number;
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+            /** Unix Ts */
+            unix_ts: number;
+            /** Source */
+            source: string;
         };
         /** MonthlyTrendInfo */
         MonthlyTrendInfo: {
@@ -553,6 +586,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WrappedDataResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_recent_api_recent_get: {
+        parameters: {
+            query?: {
+                /** @description Max results per page (1–100) */
+                limit?: number;
+                /** @description Cursor: unix_ts of the last item from the previous page */
+                before_ts?: number | null;
+                /** @description Cursor: id of the last item from the previous page */
+                before_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"][];
                 };
             };
             /** @description Validation Error */

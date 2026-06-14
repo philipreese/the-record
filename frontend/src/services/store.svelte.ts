@@ -1,13 +1,14 @@
-import { 
-  triggerSync, 
-  getSyncStatus, 
-  type StatsInfo, 
-  type StreakInfo, 
-  type ArtistInfo, 
-  type TrackInfo, 
-  type WrappedDataInfo, 
+import {
+  triggerSync,
+  getSyncStatus,
+  type StatsInfo,
+  type StreakInfo,
+  type ArtistInfo,
+  type TrackInfo,
+  type WrappedDataInfo,
   type MonthlyTrendInfo,
-  type SyncStatusInfo 
+  type SyncStatusInfo,
+  type ListenEntry,
 } from './api';
 
 class AppCache {
@@ -25,6 +26,11 @@ class AppCache {
   // Wrapped/Reviews Cache (keyed by period + parameters)
   wrapped = $state<Record<string, WrappedDataInfo>>({});
 
+  // Recent Listens Cache
+  recentListens = $state<ListenEntry[]>([]);
+  recentScrollOffset = $state(0);
+  recentExhausted = $state(false);
+
   // Centralized Sync State
   isSyncing = $state(false);
   syncStatus = $state<SyncStatusInfo | null>(null);
@@ -41,6 +47,9 @@ class AppCache {
     this.statsLoaded = false;
     this.charts = {};
     this.wrapped = {};
+    this.recentListens = [];
+    this.recentScrollOffset = 0;
+    this.recentExhausted = false;
     console.log("[cache] Store cache cleared.");
   }
 

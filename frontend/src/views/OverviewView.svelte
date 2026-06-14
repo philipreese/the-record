@@ -17,11 +17,14 @@
     fetchStreak,
     fetchHeatmap,
     fetchHourlyTrends,
-    fetchMonthlyTrends
+    fetchMonthlyTrends,
+    fetchRecentListens,
   } from '../services/api';
   
   import { appCache } from '../services/store.svelte';
- 
+
+  let { activeTab = $bindable() }: { activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent' } = $props();
+
   let heatmapYear = $state(new Date().getFullYear());
   let loadingStats = $state(!appCache.statsLoaded);
   let scrollY = $state(0);
@@ -47,7 +50,8 @@
     const sections = [
       { id: 'insights-section', label: 'insights' },
       { id: 'diurnal-patterns', label: 'patterns' },
-      { id: 'telemetry-volumes', label: 'volumes' }
+      { id: 'telemetry-volumes', label: 'volumes' },
+      { id: 'recent-scrobbles', label: 'recent' },
     ];
 
     for (const sec of sections) {
@@ -100,6 +104,12 @@
       appCache.hourlyTrends = hourlyRes;
       appCache.monthlyTrends = monthlyRes;
       appCache.statsLoaded = true;
+
+      if (appCache.recentListens.length === 0) {
+        const recent = await fetchRecentListens(10);
+        appCache.recentListens = recent;
+        if (recent.length < 10) appCache.recentExhausted = true;
+      }
     } catch (e) {
       console.error("Failed to fetch dashboard data:", e);
     } finally {
@@ -276,9 +286,9 @@
   </div>
 
   <!-- Layer 3: Telemetry & Raw Counts -->
-  <div 
+  <div
     use:inView={{ once: true }}
-    class="pt-30 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container" 
+    class="pt-30 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
     class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
     role="region"
     onmouseenter={() => currentFocusZone = 'telemetry'}
@@ -295,6 +305,65 @@
         </div>
       {:else}
         <StatsGrid stats={currentStats} />
+      {/if}
+    </div>
+  </div>
+
+  <!-- Layer 4: Recent Scrobbles Snippet -->
+  <div
+    use:inView={{ once: true }}
+    class="pt-30 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+    class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
+    role="region"
+    onmouseenter={() => currentFocusZone = 'recent'}
+    onmouseleave={() => currentFocusZone = null}
+    id="recent-scrobbles"
+  >
+    <div class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between">
+      <h2 class="editorial-text-h2">04 / Recent Scrobbles</h2>
+      <button
+        class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
+        onclick={() => activeTab = 'recent'}
+      >
+        View full journal →
+      </button>
+    </div>
+    <div class="reveal-content">
+      {#if appCache.recentListens.length === 0 && loadingStats}
+        <div class="space-y-1">
+          {#each { length: 5 } as _}
+            <div class="flex items-center gap-3 py-2.5 px-2 animate-pulse">
+              <div class="h-3 bg-base-300 rounded w-20 shrink-0"></div>
+              <div class="flex-1 h-3 bg-base-300 rounded"></div>
+            </div>
+          {/each}
+        </div>
+      {:else if appCache.recentListens.length === 0}
+        <p class="text-sm text-base-content/40 font-mono">No listens yet.</p>
+      {:else}
+        <div class="space-y-0">
+          {#each appCache.recentListens.slice(0, 10) as entry (entry.id)}
+            <div class="flex items-center gap-3 py-2.5 px-2 rounded hover:bg-base-200/50 transition-colors">
+              <div class="w-24 shrink-0 text-right">
+                <span class="text-xs text-base-content/40 font-mono tabular-nums">
+                  {new Date(entry.unix_ts * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="text-sm font-medium truncate block">{entry.title}</span>
+                <span class="text-xs text-base-content/50 truncate block">{entry.artist}</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+        <div class="pt-2">
+          <button
+            class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
+            onclick={() => activeTab = 'recent'}
+          >
+            View full journal →
+          </button>
+        </div>
       {/if}
     </div>
   </div>
