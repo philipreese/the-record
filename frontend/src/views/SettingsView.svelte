@@ -39,7 +39,7 @@
     >
       Visual Interface
       {#if activeSettingsTab === 'interface'}
-        <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background-color: var(--accent);"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-0.5" style="background-color: var(--accent);"></div>
       {/if}
     </button>
     <button 
@@ -49,7 +49,7 @@
     >
       Database & Sync
       {#if activeSettingsTab === 'data'}
-        <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background-color: var(--accent);"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-0.5" style="background-color: var(--accent);"></div>
       {/if}
     </button>
   </div>
@@ -80,7 +80,7 @@
                 {/if}
 
                 <!-- Left Side: Details & Badges -->
-                <div class="flex flex-col gap-3 pl-1 flex-grow pr-4">
+                <div class="flex flex-col gap-3 pl-1 grow pr-4">
                   <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-base lg:text-lg font-light" style="color: var(--text-primary);">
                       {theme.name}
@@ -97,7 +97,7 @@
                     </span>
                   </div>
                   
-                  <span class="text-sm leading-relaxed font-light max-w-[360px]" style="color: var(--text-secondary);">
+                  <span class="text-sm leading-relaxed font-light max-w-90" style="color: var(--text-secondary);">
                     {theme.description}
                   </span>
                 </div>
@@ -246,7 +246,7 @@
 
           <!-- Sync Error Message -->
           {#if appCache.syncError}
-            <div class="text-xs text-error font-semibold flex items-start gap-1.5 max-w-[500px] animate-fade-in">
+            <div class="text-xs text-error font-semibold flex items-start gap-1.5 max-w-125 animate-fade-in">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 shrink-0 mt-0.5">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
               </svg>

@@ -49,11 +49,11 @@
       {longestOption.label}
     </span>
     <!-- Actual Selected Label (Positioned at the left padding offset 0.25rem) -->
-    <span class="pl-1 absolute left-[0.25rem] right-6 font-mono text-left truncate" style="font-size: 1rem;">
+    <span class="pl-1 absolute left-1 right-6 font-mono text-left truncate" style="font-size: 1rem;">
       {selectedOption.label}
     </span>
     <!-- Arrow indicator (Positioned at the right padding offset 0.25rem) -->
-    <span class="pr-1 text-xs opacity-60 absolute right-[0.25rem] transition-transform duration-200" style="transform: rotate({isOpen ? 180 : 0}deg);">↓</span>
+    <span class="pr-1 text-xs opacity-60 absolute right-1 transition-transform duration-200" style="transform: rotate({isOpen ? 180 : 0}deg);">↓</span>
   </button>
   
   <!-- Floating Menu Panel (Seamless downward extension, slides open smoothly) -->
@@ -71,7 +71,7 @@
         <button
           type="button"
           // Align option text exactly underneath the trigger button text
-          class="w-full text-left pl-2 pr-[1.5rem] py-2.5 font-mono tracking-wide transition-colors duration-150 cursor-pointer block select-none truncate"
+          class="w-full text-left pl-2 pr-6 py-2.5 font-mono tracking-wide transition-colors duration-150 cursor-pointer block select-none truncate"
           style="
             font-size: 1rem;
             color: {option.value === value ? 'var(--accent)' : 'var(--text-secondary)'};

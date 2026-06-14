@@ -153,10 +153,10 @@
               onclick={() => toggleArtistFocus(artist.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist); }}
             >
-              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
-              <div class="flex-grow">
+              <div class="grow">
                 <div class="text-base md:text-lg font-light tracking-wide text-theme-text">{artist.artist}</div>
               </div>
               <div class="text-right">
@@ -195,14 +195,14 @@
               onclick={() => toggleTrackFocus(track.title, track.artist)}
               onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist); }}
             >
-              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 flex-shrink-0">
+              <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
                 {String(idx + 1).padStart(2, '0')}
               </div>
-              <div class="flex-grow min-w-0">
+              <div class="grow min-w-0">
                 <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text" use:tooltip>{track.title}</div>
                 <div class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80" use:tooltip>{track.artist}</div>
               </div>
-              <div class="text-right flex-shrink-0">
+              <div class="text-right shrink-0">
                 <div class="text-lg font-mono font-light text-theme-text">{track.play_count.toLocaleString()}</div>
                 <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">plays</div>
               </div>

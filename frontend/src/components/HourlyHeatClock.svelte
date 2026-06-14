@@ -79,7 +79,7 @@
   use:inView={{ once: true }} 
   class="memory-surface heatclock-container flex flex-col items-center justify-center relative overflow-visible"
 >
-  <div class="relative w-[320px] h-[320px] flex items-center justify-center">
+  <div class="relative w-[320px] h-80 flex items-center justify-center">
     <svg width="320" height="320" viewBox="0 0 240 240" style="color: var(--text-primary);">
       <!-- Outer circle boundary -->
       <circle cx="120" cy="120" r="105" fill="none" style="stroke: var(--text-primary); stroke-opacity: 0.06;" stroke-width="1" />
@@ -102,7 +102,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 40, 70, seg.startAngle, seg.endAngle)}
-            class="clock-segment transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer"
             style="fill: var(--accent); --target-opacity: {getOpacity(amCount)}; animation-delay: {idx * 40}ms;"
             onmouseenter={() => hoveredSegment = { label: seg.amLabel, count: amCount }}
             onmouseleave={() => hoveredSegment = null}
@@ -114,7 +114,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 72, 102, seg.startAngle, seg.endAngle)}
-            class="clock-segment transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 hover:brightness-110 cursor-pointer"
+            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer"
             style="fill: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%); --target-opacity: {getOpacity(pmCount)}; animation-delay: {(idx + 12) * 40}ms;"
             onmouseenter={() => hoveredSegment = { label: seg.pmLabel, count: pmCount }}
             onmouseleave={() => hoveredSegment = null}
@@ -125,7 +125,7 @@
     
     <!-- Center visual core - Displays hovered details or base instructions -->
     <div 
-      class="absolute w-[106px] h-[106px] rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+      class="absolute w-26.5 h-26.5 rounded-full flex flex-col items-center justify-center text-center p-2 select-none border transition-all duration-(--t-responsive) var(--ease-fluid)"
       style="
         background-color: color-mix(in srgb, var(--bg-base) 96%, transparent);
         border-color: color-mix(in srgb, var(--text-primary) 8%, transparent);

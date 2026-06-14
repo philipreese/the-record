@@ -196,12 +196,12 @@
       {wrappedError}
     </div>
   {:else if currentWrappedData}
-    <div class="max-w-4xl mx-auto w-full memory-surface relative overflow-visible flex flex-col justify-between min-h-[460px] p-10 md:p-12 shadow-2xl">
+    <div class="max-w-4xl mx-auto w-full memory-surface relative overflow-visible flex flex-col justify-between min-h-115 p-10 md:p-12 shadow-2xl">
       <!-- Glow backings for ambient warmth (desaturated) -->
       <div class="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft"></div>
       <div class="absolute -bottom-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft/80"></div>
  
-      <div class="flex-grow grid grid-cols-1 grid-rows-1 items-center">
+      <div class="grow grid grid-cols-1 grid-rows-1 items-center">
         <!-- Reflective view transitions -->
         {#key currentStep}
           <div class="col-start-1 row-start-1 w-full" in:fade={{ duration: 380, delay: 100 }} out:fade={{ duration: 220 }}>
