@@ -80,6 +80,14 @@
   $effect(() => {
     if (sentinel && observer) observer.observe(sentinel);
   });
+
+  // Re-fetch when a sync invalidates the cache while this view is mounted
+  $effect(() => {
+    if (appCache.recentListens.length === 0 && !loading && !appCache.recentExhausted) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      loadMore();
+    }
+  });
 </script>
 
 <div class="w-full pb-28">
