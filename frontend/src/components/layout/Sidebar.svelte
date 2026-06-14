@@ -4,10 +4,10 @@
   import Icon from './Icon.svelte';
 
   // Svelte 5 bindable props
-  let { 
-    activeTab = $bindable() 
-  }: { 
-    activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings';
+  let {
+    activeTab = $bindable()
+  }: {
+    activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent';
   } = $props();
 
   let activeThemeMeta = $derived(themeMetadata.find(t => t.id === themeManager.currentTheme));
@@ -97,15 +97,33 @@
         </li>
 
         <li>
-          <button 
+          <button
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class:text-theme-accent={activeTab === 'recent'}
+            class:text-theme-secondary={activeTab !== 'recent'}
+            onclick={() => { activeTab = 'recent'; closeSidebar(); }}
+          >
+            <Icon
+              name="clock"
+              size="w-6 h-6"
+              class="transition-transform duration-300 group-hover:scale-105 {activeTab === 'recent' ? 'text-theme-accent' : 'text-theme-muted'}"
+            />
+            <span class="transition-transform duration-300 group-hover:translate-x-1" class:translate-x-1={activeTab === 'recent'}>
+              Journal
+            </span>
+          </button>
+        </li>
+
+        <li>
+          <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'settings'}
             class:text-theme-secondary={activeTab !== 'settings'}
             onclick={() => { activeTab = 'settings'; closeSidebar(); }}
           >
-            <Icon 
-              name="settings" 
-              size="w-6 h-6" 
+            <Icon
+              name="settings"
+              size="w-6 h-6"
               class="transition-transform duration-300 group-hover:scale-105 {activeTab === 'settings' ? 'text-theme-accent' : 'text-theme-muted'}"
             />
             <span class="transition-transform duration-300 group-hover:translate-x-1" class:translate-x-1={activeTab === 'settings'}>

@@ -3,7 +3,7 @@
   import { themeManager, themes } from '../../services/theme.svelte';
   import Icon from './Icon.svelte';
 
-  let { activeTab = $bindable() }: { activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' } = $props();
+  let { activeTab = $bindable() }: { activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent' } = $props();
 
   let scrollY = $state(0);
 
@@ -20,6 +20,7 @@
       case 'charts': return 'charts';
       case 'wrapped': return 'reviews';
       case 'settings': return 'settings';
+      case 'recent': return 'journal';
       default: return '';
     }
   });

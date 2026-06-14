@@ -20,6 +20,13 @@ class TrackInfo(BaseModel):
     title: str
     play_count: int
 
+class ListenEntry(BaseModel):
+    id: int
+    artist: str
+    title: str
+    unix_ts: int
+    source: str
+
 class MonthlyTrendInfo(BaseModel):
     month: str
     count: int

@@ -9,12 +9,13 @@
   import ChartsView from './views/ChartsView.svelte';
   import WrappedView from './views/WrappedView.svelte';
   import SettingsView from './views/SettingsView.svelte';
+  import RecentView from './views/RecentView.svelte';
 
   import { themeManager } from './services/theme.svelte';
   import { appCache } from './services/store.svelte';
 
   // Navigation state using Svelte 5 state rune
-  let activeTab = $state<'dashboard' | 'charts' | 'wrapped' | 'settings'>('dashboard');
+  let activeTab = $state<'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent'>('dashboard');
 
   onMount(() => {
     themeManager.init();
@@ -44,13 +45,15 @@
       {#key activeTab}
         <div in:fade={{ duration: 160, delay: 120 }} out:fade={{ duration: 120 }} class="w-full">
           {#if activeTab === 'dashboard'}
-            <OverviewView />
+            <OverviewView bind:activeTab />
           {:else if activeTab === 'charts'}
             <ChartsView />
           {:else if activeTab === 'wrapped'}
             <WrappedView />
           {:else if activeTab === 'settings'}
             <SettingsView />
+          {:else if activeTab === 'recent'}
+            <RecentView />
           {/if}
         </div>
       {/key}

@@ -6,6 +6,7 @@ import app.sync as sync_worker
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
+    ListenEntry,
     TrackInfo,
     MonthlyTrendInfo,
     StreakStatsResponse,
@@ -72,6 +73,15 @@ def read_wrapped(
             detail="You must specify a 'year' parameter.",
         )
     return repo.get_wrapped_data(year=year, quarter=quarter, month=month)
+
+@router.get("/recent", response_model=List[ListenEntry])
+def read_recent(
+    limit: int = Query(50, ge=1, le=100, description="Max results per page (1–100)"),
+    before_ts: Optional[int] = Query(None, description="Cursor: unix_ts of the last item from the previous page"),
+    before_id: Optional[int] = Query(None, description="Cursor: id of the last item from the previous page"),
+) -> Any:
+    """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
+    return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
 
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(

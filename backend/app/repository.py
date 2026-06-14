@@ -2,7 +2,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, List
 import os
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, func, desc, distinct, text
+from sqlalchemy import select, func, desc, distinct, text, tuple_
 from app.db import get_engine, Listen
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
 
@@ -293,6 +293,26 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
             "peak_day": peak_day,
             "minutes_listened": minutes_listened
         }
+
+def get_recent_listens(
+    limit: int = 50,
+    before_ts: int | None = None,
+    before_id: int | None = None,
+) -> list[dict[str, Any]]:
+    """Retrieve recent listens in reverse-chronological order using cursor-based keyset pagination.
+
+    Pass before_ts and before_id (from the last item of the previous page) to get the next page.
+    """
+    with get_engine().connect() as conn:
+        stmt = select(Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source)
+        if before_ts is not None and before_id is not None:
+            stmt = stmt.where(tuple_(Listen.unix_ts, Listen.id) < (before_ts, before_id))
+        stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
+        rows = conn.execute(stmt).all()
+        return [
+            {"id": r.id, "artist": r.artist, "title": r.title, "unix_ts": r.unix_ts, "source": r.source}
+            for r in rows
+        ]
 
 def deduplicate_listens() -> int:
     """

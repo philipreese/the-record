@@ -17,6 +17,7 @@ export type TrackInfo = components['schemas']['TrackInfo'];
 export type MonthlyTrendInfo = components['schemas']['MonthlyTrendInfo'];
 export type SyncStatusInfo = components['schemas']['SyncStatusResponse'];
 export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
+export type ListenEntry = components['schemas']['ListenEntry'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -93,6 +94,19 @@ export async function triggerSync(forceFull: boolean): Promise<any> {
     const errData = await res.json();
     throw new Error(errData.detail || 'Sync failed to start.');
   }
+  return res.json();
+}
+
+export async function fetchRecentListens(
+  limit: number = 50,
+  before_ts?: number,
+  before_id?: number,
+): Promise<ListenEntry[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (before_ts !== undefined) params.set('before_ts', String(before_ts));
+  if (before_id !== undefined) params.set('before_id', String(before_id));
+  const res = await apiFetch(`/api/recent?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch recent listens');
   return res.json();
 }
 
