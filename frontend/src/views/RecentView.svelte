@@ -3,6 +3,7 @@
   import { fetchRecentListens, type ListenEntry } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
+  import { sourceLabel, timeOnly, relativeTimeShort, absoluteTime } from '../utils/listens';
 
   const PAGE_SIZE = 50;
 
@@ -11,40 +12,12 @@
   let observer: IntersectionObserver | undefined;
   let scrollThrottle: ReturnType<typeof setTimeout> | undefined;
 
-  const SOURCE_LABELS: Record<string, string> = {
-    listenbrainz: 'ListenBrainz',
-    listenbrainz_sync: 'ListenBrainz',
-    youtube: 'YouTube Music',
-    google_takeout: 'Takeout',
-  };
-
-  function sourceLabel(source: string): string {
-    return SOURCE_LABELS[source] ?? 'Other';
-  }
-
-  function relativeTime(unix_ts: number): string {
-    const diff = Math.floor(Date.now() / 1000) - unix_ts;
-    if (diff < 60) return 'just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-    return new Date(unix_ts * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
-  function absoluteTime(unix_ts: number): string {
-    return new Date(unix_ts * 1000).toLocaleString(undefined, {
-      weekday: 'short', month: 'short', day: 'numeric',
-      year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
-  }
-
   function dayKey(unix_ts: number): string {
     return new Date(unix_ts * 1000).toLocaleDateString(undefined, {
       weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
     });
   }
 
-  // Group entries: returns an array of {day, entries} blocks
   let grouped = $derived.by(() => {
     const result: { day: string; entries: ListenEntry[] }[] = [];
     let currentDay = '';
@@ -64,11 +37,7 @@
     loading = true;
     try {
       const last = appCache.recentListens[appCache.recentListens.length - 1];
-      const page = await fetchRecentListens(
-        PAGE_SIZE,
-        last?.unix_ts,
-        last?.id,
-      );
+      const page = await fetchRecentListens(PAGE_SIZE, last?.unix_ts, last?.id);
       appCache.recentListens = [...appCache.recentListens, ...page];
       if (page.length < PAGE_SIZE) appCache.recentExhausted = true;
     } catch (e) {
@@ -88,16 +57,13 @@
 
   onMount(async () => {
     window.addEventListener('scroll', onScroll, { passive: true });
-
     if (appCache.recentListens.length === 0) {
       await loadMore();
     } else {
-      // Restore scroll position after Svelte renders the cached list
       requestAnimationFrame(() => {
         window.scrollTo({ top: appCache.recentScrollOffset, behavior: 'instant' });
       });
     }
-
     observer = new IntersectionObserver(
       (entries) => { if (entries[0].isIntersecting) loadMore(); },
       { rootMargin: '200px' },
@@ -111,23 +77,21 @@
     if (scrollThrottle) clearTimeout(scrollThrottle);
   });
 
-  // Re-observe sentinel when it mounts (Svelte may bind it after onMount)
   $effect(() => {
     if (sentinel && observer) observer.observe(sentinel);
   });
 </script>
 
-<div class="w-full max-w-2xl mx-auto pb-16">
+<div class="w-full pb-28">
   <PageHeader title="journal" subtitle="your complete listening history" />
 
   {#if appCache.recentListens.length === 0 && loading}
-    <!-- Initial loading skeleton -->
-    <div class="space-y-1 mt-4">
-      {#each { length: 12 } as _}
-        <div class="flex items-center gap-3 py-3 px-2 animate-pulse">
-          <div class="h-3 bg-base-300 rounded w-28 shrink-0"></div>
+    <div class="space-y-1 mt-6">
+      {#each { length: 14 } as _}
+        <div class="flex items-center gap-4 py-3 px-2 animate-pulse">
+          <div class="h-3 bg-base-300 rounded w-24 shrink-0"></div>
           <div class="flex-1 h-3 bg-base-300 rounded"></div>
-          <div class="h-3 bg-base-300 rounded w-20 shrink-0"></div>
+          <div class="h-3 bg-base-300 rounded w-32 shrink-0"></div>
         </div>
       {/each}
     </div>
@@ -136,32 +100,46 @@
     <div class="text-center text-base-content/40 mt-16 text-sm">No listens yet.</div>
 
   {:else}
-    <div class="space-y-8 mt-4">
+    <div class="space-y-10 mt-6">
       {#each grouped as group}
         <div>
-          <div class="text-xs uppercase tracking-widest text-base-content/40 font-mono mb-2 pl-2 border-b border-base-content/10 pb-1">
-            {group.day}
+          <!-- Day divider with play count -->
+          <div class="flex items-baseline justify-between border-b border-base-content/10 pb-1.5 mb-1">
+            <span class="text-xs uppercase tracking-widest text-base-content/50 font-mono">
+              {group.day}
+            </span>
+            <span class="text-xs font-mono text-base-content/35 tabular-nums">
+              {group.entries.length} {group.entries.length === 1 ? 'play' : 'plays'}
+            </span>
           </div>
-          <div class="space-y-0">
+
+          <!-- Entries -->
+          <div>
             {#each group.entries as entry (entry.id)}
-              <div class="flex items-center gap-3 py-2.5 px-2 rounded hover:bg-base-200/50 transition-colors group">
-                <div class="w-28 shrink-0 text-right">
-                  <span
-                    class="text-xs text-base-content/40 group-hover:text-base-content/60 transition-colors font-mono tabular-nums"
-                    title={absoluteTime(entry.unix_ts)}
-                  >
-                    {relativeTime(entry.unix_ts)}
+              {@const label = sourceLabel(entry.source)}
+              <div class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group">
+                <!-- Timestamp: HH:MM · relative -->
+                <div class="w-36 shrink-0 text-right" title={absoluteTime(entry.unix_ts)}>
+                  <span class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors">
+                    {timeOnly(entry.unix_ts)}
+                    {#if relativeTimeShort(entry.unix_ts)}
+                      <span class="text-base-content/35"> · {relativeTimeShort(entry.unix_ts)}</span>
+                    {/if}
                   </span>
                 </div>
+
+                <!-- Title + artist -->
                 <div class="flex-1 min-w-0">
-                  <span class="text-sm font-medium truncate block">{entry.title}</span>
-                  <span class="text-xs text-base-content/50 truncate block">{entry.artist}</span>
+                  <span class="text-sm font-medium leading-snug truncate block text-base-content">{entry.title}</span>
+                  <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
                 </div>
-                <div class="shrink-0">
-                  <span class="badge badge-ghost badge-xs text-base-content/40 font-mono">
-                    {sourceLabel(entry.source)}
-                  </span>
-                </div>
+
+                <!-- Source badge: only for non-LB sources -->
+                {#if label}
+                  <div class="shrink-0">
+                    <span class="badge badge-ghost badge-xs text-base-content/45 font-mono">{label}</span>
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>
@@ -169,7 +147,6 @@
       {/each}
     </div>
 
-    <!-- Infinite scroll sentinel -->
     {#if !appCache.recentExhausted}
       <div bind:this={sentinel} class="h-8 mt-4"></div>
       {#if loading}
@@ -178,7 +155,7 @@
         </div>
       {/if}
     {:else}
-      <div class="text-center text-base-content/30 text-xs font-mono mt-8 py-4 border-t border-base-content/10">
+      <div class="text-center text-base-content/30 text-xs font-mono mt-10 py-4 border-t border-base-content/10">
         — end of history —
       </div>
     {/if}
