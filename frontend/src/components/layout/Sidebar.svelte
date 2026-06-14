@@ -44,7 +44,7 @@
       <ul class="flex flex-col gap-5 font-sans text-base mt-6">
         <li>
           <button 
-            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'dashboard'}
             class:text-theme-secondary={activeTab !== 'dashboard'}
             onclick={() => { activeTab = 'dashboard'; closeSidebar(); }}
@@ -62,7 +62,7 @@
         
         <li>
           <button 
-            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'charts'}
             class:text-theme-secondary={activeTab !== 'charts'}
             onclick={() => { activeTab = 'charts'; closeSidebar(); }}
@@ -80,7 +80,7 @@
 
         <li>
           <button 
-            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'wrapped'}
             class:text-theme-secondary={activeTab !== 'wrapped'}
             onclick={() => { activeTab = 'wrapped'; closeSidebar(); }}
@@ -98,7 +98,7 @@
 
         <li>
           <button
-            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'recent'}
             class:text-theme-secondary={activeTab !== 'recent'}
             onclick={() => { activeTab = 'recent'; closeSidebar(); }}
@@ -116,7 +116,7 @@
 
         <li>
           <button
-            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-[var(--t-responsive)] var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={activeTab === 'settings'}
             class:text-theme-secondary={activeTab !== 'settings'}
             onclick={() => { activeTab = 'settings'; closeSidebar(); }}
@@ -176,6 +176,18 @@
             Connecting to archive...
           </div>
         {/if}
+
+        <!-- Sync trigger -->
+        <div class="pt-3">
+          <button
+            class="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded border border-theme-border-soft text-xs font-mono text-theme-muted hover:text-theme-accent hover:border-theme-accent transition-colors cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={appCache.isSyncing}
+            onclick={() => appCache.runSync(false)}
+          >
+            <Icon name="sync" size="w-3.5 h-3.5" class={appCache.isSyncing ? 'animate-spin' : ''} />
+            {appCache.isSyncing ? 'syncing…' : 'sync now'}
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -20,6 +20,7 @@
     fetchMonthlyTrends,
     fetchRecentListens,
   } from '../services/api';
+  import { sourceLabel, timeOnly, relativeTimeShort } from '../utils/listens';
   
   import { appCache } from '../services/store.svelte';
 
@@ -153,7 +154,7 @@
           {/if}
           <div class="flex items-baseline gap-1.5">
             <span 
-              class="font-light font-sans tracking-tighter text-theme-accent transition-all duration-[var(--t-responsive)] var(--ease-fluid)"
+              class="font-light font-sans tracking-tighter text-theme-accent transition-all duration-(--t-responsive) var(--ease-fluid)"
               class:text-2xl={isShrunk}
               class:text-4xl={!isShrunk}
               class:lg:text-3xl={isShrunk}
@@ -171,10 +172,10 @@
   <!-- Layer 1: High-Signal Emotional/Reflective Narrative Hero Splash -->
   <div class="hero-splash-container min-h-[62vh] lg:min-h-[72vh] flex flex-col justify-between">
     <!-- Middle Row: Narrative Text + Watermarked Artwork -->
-    <div class="relative flex-grow flex items-center py-6 lg:py-10">
+    <div class="relative grow flex items-center py-6 lg:py-10">
       
       <!-- Background artwork watermark -->
-      <div class="absolute -right-8 -bottom-10 lg:right-12 lg:bottom-0 w-[260px] md:w-[340px] lg:w-[400px] aspect-square opacity-[0.06] dark:opacity-[0.09] pointer-events-none select-none overflow-hidden rounded-full">
+      <div class="absolute -right-8 -bottom-10 lg:right-12 lg:bottom-0 w-65 md:w-85 lg:w-100 aspect-square opacity-[0.06] dark:opacity-[0.09] pointer-events-none select-none overflow-hidden rounded-full">
         <img 
           src={listeningJournalImg} 
           alt="" 
@@ -193,7 +194,7 @@
     </div>
 
     <!-- Bottom dissolve gradient overlay -->
-    <div class="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[var(--bg-base)] to-transparent pointer-events-none z-10"></div>
+    <div class="absolute bottom-0 left-0 right-0 h-28 bg-linear-to-t from-(--bg-base) to-transparent pointer-events-none z-10"></div>
   </div>
 
   <!-- Layer 2: Behavioral Patterns -->
@@ -202,7 +203,7 @@
     <!-- 01 / Heatmap & Monthly Section -->
     <div 
       use:inView={{ once: true }}
-      class="flex flex-col gap-6 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+      class="flex flex-col gap-6 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
       class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'heatmap'}
       role="region"
       onmouseenter={() => currentFocusZone = 'heatmap'}
@@ -250,7 +251,7 @@
       <!-- Hourly clock -->
       <div 
         use:inView={{ once: true }}
-        class="space-y-4 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+        class="space-y-4 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
         class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'clock'}
         role="region"
         onmouseenter={() => currentFocusZone = 'clock'}
@@ -267,7 +268,7 @@
       <!-- Streak tracker -->
       <div 
         use:inView={{ once: true }}
-        class="space-y-4 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+        class="space-y-4 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
         class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'streak'}
         role="region"
         onmouseenter={() => currentFocusZone = 'streak'}
@@ -288,7 +289,7 @@
   <!-- Layer 3: Telemetry & Raw Counts -->
   <div
     use:inView={{ once: true }}
-    class="pt-30 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+    class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
     class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
     role="region"
     onmouseenter={() => currentFocusZone = 'telemetry'}
@@ -312,7 +313,7 @@
   <!-- Layer 4: Recent Scrobbles Snippet -->
   <div
     use:inView={{ once: true }}
-    class="pt-30 space-y-8 transition-all duration-[var(--t-responsive)] var(--ease-fluid) reveal-container"
+    class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
     class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
     role="region"
     onmouseenter={() => currentFocusZone = 'recent'}
@@ -343,16 +344,23 @@
       {:else}
         <div class="space-y-0">
           {#each appCache.recentListens.slice(0, 10) as entry (entry.id)}
-            <div class="flex items-center gap-3 py-2.5 px-2 rounded hover:bg-base-200/50 transition-colors">
-              <div class="w-24 shrink-0 text-right">
-                <span class="text-xs text-base-content/40 font-mono tabular-nums">
-                  {new Date(entry.unix_ts * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+            {@const label = sourceLabel(entry.source)}
+            <div class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group">
+              <div class="w-36 shrink-0 text-right">
+                <span class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors">
+                  {timeOnly(entry.unix_ts)}
+                  {#if relativeTimeShort(entry.unix_ts)}
+                    <span class="text-base-content/35"> · {relativeTimeShort(entry.unix_ts)}</span>
+                  {/if}
                 </span>
               </div>
               <div class="flex-1 min-w-0">
-                <span class="text-sm font-medium truncate block">{entry.title}</span>
-                <span class="text-xs text-base-content/50 truncate block">{entry.artist}</span>
+                <span class="text-sm font-medium truncate block text-base-content">{entry.title}</span>
+                <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
               </div>
+              {#if label}
+                <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0">{label}</span>
+              {/if}
             </div>
           {/each}
         </div>
