@@ -6,6 +6,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   base: process.env.GITHUB_PAGES ? '/the-record/' : '/',
   plugins: [tailwindcss(), svelte()],
+  // Svelte 5 needs the browser build resolved under Vitest so runes work in .svelte.ts modules.
+  resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
   server: {
     proxy: {
       '/api': {
