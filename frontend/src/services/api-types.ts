@@ -641,7 +641,9 @@ export interface operations {
                 /** @description Sync mode: 'normal' or 'full' */
                 mode?: "normal" | "full";
             };
-            header?: never;
+            header?: {
+                "x-sync-token"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
