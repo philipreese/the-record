@@ -1,6 +1,7 @@
 <script lang="ts">
   import { appCache } from '../../services/store.svelte';
   import Icon from './Icon.svelte';
+  import NowPlaying from '../NowPlaying.svelte';
 
   // Svelte 5 bindable props
   let {
@@ -181,6 +182,7 @@
 
     <!-- Bottom Stable Memory Anchor -->
     <div class="border-t border-theme-border-soft pt-6">
+      <NowPlaying compact />
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">

@@ -10,6 +10,7 @@
   import StreakTracker from '../components/StreakTracker.svelte';
   import StatsGrid from '../components/dashboard/StatsGrid.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
+  import NowPlaying from '../components/NowPlaying.svelte';
   import listeningJournalImg from '../assets/listening_journal.png';
 
   import {
@@ -376,79 +377,95 @@
     </div>
   </div>
 
-  <!-- Layer 4: Recent Scrobbles Snippet -->
-  <div
-    use:inView={{ once: true }}
-    class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-    class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
-    role="region"
-    onmouseenter={() => (currentFocusZone = 'recent')}
-    onmouseleave={() => (currentFocusZone = null)}
-    id="recent-scrobbles"
-  >
+  <!-- Layer 4: Recent Scrobbles + Now Playing -->
+  <div class="pt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
     <div
-      class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between"
+      use:inView={{ once: true }}
+      class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
+      class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
+      role="region"
+      onmouseenter={() => (currentFocusZone = 'recent')}
+      onmouseleave={() => (currentFocusZone = null)}
+      id="recent-scrobbles"
     >
-      <h2 class="editorial-text-h2">04 / Recent Scrobbles</h2>
-      <button
-        class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
-        onclick={() => (activeTab = 'recent')}
+      <div
+        class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between"
       >
-        View full journal →
-      </button>
-    </div>
-    <div class="reveal-content">
-      {#if appCache.recentListens.length === 0 && loadingStats}
-        <div class="space-y-1">
-          {#each { length: 5 } as _}
-            <div class="flex items-center gap-3 py-2.5 px-2 animate-pulse">
-              <div class="h-3 bg-base-300 rounded w-20 shrink-0"></div>
-              <div class="flex-1 h-3 bg-base-300 rounded"></div>
-            </div>
-          {/each}
-        </div>
-      {:else if appCache.recentListens.length === 0}
-        <p class="text-sm text-base-content/40 font-mono">No listens yet.</p>
-      {:else}
-        <div class="space-y-0">
-          {#each appCache.recentListens.slice(0, 10) as entry (entry.id)}
-            {@const label = sourceLabel(entry.source)}
-            <div
-              class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group"
+        <h2 class="editorial-text-h2">04 / Recent Scrobbles</h2>
+        <button
+          class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
+          onclick={() => (activeTab = 'recent')}
+        >
+          View full journal →
+        </button>
+      </div>
+      <div class="reveal-content">
+        {#if appCache.recentListens.length === 0 && loadingStats}
+          <div class="space-y-1">
+            {#each { length: 5 } as _}
+              <div class="flex items-center gap-3 py-2.5 px-2 animate-pulse">
+                <div class="h-3 bg-base-300 rounded w-20 shrink-0"></div>
+                <div class="flex-1 h-3 bg-base-300 rounded"></div>
+              </div>
+            {/each}
+          </div>
+        {:else if appCache.recentListens.length === 0}
+          <p class="text-sm text-base-content/40 font-mono">No listens yet.</p>
+        {:else}
+          <div class="space-y-0">
+            {#each appCache.recentListens.slice(0, 10) as entry (entry.id)}
+              {@const label = sourceLabel(entry.source)}
+              <div
+                class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group"
+              >
+                <div class="w-36 shrink-0 text-right">
+                  <span
+                    class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
+                  >
+                    {timeOnly(entry.unix_ts)}
+                    {#if relativeTimeShort(entry.unix_ts)}
+                      <span class="text-base-content/35">
+                        · {relativeTimeShort(entry.unix_ts)}</span
+                      >
+                    {/if}
+                  </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <span class="text-sm font-medium truncate block text-base-content"
+                    >{entry.title}</span
+                  >
+                  <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
+                </div>
+                {#if label}
+                  <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0"
+                    >{label}</span
+                  >
+                {/if}
+              </div>
+            {/each}
+          </div>
+          <div class="pt-2">
+            <button
+              class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
+              onclick={() => (activeTab = 'recent')}
             >
-              <div class="w-36 shrink-0 text-right">
-                <span
-                  class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
-                >
-                  {timeOnly(entry.unix_ts)}
-                  {#if relativeTimeShort(entry.unix_ts)}
-                    <span class="text-base-content/35"> · {relativeTimeShort(entry.unix_ts)}</span>
-                  {/if}
-                </span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <span class="text-sm font-medium truncate block text-base-content"
-                  >{entry.title}</span
-                >
-                <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
-              </div>
-              {#if label}
-                <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0"
-                  >{label}</span
-                >
-              {/if}
-            </div>
-          {/each}
-        </div>
-        <div class="pt-2">
-          <button
-            class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
-            onclick={() => (activeTab = 'recent')}
-          >
-            View full journal →
-          </button>
-        </div>
-      {/if}
+              View full journal →
+            </button>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Now Playing / Last Played column -->
+    <div
+      use:inView={{ once: true }}
+      class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
+      class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
+      role="region"
+      onmouseenter={() => (currentFocusZone = 'recent')}
+      onmouseleave={() => (currentFocusZone = null)}
+    >
+      <NowPlaying />
     </div>
   </div>
 </div>
