@@ -123,6 +123,10 @@ class ThemeManager {
       if (savedTheme && themes.includes(savedTheme)) {
         this.currentTheme = savedTheme;
       }
+      // Restore the last extracted ambient color so music-mood shows the dynamic
+      // accent immediately on page load, before the first poll completes.
+      const savedAccent = localStorage.getItem('music-mood-accent');
+      if (savedAccent) this.ambientColor = savedAccent;
       this.apply(this.currentTheme);
     }
   }
@@ -133,7 +137,12 @@ class ThemeManager {
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        // Re-apply current ambient color to trigger contrast calculations under new theme background
+        // When switching back to music-mood with no in-memory ambient color (e.g. after
+        // getDominantColor failed), restore the last persisted color from localStorage.
+        if (theme === 'music-mood' && !this.ambientColor) {
+          const saved = localStorage.getItem('music-mood-accent');
+          if (saved) this.ambientColor = saved;
+        }
         this.setAmbientColor(this.ambientColor);
       }
     }
@@ -223,6 +232,9 @@ class ThemeManager {
 
     // Dynamic ambient glow variable for backing radial layouts (15% opacity)
     document.documentElement.style.setProperty('--ambient-glow', `${adjustedHex}26`);
+
+    // Persist the raw extracted hex so it survives page refresh and theme switching.
+    localStorage.setItem('music-mood-accent', hex);
   }
 }
 

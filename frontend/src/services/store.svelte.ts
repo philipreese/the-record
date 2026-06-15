@@ -125,8 +125,13 @@ class AppCache {
       if (coverUrl !== this._lastExtractedCoverUrl) {
         this._lastExtractedCoverUrl = coverUrl;
         if (coverUrl) {
-          getDominantColor(coverUrl).then((color) => themeManager.setAmbientColor(color));
+          getDominantColor(coverUrl).then((color) => {
+            // Only update when extraction succeeds. A null result (CORS block, load error)
+            // is not the same as "no art" — keep the current ambient color in that case.
+            if (color) themeManager.setAmbientColor(color);
+          });
         } else {
+          // No cover URL at all — genuinely reset the dynamic accent
           themeManager.setAmbientColor(null);
         }
       }
