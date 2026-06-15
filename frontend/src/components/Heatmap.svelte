@@ -152,13 +152,13 @@
 <div
   bind:this={containerElement}
   use:inView={{ once: true }}
-  class="w-full memory-surface heatmap-container !p-6 relative overflow-visible"
+  class="w-full memory-surface heatmap-container p-6! relative overflow-visible"
   style="min-width: 320px; max-width: 100%;"
 >
   <div class="w-full overflow-x-auto scrollbar-thin">
     <svg
       viewBox="0 0 835 150"
-      class="min-w-[780px] w-full h-auto"
+      class="min-w-195 w-full h-auto"
       preserveAspectRatio="xMidYMid meet"
       style="color: var(--text-primary);"
     >
@@ -231,7 +231,7 @@
                     width="12"
                     height="12"
                     rx="2.5"
-                    class="heatmap-cell transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 cursor-pointer"
+                    class="heatmap-cell transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 cursor-pointer"
                     class:fill-base-300={day.weight === 0}
                     style="
                        fill: {day.weight > 0 ? 'var(--accent)' : ''};

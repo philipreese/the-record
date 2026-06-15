@@ -51,7 +51,7 @@
   <div class="space-y-1.5">
     <div class="text-caps text-theme-muted">Top Source</div>
     <div
-      class="text-lg font-light tracking-wide truncate h-[3rem] flex items-center capitalize text-theme-text"
+      class="text-lg font-light tracking-wide truncate h-12 flex items-center capitalize text-theme-text"
       use:tooltip
     >
       {stats.top_source.replace('_', ' ')}

@@ -35,7 +35,7 @@
 
 <!-- Using first-class memory-surface class with heatmap-matching padding !p-6 -->
 <div
-  class="memory-surface heatmap-container flex flex-col justify-between h-full min-h-[220px] !p-6 relative overflow-visible"
+  class="memory-surface heatmap-container flex flex-col justify-between h-full min-h-55 p-6! relative overflow-visible"
 >
   <div class="flex justify-between items-center mb-4">
     <span class="text-caps text-[10px] text-theme-muted tracking-widest uppercase"
@@ -44,9 +44,9 @@
   </div>
 
   <!-- Chart Area -->
-  <div class="flex-grow flex items-end gap-1.5 h-52 px-1 relative">
+  <div class="grow flex items-end gap-1.5 h-52 px-1 relative">
     {#each monthsData as month}
-      <div class="flex-grow h-full flex flex-col justify-end items-center group relative">
+      <div class="grow h-full flex flex-col justify-end items-center group relative">
         <!-- Custom styled tooltip (matching heatmap hover states) -->
         <div
           class="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none"
@@ -71,7 +71,7 @@
 
         <!-- The Bar (Flat Accent Solid Fill with Scaled Opacity) -->
         <div
-          class="w-full rounded-t-sm transition-all duration-[var(--t-responsive)] var(--ease-fluid) group-hover:brightness-110 cursor-pointer"
+          class="w-full rounded-t-sm transition-all duration-(--t-responsive) var(--ease-fluid) group-hover:brightness-110 cursor-pointer"
           style="
             height: {month.percent}%;
             background-color: var(--accent);
