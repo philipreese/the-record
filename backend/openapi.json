@@ -618,6 +618,17 @@
           "unix_ts": {
             "type": "integer",
             "title": "Unix Ts"
+          },
+          "cover_art_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Art Url"
           }
         },
         "type": "object",

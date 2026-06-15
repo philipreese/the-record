@@ -74,6 +74,7 @@ class LastPlayedEntry(BaseModel):
     artist: str
     title: str
     unix_ts: int
+    cover_art_url: Optional[str] = None
 
 class PlayingNowResponse(BaseModel):
     is_playing: bool
