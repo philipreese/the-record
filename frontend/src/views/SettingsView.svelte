@@ -17,6 +17,10 @@
     appCache.runSync(forceFull);
   }
 
+  let tokenInput = $state(appCache.syncToken);
+  function saveToken() { appCache.setSyncToken(tokenInput); }
+  function clearToken() { tokenInput = ''; appCache.setSyncToken(''); }
+
   // Auto-fetch database stats if not loaded yet
   $effect(() => {
     if (!appCache.isSyncing && !appCache.stats) {
@@ -148,6 +152,42 @@
         </div>
       </div>
 
+      <!-- Sync Authentication Card -->
+      <div class="memory-surface-nested">
+        <h3 class="text-sm md:text-base font-mono tracking-widest uppercase text-theme-muted mb-6">Sync Authentication</h3>
+        <p class="text-base font-light text-theme-muted mb-6 leading-relaxed">
+          Paste your sync token to enable archive synchronization. Public visitors without a token see read-only mode.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 items-start">
+          <input
+            type="password"
+            class="input input-bordered w-full sm:max-w-sm font-mono text-sm"
+            placeholder="Paste sync token..."
+            bind:value={tokenInput}
+            onkeydown={(e) => e.key === 'Enter' && saveToken()}
+          />
+          <div class="flex gap-2">
+            <button
+              class="btn btn-primary btn-md cursor-pointer focus:outline-none"
+              onclick={saveToken}
+            >
+              Save
+            </button>
+            {#if appCache.syncToken}
+              <button
+                class="btn btn-ghost btn-md cursor-pointer focus:outline-none"
+                onclick={clearToken}
+              >
+                Clear
+              </button>
+            {/if}
+          </div>
+        </div>
+        {#if appCache.syncToken}
+          <p class="text-xs text-success font-mono mt-3">Token saved — sync controls unlocked.</p>
+        {/if}
+      </div>
+
       <!-- Sync Controls Section -->
       <div class="space-y-6">
         <div>
@@ -157,6 +197,7 @@
           </p>
         </div>
 
+        {#if appCache.syncToken}
         <div class="flex flex-col gap-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Incremental Sync Card -->
@@ -169,7 +210,7 @@
               </p>
             </div>
             <div>
-              <button 
+              <button
                 class="btn btn-primary btn-md shadow-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
                 disabled={appCache.isSyncing}
                 onclick={() => handleSync(false)}
@@ -195,7 +236,7 @@
               </p>
             </div>
             <div>
-              <button 
+              <button
                 class="btn btn-outline btn-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
                 disabled={appCache.isSyncing}
                 onclick={() => handleSync(true)}
@@ -222,8 +263,8 @@
                 </span>
               </div>
               <div class="w-full bg-base-300 h-1.5 rounded-full overflow-hidden">
-                <div 
-                  class="bg-theme-accent h-full transition-all duration-300 animate-pulse" 
+                <div
+                  class="bg-theme-accent h-full transition-all duration-300 animate-pulse"
                   style="width: {appCache.syncStatus.lb_total ? Math.min(100, (appCache.syncStatus.local_total / appCache.syncStatus.lb_total) * 100) : 50}%"
                 ></div>
               </div>
@@ -255,6 +296,9 @@
           {/if}
 
         </div>
+        {:else}
+          <p class="text-sm text-theme-muted font-light">Save a sync token above to enable archive synchronization controls.</p>
+        {/if}
       </div>
     </div>
   {/if}

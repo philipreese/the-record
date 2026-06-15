@@ -25,6 +25,7 @@ class SyncState:
     finished: bool = False
 
 _sync_state = SyncState()
+_sync_lock = asyncio.Lock()
 
 async def _run_sync(mode: str) -> None:
     """
@@ -40,7 +41,6 @@ async def _run_sync(mode: str) -> None:
         Pass B (forward): fast scan from newest LB entry down to MAX(local unix_ts)
           to capture any brand-new scrobbles added since the last sync.
     """
-    global _sync_state
 
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         _sync_state.error = "Credentials missing. Configure LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN."

@@ -32,6 +32,16 @@ class AppCache {
   recentScrollOffset = $state(0);
   recentExhausted = $state(false);
 
+  // Sync Authentication
+  syncToken = $state<string>(
+    typeof window !== 'undefined' ? (localStorage.getItem('syncToken') ?? '') : ''
+  );
+
+  setSyncToken(token: string) {
+    this.syncToken = token.trim();
+    if (typeof window !== 'undefined') localStorage.setItem('syncToken', this.syncToken);
+  }
+
   // Centralized Sync State
   isSyncing = $state(false);
   syncStatus = $state<SyncStatusInfo | null>(null);
