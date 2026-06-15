@@ -1,2 +1,9 @@
+# Normalize line endings to LF on commit for all text files
+* text=auto eol=lf
+
+# Windows batch files require CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
 # SCM syntax highlighting & preventing 3-way merges
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
