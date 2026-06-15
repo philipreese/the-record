@@ -24,13 +24,13 @@
 
 <svelte:window bind:scrollY />
 
-<div 
+<div
   class="sticky-header flex flex-row justify-between items-center gap-4 pb-4 transition-all duration-(--t-reflective) var(--ease-fluid)"
   class:lg:py-2={isShrunk}
   class:lg:py-4={!isShrunk}
 >
   <div class="flex flex-col justify-center">
-    <h1 
+    <h1
       class="font-serif italic lowercase tracking-tight transition-all duration-(--t-responsive) var(--ease-fluid)"
       class:text-3xl={isShrunk}
       class:text-4xl={!isShrunk}
@@ -45,7 +45,7 @@
       </div>
     {/if}
   </div>
-  
+
   {#if actions}
     {@render actions(isShrunk)}
   {/if}

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { inView } from '../../utils/inView';
 
-  let { 
-    value, 
+  let {
+    value,
     duration = 800,
-    class: className = ''
-  }: { 
-    value: number; 
+    class: className = '',
+  }: {
+    value: number;
     duration?: number;
     class?: string;
   } = $props();
@@ -37,10 +37,10 @@
     function update(now: number) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Cubic ease-out curve
       const ease = 1 - Math.pow(1 - progress, 3);
-      
+
       displayValue = Math.floor(startVal + (endVal - startVal) * ease);
 
       if (progress < 1) {
@@ -54,9 +54,6 @@
   }
 </script>
 
-<span 
-  use:inView={{ once: true, callback: handleVisibility }}
-  class={className}
->
+<span use:inView={{ once: true, callback: handleVisibility }} class={className}>
   {displayValue.toLocaleString()}
 </span>

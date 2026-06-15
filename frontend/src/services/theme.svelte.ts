@@ -27,27 +27,90 @@ export function stringToColor(str: string): string {
 }
 
 export const themes = [
-  "cool-slate",
-  "warm-dark",
-  "forest-deep",
-  "editorial-light",
-  "monochrome-dark",
-  "sepia-warm",
-  "charcoal-cozy",
-  "mist-gray",
-  "music-mood"
+  'cool-slate',
+  'warm-dark',
+  'forest-deep',
+  'editorial-light',
+  'monochrome-dark',
+  'sepia-warm',
+  'charcoal-cozy',
+  'mist-gray',
+  'music-mood',
 ];
 
 export const themeMetadata: ThemeInfo[] = [
-  { id: 'cool-slate', name: 'Cool Slate', category: 'Atmospheric', isDark: true, description: 'Cool blue-gray tones with soft azure highlights', colors: { bg: '#0f1115', accent: '#7899f5', text: '#e8eaf0' } },
-  { id: 'warm-dark', name: 'Warm Dark', category: 'Atmospheric', isDark: true, description: 'Gold accents on a warm graphite canvas', colors: { bg: '#131009', accent: '#c8a96e', text: '#f0e6d3' } },
-  { id: 'forest-deep', name: 'Forest Deep', category: 'Atmospheric', isDark: true, description: 'Muted emerald tones with misty mint details', colors: { bg: '#080c0a', accent: '#4eb588', text: '#e2f2ec' } },
-  { id: 'editorial-light', name: 'Editorial Light', category: 'Paper', isDark: false, description: 'High-contrast black text on alabaster paper', colors: { bg: '#faf9f6', accent: '#111111', text: '#111111' } },
-  { id: 'monochrome-dark', name: 'Monochrome Dark', category: 'Paper', isDark: true, description: 'Absolute carbon black with paper white accents', colors: { bg: '#000000', accent: '#ffffff', text: '#ffffff' } },
-  { id: 'sepia-warm', name: 'Sepia Warm', category: 'Comfort', isDark: false, description: 'Classic ink on warm, eye-friendly sepia book pages', colors: { bg: '#f5edd6', accent: '#6f4e37', text: '#3c2f2f' } },
-  { id: 'charcoal-cozy', name: 'Charcoal Cozy', category: 'Comfort', isDark: true, description: 'Warm amber glow on deep cozy hearth charcoal', colors: { bg: '#1a1614', accent: '#e5a93b', text: '#e6dfd9' } },
-  { id: 'mist-gray', name: 'Mist Gray', category: 'Comfort', isDark: false, description: 'Muted navy details on a soft fog-colored canvas', colors: { bg: '#edf0f5', accent: '#2e5cb8', text: '#1c2e4a' } },
-  { id: 'music-mood', name: 'Music Mood (Dynamic)', category: 'Atmospheric', isDark: true, description: 'UI accent colors and background glows shift to match selected artists and tracks', colors: { bg: '#0d0e12', accent: '#7899f5', text: '#e8eaf0' } }
+  {
+    id: 'cool-slate',
+    name: 'Cool Slate',
+    category: 'Atmospheric',
+    isDark: true,
+    description: 'Cool blue-gray tones with soft azure highlights',
+    colors: { bg: '#0f1115', accent: '#7899f5', text: '#e8eaf0' },
+  },
+  {
+    id: 'warm-dark',
+    name: 'Warm Dark',
+    category: 'Atmospheric',
+    isDark: true,
+    description: 'Gold accents on a warm graphite canvas',
+    colors: { bg: '#131009', accent: '#c8a96e', text: '#f0e6d3' },
+  },
+  {
+    id: 'forest-deep',
+    name: 'Forest Deep',
+    category: 'Atmospheric',
+    isDark: true,
+    description: 'Muted emerald tones with misty mint details',
+    colors: { bg: '#080c0a', accent: '#4eb588', text: '#e2f2ec' },
+  },
+  {
+    id: 'editorial-light',
+    name: 'Editorial Light',
+    category: 'Paper',
+    isDark: false,
+    description: 'High-contrast black text on alabaster paper',
+    colors: { bg: '#faf9f6', accent: '#111111', text: '#111111' },
+  },
+  {
+    id: 'monochrome-dark',
+    name: 'Monochrome Dark',
+    category: 'Paper',
+    isDark: true,
+    description: 'Absolute carbon black with paper white accents',
+    colors: { bg: '#000000', accent: '#ffffff', text: '#ffffff' },
+  },
+  {
+    id: 'sepia-warm',
+    name: 'Sepia Warm',
+    category: 'Comfort',
+    isDark: false,
+    description: 'Classic ink on warm, eye-friendly sepia book pages',
+    colors: { bg: '#f5edd6', accent: '#6f4e37', text: '#3c2f2f' },
+  },
+  {
+    id: 'charcoal-cozy',
+    name: 'Charcoal Cozy',
+    category: 'Comfort',
+    isDark: true,
+    description: 'Warm amber glow on deep cozy hearth charcoal',
+    colors: { bg: '#1a1614', accent: '#e5a93b', text: '#e6dfd9' },
+  },
+  {
+    id: 'mist-gray',
+    name: 'Mist Gray',
+    category: 'Comfort',
+    isDark: false,
+    description: 'Muted navy details on a soft fog-colored canvas',
+    colors: { bg: '#edf0f5', accent: '#2e5cb8', text: '#1c2e4a' },
+  },
+  {
+    id: 'music-mood',
+    name: 'Music Mood (Dynamic)',
+    category: 'Atmospheric',
+    isDark: true,
+    description: 'UI accent colors and background glows shift to match selected artists and tracks',
+    colors: { bg: '#0d0e12', accent: '#7899f5', text: '#e8eaf0' },
+  },
 ];
 
 class ThemeManager {
@@ -56,7 +119,7 @@ class ThemeManager {
 
   init() {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem("theme");
+      const savedTheme = localStorage.getItem('theme');
       if (savedTheme && themes.includes(savedTheme)) {
         this.currentTheme = savedTheme;
       }
@@ -69,7 +132,7 @@ class ThemeManager {
       this.currentTheme = theme;
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem("theme", theme);
+        localStorage.setItem('theme', theme);
         // Re-apply current ambient color to trigger contrast calculations under new theme background
         this.setAmbientColor(this.ambientColor);
       }
@@ -81,9 +144,12 @@ class ThemeManager {
     // Clean hex format
     let cleanHex = hex.replace('#', '');
     if (cleanHex.length === 3) {
-      cleanHex = cleanHex.split('').map(c => c + c).join('');
+      cleanHex = cleanHex
+        .split('')
+        .map((c) => c + c)
+        .join('');
     }
-    
+
     let r = parseInt(cleanHex.substring(0, 2), 16);
     let g = parseInt(cleanHex.substring(2, 4), 16);
     let b = parseInt(cleanHex.substring(4, 6), 16);
@@ -91,7 +157,7 @@ class ThemeManager {
     // Calculate relative luminance: L = 0.2126 * R + 0.7152 * G + 0.0722 * B
     // scaling R, G, B to 0..1
     const getLuminance = (rVal: number, gVal: number, bVal: number) => {
-      const a = [rVal, gVal, bVal].map(v => {
+      const a = [rVal, gVal, bVal].map((v) => {
         v /= 255;
         return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
       });
@@ -110,7 +176,7 @@ class ThemeManager {
       }
     } else {
       // If color is too light for light theme, scale its brightness down
-      while (luminance > 0.20 && (r > 0 || g > 0 || b > 0)) {
+      while (luminance > 0.2 && (r > 0 || g > 0 || b > 0)) {
         r = Math.max(0, Math.round(r * 0.8 - 5));
         g = Math.max(0, Math.round(g * 0.8 - 5));
         b = Math.max(0, Math.round(b * 0.8 - 5));
@@ -128,7 +194,7 @@ class ThemeManager {
 
   setAmbientColor(hex: string | null) {
     this.ambientColor = hex;
-    
+
     if (typeof document === 'undefined') return;
 
     // Static themes never allow dynamic color overrides
@@ -147,7 +213,7 @@ class ThemeManager {
       return;
     }
 
-    const currentMeta = themeMetadata.find(t => t.id === this.currentTheme);
+    const currentMeta = themeMetadata.find((t) => t.id === this.currentTheme);
     const isDark = currentMeta ? currentMeta.isDark : true;
     const adjustedHex = this.adjustColorForContrast(hex, isDark);
 

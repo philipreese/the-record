@@ -14,26 +14,29 @@ export function inView(node: HTMLElement, options: InViewOptions = {}) {
   const rootMargin = options.rootMargin ?? '0px 0px -50px 0px';
   const once = options.once ?? true;
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        node.classList.add('in-view');
-        options.callback?.(true);
-        if (once) {
-          observer.unobserve(node);
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          node.classList.add('in-view');
+          options.callback?.(true);
+          if (once) {
+            observer.unobserve(node);
+          }
+        } else if (!once) {
+          node.classList.remove('in-view');
+          options.callback?.(false);
         }
-      } else if (!once) {
-        node.classList.remove('in-view');
-        options.callback?.(false);
-      }
-    });
-  }, { threshold, rootMargin });
+      });
+    },
+    { threshold, rootMargin },
+  );
 
   observer.observe(node);
 
   return {
     destroy() {
       observer.disconnect();
-    }
+    },
   };
 }

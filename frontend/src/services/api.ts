@@ -1,14 +1,14 @@
 import type { components, paths } from './api-types';
 
-type _TopArtistsQuery = NonNullable<paths["/api/top-artists"]["get"]["parameters"]["query"]>;
-export type TimeRange = NonNullable<_TopArtistsQuery["range"]>;
+type _TopArtistsQuery = NonNullable<paths['/api/top-artists']['get']['parameters']['query']>;
+export type TimeRange = NonNullable<_TopArtistsQuery['range']>;
 
-type _SyncQuery = NonNullable<paths["/api/sync"]["post"]["parameters"]["query"]>;
-export type SyncMode = NonNullable<_SyncQuery["mode"]>;
+type _SyncQuery = NonNullable<paths['/api/sync']['post']['parameters']['query']>;
+export type SyncMode = NonNullable<_SyncQuery['mode']>;
 
-type _WrappedQuery = NonNullable<paths["/api/wrapped"]["get"]["parameters"]["query"]>;
-export type WrappedQuarter = NonNullable<_WrappedQuery["quarter"]>;
-export type WrappedMonth = NonNullable<_WrappedQuery["month"]>;
+type _WrappedQuery = NonNullable<paths['/api/wrapped']['get']['parameters']['query']>;
+export type WrappedQuarter = NonNullable<_WrappedQuery['quarter']>;
+export type WrappedMonth = NonNullable<_WrappedQuery['month']>;
 
 export type StatsInfo = components['schemas']['StatsSummaryResponse'];
 export type StreakInfo = components['schemas']['StreakStatsResponse'];
@@ -18,6 +18,7 @@ export type MonthlyTrendInfo = components['schemas']['MonthlyTrendInfo'];
 export type SyncStatusInfo = components['schemas']['SyncStatusResponse'];
 export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
 export type ListenEntry = components['schemas']['ListenEntry'];
+export type SyncStartInfo = components['schemas']['SyncStartResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -72,7 +73,7 @@ export async function generateWrapped(
   period: 'year' | 'quarter' | 'month',
   year: number,
   quarter: WrappedQuarter,
-  month: WrappedMonth
+  month: WrappedMonth,
 ): Promise<WrappedDataInfo> {
   const queryParams: string[] = [];
   queryParams.push(`year=${year}`);
@@ -82,12 +83,12 @@ export async function generateWrapped(
   const res = await apiFetch(`/api/wrapped?${queryParams.join('&')}`);
   if (!res.ok) {
     const errData = await res.json();
-    throw new Error(errData.detail || "Failed to generate Wrapped.");
+    throw new Error(errData.detail || 'Failed to generate Wrapped.');
   }
   return res.json();
 }
 
-export async function triggerSync(forceFull: boolean): Promise<any> {
+export async function triggerSync(forceFull: boolean): Promise<SyncStartInfo> {
   const url = forceFull ? '/api/sync?mode=full' : '/api/sync';
   const token = localStorage.getItem('syncToken') ?? '';
   const res = await apiFetch(url, {

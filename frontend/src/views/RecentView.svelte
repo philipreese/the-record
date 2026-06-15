@@ -14,7 +14,10 @@
 
   function dayKey(unix_ts: number): string {
     return new Date(unix_ts * 1000).toLocaleDateString(undefined, {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
     });
   }
 
@@ -65,7 +68,9 @@
       });
     }
     observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
       { rootMargin: '200px' },
     );
     if (sentinel) observer.observe(sentinel);
@@ -103,21 +108,22 @@
         </div>
       {/each}
     </div>
-
   {:else if grouped.length === 0}
     <div class="text-center text-base-content/40 mt-16 text-sm">No listens yet.</div>
-
   {:else}
     <div class="space-y-10 mt-6">
       {#each grouped as group}
         <div>
           <!-- Day divider with play count -->
-          <div class="flex items-baseline justify-between border-b border-base-content/10 pb-1.5 mb-1">
+          <div
+            class="flex items-baseline justify-between border-b border-base-content/10 pb-1.5 mb-1"
+          >
             <span class="text-xs uppercase tracking-widest text-base-content/50 font-mono">
               {group.day}
             </span>
             <span class="text-xs font-mono text-base-content/35 tabular-nums">
-              {group.entries.length} {group.entries.length === 1 ? 'play' : 'plays'}
+              {group.entries.length}
+              {group.entries.length === 1 ? 'play' : 'plays'}
             </span>
           </div>
 
@@ -125,27 +131,37 @@
           <div>
             {#each group.entries as entry (entry.id)}
               {@const label = sourceLabel(entry.source)}
-              <div class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group">
+              <div
+                class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group"
+              >
                 <!-- Timestamp: HH:MM · relative -->
                 <div class="w-36 shrink-0 text-right" title={absoluteTime(entry.unix_ts)}>
-                  <span class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors">
+                  <span
+                    class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
+                  >
                     {timeOnly(entry.unix_ts)}
                     {#if relativeTimeShort(entry.unix_ts)}
-                      <span class="text-base-content/35"> · {relativeTimeShort(entry.unix_ts)}</span>
+                      <span class="text-base-content/35">
+                        · {relativeTimeShort(entry.unix_ts)}</span
+                      >
                     {/if}
                   </span>
                 </div>
 
                 <!-- Title + artist -->
                 <div class="flex-1 min-w-0">
-                  <span class="text-sm font-medium leading-snug truncate block text-base-content">{entry.title}</span>
+                  <span class="text-sm font-medium leading-snug truncate block text-base-content"
+                    >{entry.title}</span
+                  >
                   <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
                 </div>
 
                 <!-- Source badge: only for non-LB sources -->
                 {#if label}
                   <div class="shrink-0">
-                    <span class="badge badge-ghost badge-xs text-base-content/45 font-mono">{label}</span>
+                    <span class="badge badge-ghost badge-xs text-base-content/45 font-mono"
+                      >{label}</span
+                    >
                   </div>
                 {/if}
               </div>
@@ -163,7 +179,9 @@
         </div>
       {/if}
     {:else}
-      <div class="text-center text-base-content/30 text-xs font-mono mt-10 py-4 border-t border-base-content/10">
+      <div
+        class="text-center text-base-content/30 text-xs font-mono mt-10 py-4 border-t border-base-content/10"
+      >
         — end of history —
       </div>
     {/if}

@@ -1,0 +1,4 @@
+dist
+.vite
+node_modules
+src/services/api-types.ts

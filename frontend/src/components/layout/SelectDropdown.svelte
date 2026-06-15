@@ -1,13 +1,13 @@
-<script lang="ts">
+<script lang="ts" generics="T extends string | number">
   // Svelte 5 Custom Themed Dropdown Component with Slide Transition & Exact Sizing
   import { slide } from 'svelte/transition';
-  
-  let { 
-    value = $bindable(), 
-    options = [] 
-  }: { 
-    value: any, 
-    options: { value: any, label: string }[] 
+
+  let {
+    value = $bindable(),
+    options = [],
+  }: {
+    value: T;
+    options: { value: T; label: string }[];
   } = $props();
 
   let isOpen = $state(false);
@@ -21,44 +21,55 @@
   }
 
   $effect(() => {
-    document.addEventListener("click", handleDocumentClick);
-    return () => document.removeEventListener("click", handleDocumentClick);
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
   });
 
   // Selected option
-  let selectedOption = $derived(options.find(o => o.value === value) || options[0] || { value: '', label: '' });
+  let selectedOption = $derived(
+    options.find((o) => o.value === value) || options[0] || { value: '', label: '' },
+  );
 
   // Find the option with the longest label to size the button stably
   let longestOption = $derived(
-    options.reduce((longest, current) => 
-      current.label.length > longest.label.length ? current : longest, 
-      options[0] || { value: '', label: '' }
-    )
+    options.reduce(
+      (longest, current) => (current.label.length > longest.label.length ? current : longest),
+      options[0] || { value: '', label: '' },
+    ),
   );
 </script>
 
 <div class="relative inline-block" bind:this={containerRef}>
   <!-- Dropdown Trigger Button (Uses select-premium for border and bottom line padding) -->
-  <button 
+  <button
     type="button"
-    class="select-premium relative w-full flex items-center focus:outline-none cursor-pointer select-none font-mono" 
-    onclick={() => isOpen = !isOpen}
+    class="select-premium relative w-full flex items-center focus:outline-none cursor-pointer select-none font-mono"
+    onclick={() => (isOpen = !isOpen)}
   >
     <!-- Hidden layout spacer (preserves height & width, with padding offsets respected via inline-block) -->
-    <span class="invisible pointer-events-none select-none font-mono tracking-wide inline-block" style="font-size: 1rem; padding: 0.25rem;">
+    <span
+      class="invisible pointer-events-none select-none font-mono tracking-wide inline-block"
+      style="font-size: 1rem; padding: 0.25rem;"
+    >
       {longestOption.label}
     </span>
     <!-- Actual Selected Label (Positioned at the left padding offset 0.25rem) -->
-    <span class="pl-1 absolute left-1 right-6 font-mono text-left truncate" style="font-size: 1rem;">
+    <span
+      class="pl-1 absolute left-1 right-6 font-mono text-left truncate"
+      style="font-size: 1rem;"
+    >
       {selectedOption.label}
     </span>
     <!-- Arrow indicator (Positioned at the right padding offset 0.25rem) -->
-    <span class="pr-1 text-xs opacity-60 absolute right-1 transition-transform duration-200" style="transform: rotate({isOpen ? 180 : 0}deg);">↓</span>
+    <span
+      class="pr-1 text-xs opacity-60 absolute right-1 transition-transform duration-200"
+      style="transform: rotate({isOpen ? 180 : 0}deg);">↓</span
+    >
   </button>
-  
+
   <!-- Floating Menu Panel (Seamless downward extension, slides open smoothly) -->
   {#if isOpen}
-    <div 
+    <div
       transition:slide={{ duration: 180 }}
       class="absolute left-0 mt-0 w-full rounded-b-xl border-l border-r border-b shadow-2xl backdrop-blur-xl z-50 py-1 overflow-hidden"
       style="
@@ -75,7 +86,9 @@
           style="
             font-size: 1rem;
             color: {option.value === value ? 'var(--accent)' : 'var(--text-secondary)'};
-            background-color: {option.value === value ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent'};
+            background-color: {option.value === value
+            ? 'color-mix(in srgb, var(--accent) 8%, transparent)'
+            : 'transparent'};
           "
           onclick={() => {
             value = option.value;
@@ -83,7 +96,8 @@
           }}
           onmouseenter={(e) => {
             if (option.value !== value) {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+              e.currentTarget.style.backgroundColor =
+                'color-mix(in srgb, var(--text-primary) 4%, transparent)';
               e.currentTarget.style.color = 'var(--text-primary)';
             }
           }}

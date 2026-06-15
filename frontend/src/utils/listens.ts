@@ -37,7 +37,11 @@ export function relativeTimeShort(unix_ts: number): string {
 /** Full absolute datetime string for use in title/tooltip attributes. */
 export function absoluteTime(unix_ts: number): string {
   return new Date(unix_ts * 1000).toLocaleString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric',
-    year: 'numeric', hour: '2-digit', minute: '2-digit',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }

@@ -16,8 +16,9 @@ export function tooltip(node: HTMLElement, customText?: string) {
 
     // Create custom tooltip div matching the design of the heatmap popovers
     tooltipEl = document.createElement('div');
-    tooltipEl.className = 'fixed z-50 pointer-events-none p-2.5 rounded-lg text-[11px] leading-normal shadow-xl border backdrop-blur-md transition-opacity duration-150';
-    
+    tooltipEl.className =
+      'fixed z-50 pointer-events-none p-2.5 rounded-lg text-[11px] leading-normal shadow-xl border backdrop-blur-md transition-opacity duration-150';
+
     // Style coordinates and colors using active CSS variables
     tooltipEl.style.backgroundColor = 'var(--bg-base)';
     tooltipEl.style.borderColor = 'color-mix(in srgb, var(--text-primary) 12%, transparent)';
@@ -25,7 +26,7 @@ export function tooltip(node: HTMLElement, customText?: string) {
     tooltipEl.style.fontFamily = 'var(--font-mono)';
     tooltipEl.style.opacity = '0';
     tooltipEl.textContent = content;
-    
+
     document.body.appendChild(tooltipEl);
 
     // Subtle fade in
@@ -50,11 +51,11 @@ export function tooltip(node: HTMLElement, customText?: string) {
 
   function positionTooltip(e: MouseEvent) {
     if (!tooltipEl) return;
-    
+
     // Position offset from the mouse pointer
     const offsetX = 14;
     const offsetY = 14;
-    
+
     const x = e.clientX + offsetX;
     const y = e.clientY + offsetY;
 
@@ -92,6 +93,6 @@ export function tooltip(node: HTMLElement, customText?: string) {
       if (tooltipEl) {
         tooltipEl.remove();
       }
-    }
+    },
   };
 }
