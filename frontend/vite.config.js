@@ -15,7 +15,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Use 127.0.0.1 (not localhost): on Node 17+ localhost can resolve to
+        // IPv6 ::1 first, but the backend binds IPv4 127.0.0.1 only.
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },
