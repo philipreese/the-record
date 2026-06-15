@@ -118,6 +118,25 @@ async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> O
     return None
 
 
+async def _get_caa_release_group_url(client: httpx.AsyncClient, release_group_mbid: str) -> Optional[str]:
+    """Resolve cover art via release group MBID — wider CAA coverage than per-release lookup."""
+    try:
+        r = await client.get(
+            f"https://coverartarchive.org/release-group/{release_group_mbid}",
+            headers={"User-Agent": _UA},
+            timeout=httpx.Timeout(4.0),
+            follow_redirects=True,
+        )
+        if r.status_code == 200:
+            images = r.json().get("images", [])
+            front = next((img for img in images if img.get("front")), images[0] if images else None)
+            if front:
+                return front.get("thumbnails", {}).get("250") or front.get("image")
+    except Exception:
+        pass
+    return None
+
+
 async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: str) -> Optional[str]:
     """Look up the best release MBID for a recording via MusicBrainz."""
     try:
@@ -162,15 +181,21 @@ async def _search_cover_art_by_text(
     return None
 
 
+def _art_key(artist: str, title: str) -> tuple[str, str]:
+    """Case-folded cache key so LB API casing and DB casing resolve to the same entry."""
+    return (artist.casefold().strip(), title.casefold().strip())
+
+
 async def _resolve_cover_art(
     client: httpx.AsyncClient,
     artist: str,
     title: str,
     release_mbid: Optional[str],
     recording_mbid: Optional[str],
+    release_group_mbid: Optional[str] = None,
 ) -> Optional[str]:
     """Resolve cover art URL with caching. Only caches successes; retries failures up to _MAX_ART_ATTEMPTS."""
-    cache_key = (artist, title)
+    cache_key = _art_key(artist, title)
     if cache_key in _cover_art_cache:
         return _cover_art_cache[cache_key]
     if _cover_art_attempts.get(cache_key, 0) >= _MAX_ART_ATTEMPTS:
@@ -178,12 +203,17 @@ async def _resolve_cover_art(
 
     _cover_art_attempts[cache_key] = _cover_art_attempts.get(cache_key, 0) + 1
 
+    # Tier 1: release MBID (most specific)
     mbid = release_mbid
     if not mbid and recording_mbid:
         mbid = await _recording_to_release_mbid(client, recording_mbid)
     url: Optional[str] = None
     if mbid:
         url = await _get_caa_direct_url(client, mbid)
+    # Tier 2: release group MBID (wider coverage in CAA)
+    if not url and release_group_mbid:
+        url = await _get_caa_release_group_url(client, release_group_mbid)
+    # Tier 3: text search fallback
     if not url:
         url = await _search_cover_art_by_text(client, artist, title)
 
@@ -219,12 +249,35 @@ async def get_playing_now() -> Any:
 
             listens = res.json().get("payload", {}).get("listens", [])
             if not listens:
-                # Nothing playing — resolve cover art for the most recent DB listen.
+                # Nothing playing — get the most recent DB listen, then fetch its MBIDs from
+                # LB's listens endpoint so we can do a proper CAA lookup instead of text search.
                 rows = repo.get_recent_listens(limit=1)
                 if not rows:
                     return PlayingNowResponse(is_playing=False)
                 r = rows[0]
-                art = await _resolve_cover_art(client, r["artist"], r["title"], None, None)
+                lp_release_mbid: Optional[str] = None
+                lp_recording_mbid: Optional[str] = None
+                lp_release_group_mbid: Optional[str] = None
+                try:
+                    lp_res = await client.get(
+                        f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
+                        params={"count": "1"},
+                        headers=lb_headers,
+                        timeout=httpx.Timeout(3.0),
+                    )
+                    if lp_res.status_code == 200:
+                        lp_listens = lp_res.json().get("payload", {}).get("listens", [])
+                        if lp_listens:
+                            ai = lp_listens[0].get("track_metadata", {}).get("additional_info", {})
+                            lp_release_mbid = ai.get("release_mbid")
+                            lp_recording_mbid = ai.get("recording_mbid")
+                            lp_release_group_mbid = ai.get("release_group_mbid")
+                except Exception:
+                    pass
+                art = await _resolve_cover_art(
+                    client, r["artist"], r["title"],
+                    lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
+                )
                 return PlayingNowResponse(
                     is_playing=False,
                     last_played=LastPlayedEntry(
@@ -239,12 +292,13 @@ async def get_playing_now() -> Any:
             additional_info = meta.get("additional_info", {})
             release_mbid = additional_info.get("release_mbid")
             recording_mbid = additional_info.get("recording_mbid")
+            release_group_mbid = additional_info.get("release_group_mbid")
 
             # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction.
             cover_art_url: Optional[str] = None
             if artist and title:
                 cover_art_url = await _resolve_cover_art(
-                    client, artist, title, release_mbid, recording_mbid
+                    client, artist, title, release_mbid, recording_mbid, release_group_mbid
                 )
 
             return PlayingNowResponse(
@@ -263,6 +317,18 @@ async def get_playing_now() -> Any:
             is_playing=False,
             last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
         )
+
+@router.get("/last-played", response_model=PlayingNowResponse)
+def get_last_played() -> Any:
+    """Return the most recent listen from the local DB with no LB network call — fast cold-start pre-population."""
+    rows = repo.get_recent_listens(limit=1)
+    if not rows:
+        return PlayingNowResponse(is_playing=False)
+    r = rows[0]
+    return PlayingNowResponse(
+        is_playing=False,
+        last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+    )
 
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(

@@ -72,24 +72,36 @@
   let hoveredArtist = $state<string | null>(null);
   let hoveredTrack = $state<string | null>(null);
 
-  // Clear focus when range selection changes
+  // Capture the music-mood ambient color at mount time so we can restore it when
+  // clearing chart focus or navigating away. persist=false keeps chart-focus colors
+  // from overwriting the album-art color in localStorage.
+  const preChartsAmbientColor = themeManager.ambientColor;
+
+  $effect(() => {
+    // Restore the pre-Charts ambient color when unmounting (navigating away).
+    return () => {
+      themeManager.setAmbientColor(preChartsAmbientColor, false);
+    };
+  });
+
+  // Clear focus when range selection changes — restore instead of resetting to null.
   $effect(() => {
     const _range = topRange;
     focusedArtist = null;
     focusedTrack = null;
     hoveredArtist = null;
     hoveredTrack = null;
-    themeManager.setAmbientColor(null);
+    themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
 
   function toggleArtistFocus(name: string) {
     if (focusedArtist === name) {
       focusedArtist = null;
-      themeManager.setAmbientColor(null);
+      themeManager.setAmbientColor(preChartsAmbientColor, false);
     } else {
       focusedArtist = name;
       focusedTrack = null;
-      themeManager.setAmbientColor(stringToColor(name));
+      themeManager.setAmbientColor(stringToColor(name), false);
     }
   }
 
@@ -97,31 +109,33 @@
     const key = `${artistName} - ${title}`;
     if (focusedTrack === key) {
       focusedTrack = null;
-      themeManager.setAmbientColor(null);
+      themeManager.setAmbientColor(preChartsAmbientColor, false);
     } else {
       focusedTrack = key;
       focusedArtist = null;
-      themeManager.setAmbientColor(stringToColor(artistName));
+      themeManager.setAmbientColor(stringToColor(artistName), false);
     }
   }
 </script>
 
 <PageHeader title="top charts" subtitle="Your most played creators and tracks over time.">
   {#snippet actions(isShrunk)}
-    <div
-      class="nav-selector hidden lg:flex transition-all duration-300"
-      class:text-xs={isShrunk}
-      class:text-sm={!isShrunk}
-    >
-      {#each rangeOptions as [val, label]}
-        <button
-          class="nav-selector-item"
-          class:active={topRange === val}
-          onclick={() => (topRange = val)}
-        >
-          {label}
-        </button>
-      {/each}
+    <div class="hidden lg:block">
+      <div
+        class="nav-selector transition-all duration-300"
+        class:text-xs={isShrunk}
+        class:text-sm={!isShrunk}
+      >
+        {#each rangeOptions as [val, label]}
+          <button
+            class="nav-selector-item"
+            class:active={topRange === val}
+            onclick={() => (topRange = val)}
+          >
+            {label}
+          </button>
+        {/each}
+      </div>
     </div>
   {/snippet}
 </PageHeader>

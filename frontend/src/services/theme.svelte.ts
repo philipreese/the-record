@@ -116,6 +116,9 @@ export const themeMetadata: ThemeInfo[] = [
 class ThemeManager {
   currentTheme = $state('cool-slate');
   ambientColor = $state<string | null>(null);
+  // Contrast-adjusted version of ambientColor, ready to use directly as a color value.
+  // Always reflects the music-mood accent regardless of which theme is currently active.
+  adjustedAmbientColor = $state<string | null>(null);
 
   init() {
     if (typeof window !== 'undefined') {
@@ -201,7 +204,10 @@ class ThemeManager {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
-  setAmbientColor(hex: string | null) {
+  // persist=true (default): also writes to localStorage so the color survives refresh.
+  // persist=false: updates in-memory state and CSS only — used by ChartsView for
+  // temporary artist-focus colors that should not override the album-art accent.
+  setAmbientColor(hex: string | null, persist = true) {
     this.ambientColor = hex;
 
     if (typeof document === 'undefined') return;
@@ -215,6 +221,7 @@ class ThemeManager {
     }
 
     if (!hex) {
+      this.adjustedAmbientColor = null;
       // Restore music-mood's default slate blue accent
       document.documentElement.style.setProperty('--accent', '#7899f5');
       document.documentElement.style.setProperty('--color-primary', '#7899f5');
@@ -225,6 +232,7 @@ class ThemeManager {
     const currentMeta = themeMetadata.find((t) => t.id === this.currentTheme);
     const isDark = currentMeta ? currentMeta.isDark : true;
     const adjustedHex = this.adjustColorForContrast(hex, isDark);
+    this.adjustedAmbientColor = adjustedHex;
 
     // Apply accent overrides to both standard variable and DaisyUI color primary variables
     document.documentElement.style.setProperty('--accent', adjustedHex);
@@ -233,8 +241,9 @@ class ThemeManager {
     // Dynamic ambient glow variable for backing radial layouts (15% opacity)
     document.documentElement.style.setProperty('--ambient-glow', `${adjustedHex}26`);
 
-    // Persist the raw extracted hex so it survives page refresh and theme switching.
-    localStorage.setItem('music-mood-accent', hex);
+    if (persist) {
+      localStorage.setItem('music-mood-accent', hex);
+    }
   }
 }
 
