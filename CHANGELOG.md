@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2](https://github.com/philipreese/the-record/compare/v0.4.1...v0.4.2) (2026-06-15)
+
+
+### Code Refactoring
+
+* **frontend:** Make keyed view caches reactively refetch on invalidation ([bab35cc](https://github.com/philipreese/the-record/commit/bab35cc703a4738a67ea01087859c9f92ad327b1))
+
+
+### Continuous Integration
+
+* **frontend:** Run vitest in CI and refresh stale roadmap/CI docs ([078844b](https://github.com/philipreese/the-record/commit/078844b2a75720fee02fa98a36afff6373e29fb7))
+
+
+### Miscellaneous
+
+* **frontend:** Dedupe in-flight charts and heatmap fetches ([1e18b7d](https://github.com/philipreese/the-record/commit/1e18b7d6ba45bcd043e089ce97de500d3434b256))
+* **frontend:** Retry cold-start GETs and dedupe in-flight wrapped fetches ([bb3affc](https://github.com/philipreese/the-record/commit/bb3affce23457654b2417ab55ceb3390a223388a))
+
 ## [0.4.1](https://github.com/philipreese/the-record/compare/v0.4.0...v0.4.1) (2026-06-15)
 
 
