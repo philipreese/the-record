@@ -1,28 +1,9 @@
 <script lang="ts">
   import { appCache } from '../services/store.svelte';
-  import { themeManager } from '../services/theme.svelte';
-  import { getDominantColor } from '../utils/dominantColor';
 
   let { compact = false }: { compact?: boolean } = $props();
 
   let imgLoaded = $state(false);
-  let prevCoverUrl = $state<string | null>(null);
-
-  $effect(() => {
-    if (compact) return;
-    const url = coverUrl;
-    if (url !== prevCoverUrl) {
-      imgLoaded = false;
-      prevCoverUrl = url;
-    }
-    if (!url) {
-      themeManager.setAmbientColor(null);
-      return;
-    }
-    getDominantColor(url).then((color) => {
-      themeManager.setAmbientColor(color);
-    });
-  });
 
   const info = $derived(appCache.playingNow);
   const isPlaying = $derived(info?.is_playing ?? false);
@@ -33,6 +14,12 @@
     isPlaying ? (info?.cover_art_url ?? null) : (info?.last_played?.cover_art_url ?? null),
   );
   const hasContent = $derived(!!artist && !!title);
+
+  // Reset fade-in state when cover art changes.
+  $effect(() => {
+    coverUrl;
+    imgLoaded = false;
+  });
 </script>
 
 {#if hasContent}

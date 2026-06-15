@@ -181,7 +181,7 @@
     </div>
 
     <!-- Bottom Stable Memory Anchor -->
-    <div class="border-t border-theme-border-soft pt-6">
+    <div class="pt-6">
       <NowPlaying compact />
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-2">
