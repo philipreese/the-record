@@ -204,15 +204,20 @@
         <h3 class="text-sm md:text-base font-mono tracking-widest uppercase text-theme-muted mb-6">
           Sync Authentication
         </h3>
-        <p class="text-base font-light text-theme-muted mb-6 leading-relaxed">
-          Paste your sync token to enable archive synchronization. Public visitors without a token
-          see read-only mode.
+        <p class="text-base font-light text-theme-muted mb-2 leading-relaxed">
+          A private admin secret that authorizes triggering a sync from this browser. It must match
+          the <code class="font-mono text-theme-accent">SYNC_TOKEN</code> set on the server.
+        </p>
+        <p class="text-sm font-light text-theme-muted mb-6 leading-relaxed">
+          This is <span class="text-theme-text">not</span> your ListenBrainz token. It only exists so
+          random visitors can't trigger syncs on the public deployment — without it, the dashboard is
+          read-only.
         </p>
         <div class="flex flex-col sm:flex-row gap-3 items-start">
           <input
             type="password"
             class="input input-bordered w-full sm:max-w-sm font-mono text-sm"
-            placeholder="Paste sync token..."
+            placeholder="Enter your SYNC_TOKEN..."
             bind:value={tokenInput}
             onkeydown={(e) => e.key === 'Enter' && saveToken()}
           />
@@ -234,7 +239,9 @@
           </div>
         </div>
         {#if appCache.syncToken}
-          <p class="text-xs text-success font-mono mt-3">Token saved — sync controls unlocked.</p>
+          <p class="text-xs text-success font-mono mt-3">
+            Token saved in this browser — the server verifies it on each sync.
+          </p>
         {/if}
       </div>
 
