@@ -5,6 +5,8 @@ from typing import Any, List, Literal, Optional, Dict
 
 import app.repository as repo
 import app.sync as sync_worker
+import httpx
+
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
@@ -14,7 +16,9 @@ from app.schemas import (
     StreakStatsResponse,
     WrappedDataResponse,
     SyncStartResponse,
-    SyncStatusResponse
+    SyncStatusResponse,
+    PlayingNowResponse,
+    LastPlayedEntry,
 )
 
 router = APIRouter()
@@ -84,6 +88,52 @@ def read_recent(
 ) -> Any:
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
+
+@router.get("/playing-now", response_model=PlayingNowResponse)
+async def get_playing_now() -> Any:
+    """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
+    from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
+
+    def _last_played() -> Optional[LastPlayedEntry]:
+        rows = repo.get_recent_listens(limit=1)
+        if not rows:
+            return None
+        r = rows[0]
+        return LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"])
+
+    if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
+        return PlayingNowResponse(is_playing=False, last_played=_last_played())
+
+    url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/playing-now"
+    headers = {
+        "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
+        "User-Agent": "the-record-dashboard/1.0",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0)) as client:
+            res = await client.get(url, headers=headers)
+            res.raise_for_status()
+    except Exception:
+        return PlayingNowResponse(is_playing=False, last_played=_last_played())
+
+    listens = res.json().get("payload", {}).get("listens", [])
+    if not listens:
+        return PlayingNowResponse(is_playing=False, last_played=_last_played())
+
+    meta = listens[0].get("track_metadata", {})
+    artist = meta.get("artist_name")
+    title = meta.get("track_name")
+    release = meta.get("release_name")
+    mbid = meta.get("additional_info", {}).get("release_mbid")
+    cover_art_url = f"https://coverartarchive.org/release/{mbid}/front-250" if mbid else None
+
+    return PlayingNowResponse(
+        is_playing=bool(artist and title),
+        artist=artist,
+        title=title,
+        release=release,
+        cover_art_url=cover_art_url,
+    )
 
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(

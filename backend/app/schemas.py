@@ -69,3 +69,16 @@ class SyncStatusResponse(BaseModel):
     lb_total: int
     local_total: int
     error: Optional[str] = None
+
+class LastPlayedEntry(BaseModel):
+    artist: str
+    title: str
+    unix_ts: int
+
+class PlayingNowResponse(BaseModel):
+    is_playing: bool
+    artist: Optional[str] = None
+    title: Optional[str] = None
+    release: Optional[str] = None
+    cover_art_url: Optional[str] = None
+    last_played: Optional[LastPlayedEntry] = None
