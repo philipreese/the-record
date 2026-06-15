@@ -79,44 +79,53 @@ class AppCache {
   // Now Playing
   playingNow = $state<PlayingNowInfo | null>(null);
   private _playingPollInterval: ReturnType<typeof setInterval> | null = null;
-  private _lastSyncTriggeredAt = 0;
-  private readonly SYNC_DEBOUNCE_MS = 5 * 60 * 1000;
+  // How many consecutive empty polls while we were showing "now playing".
+  // LB's playing-now endpoint has brief keep-alive gaps; don't flip to "last played"
+  // on a single miss — wait for 2 consecutive empty responses (~40s) before switching.
+  private _notPlayingCount = 0;
+  private readonly NOT_PLAYING_GRACE = 2;
+
+  private _poll = async () => {
+    if (document.visibilityState === 'hidden') return;
+    try {
+      const result = await fetchPlayingNow();
+      const prev = this.playingNow;
+      const wasPlaying = prev?.is_playing ?? false;
+
+      if (result.is_playing) {
+        this._notPlayingCount = 0;
+        // Sync whenever we start playing or the track changes — the previous track was
+        // just scrobbled and runSync's isSyncing guard prevents concurrent syncs.
+        const trackChanged =
+          !wasPlaying || result.artist !== prev?.artist || result.title !== prev?.title;
+        this.playingNow = result;
+        if (trackChanged) {
+          this.runSync(false);
+        }
+      } else if (wasPlaying) {
+        // Grace period: hold the "now playing" state through brief LB API gaps.
+        this._notPlayingCount++;
+        if (this._notPlayingCount >= this.NOT_PLAYING_GRACE) {
+          this.playingNow = result;
+        }
+      } else {
+        this.playingNow = result;
+      }
+    } catch {
+      // silently skip failed polls
+    }
+  };
 
   private _onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      fetchPlayingNow()
-        .then((result) => {
-          this.playingNow = result;
-        })
-        .catch(() => {});
+      this._poll();
     }
   };
 
   startPlayingNowPolling() {
     if (this._playingPollInterval !== null) return;
-
-    const poll = async () => {
-      if (document.visibilityState === 'hidden') return;
-      try {
-        const result = await fetchPlayingNow();
-        const prev = this.playingNow;
-        const trackChanged =
-          prev !== null && (result.artist !== prev.artist || result.title !== prev.title);
-        this.playingNow = result;
-        if (result.is_playing && trackChanged) {
-          const now = Date.now();
-          if (now - this._lastSyncTriggeredAt > this.SYNC_DEBOUNCE_MS) {
-            this._lastSyncTriggeredAt = now;
-            this.runSync(false);
-          }
-        }
-      } catch {
-        // silently skip failed polls
-      }
-    };
-
-    poll();
-    this._playingPollInterval = setInterval(poll, 20_000);
+    this._poll();
+    this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
   }
 

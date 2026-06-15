@@ -188,7 +188,11 @@ export async function getSyncStatus(): Promise<SyncStatusInfo> {
 }
 
 export async function fetchPlayingNow(): Promise<PlayingNowInfo> {
-  const res = await fetch(`${API_BASE}/api/playing-now`);
-  if (!res.ok) return { is_playing: false };
-  return res.json();
+  try {
+    const res = await apiFetch('/api/playing-now');
+    if (!res.ok) return { is_playing: false };
+    return res.json();
+  } catch {
+    return { is_playing: false };
+  }
 }
