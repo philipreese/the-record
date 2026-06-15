@@ -491,6 +491,22 @@
               "title": "Mode"
             },
             "description": "Sync mode: 'normal' or 'full'"
+          },
+          {
+            "name": "x-sync-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Sync-Token"
+            }
           }
         ],
         "responses": {
