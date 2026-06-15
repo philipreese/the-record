@@ -10,7 +10,7 @@
 
   $effect(() => {
     if (compact) return;
-    const url = appCache.playingNow?.cover_art_url ?? null;
+    const url = coverUrl;
     if (url !== prevCoverUrl) {
       imgLoaded = false;
       prevCoverUrl = url;
@@ -29,7 +29,9 @@
   const artist = $derived(isPlaying ? info?.artist : info?.last_played?.artist);
   const title = $derived(isPlaying ? info?.title : info?.last_played?.title);
   const release = $derived(isPlaying ? (info?.release ?? null) : null);
-  const coverUrl = $derived(isPlaying ? (info?.cover_art_url ?? null) : null);
+  const coverUrl = $derived(
+    isPlaying ? (info?.cover_art_url ?? null) : (info?.last_played?.cover_art_url ?? null),
+  );
   const hasContent = $derived(!!artist && !!title);
 </script>
 
@@ -53,7 +55,7 @@
         </span>
       </div>
       <div class="flex items-center gap-2.5 pl-3.5">
-        {#if isPlaying && coverUrl}
+        {#if coverUrl}
           <img
             src={coverUrl}
             alt="Album art"
@@ -92,9 +94,7 @@
         {#if coverUrl}
           <div
             class="w-16 h-16 shrink-0 rounded overflow-hidden border border-theme-border-soft"
-            style={appCache.playingNow?.cover_art_url
-              ? `box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent)`
-              : ''}
+            style="box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent)"
           >
             <img
               src={coverUrl}

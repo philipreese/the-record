@@ -2,6 +2,7 @@ import {
   triggerSync,
   getSyncStatus,
   fetchStats,
+  fetchRecentListens,
   fetchPlayingNow,
   registerWakingListener,
   type StatsInfo,
@@ -100,7 +101,7 @@ class AppCache {
           !wasPlaying || result.artist !== prev?.artist || result.title !== prev?.title;
         this.playingNow = result;
         if (trackChanged) {
-          this.runSync(false);
+          this.runSync(false, true);
         }
       } else if (wasPlaying) {
         // Grace period: hold the "now playing" state through brief LB API gaps.
@@ -129,8 +130,11 @@ class AppCache {
     document.addEventListener('visibilitychange', this._onVisibilityChange);
   }
 
-  // Centralized sync task runner
-  async runSync(forceFull = false) {
+  // Centralized sync task runner.
+  // soft=true: only refresh recentListens after completion (used by auto track-change syncs
+  // so the rest of the page doesn't flash through loading states).
+  // soft=false (default): full cache wipe, used for user-triggered syncs.
+  async runSync(forceFull = false, soft = false) {
     if (this.isSyncing) return;
     this.isSyncing = true;
     this.syncError = null;
@@ -158,6 +162,24 @@ class AppCache {
             this.isSyncing = false;
             if (status.error) {
               this.syncError = status.error;
+            } else if (soft) {
+              // Soft refresh: prepend any new listens without blanking the list.
+              // Charts/heatmap are untouched so the page doesn't flash through loading states.
+              try {
+                const fresh = await fetchRecentListens(10);
+                const existingIds = new Set(this.recentListens.map((e) => e.id));
+                const newItems = fresh.filter((e) => !existingIds.has(e.id));
+                if (newItems.length > 0) {
+                  this.recentListens = [...newItems, ...this.recentListens];
+                }
+              } catch {
+                // Non-fatal
+              }
+              try {
+                this.stats = await fetchStats();
+              } catch {
+                // Non-fatal
+              }
             } else {
               this.invalidate();
               try {
