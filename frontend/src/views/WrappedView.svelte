@@ -64,7 +64,8 @@
     currentStep = 0;
   });
 
-  // Auto trigger Wrapped when controls change
+  // Auto trigger Wrapped when controls change. Reading the cache entry here keeps the
+  // effect reactive to invalidation: a sync clears appCache.wrapped and this refetches.
   $effect(() => {
     const period = wrappedPeriod;
     const year = wrappedYear;
@@ -72,6 +73,11 @@
     const month = wrappedMonth;
     const key = cacheKey;
 
+    if (appCache.wrapped[key]) {
+      wrappedError = null;
+      loadingWrapped = false;
+      return;
+    }
     untrack(() => {
       runGenerateWrapped(period, year, quarter, month, key);
     });
@@ -88,10 +94,6 @@
     month: WrappedMonth,
     key: string,
   ) {
-    if (appCache.wrapped[key]) {
-      wrappedError = null;
-      return;
-    }
     loadingWrapped = true;
     wrappedError = null;
     try {

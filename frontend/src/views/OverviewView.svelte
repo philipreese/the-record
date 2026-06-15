@@ -148,13 +148,13 @@
     }
   }
 
-  // Handle heatmap refresh automatically when selected year changes (including mount)
+  // Handle heatmap refresh automatically when selected year changes (including mount).
+  // Reading the cache entry here keeps the effect reactive to invalidation: a sync clears
+  // appCache.heatmap and this refetches the visible year.
   $effect(() => {
     const year = heatmapYear;
-    untrack(() => {
-      if (appCache.heatmap[year]) return;
-      loadHeatmap(year);
-    });
+    if (appCache.heatmap[year]) return;
+    untrack(() => loadHeatmap(year));
   });
 
   let currentStats = $derived(
