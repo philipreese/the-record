@@ -12,12 +12,14 @@
   import RecentView from './views/RecentView.svelte';
 
   import { themeManager } from './services/theme.svelte';
+  import { appCache } from './services/store.svelte';
 
   // Navigation state using Svelte 5 state rune
   let activeTab = $state<'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent'>('dashboard');
 
   onMount(() => {
     themeManager.init();
+    appCache.startPlayingNowPolling();
   });
 </script>
 

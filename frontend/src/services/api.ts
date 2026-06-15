@@ -19,6 +19,7 @@ export type SyncStatusInfo = components['schemas']['SyncStatusResponse'];
 export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
 export type ListenEntry = components['schemas']['ListenEntry'];
 export type SyncStartInfo = components['schemas']['SyncStartResponse'];
+export type PlayingNowInfo = components['schemas']['PlayingNowResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -183,5 +184,11 @@ export async function fetchRecentListens(
 export async function getSyncStatus(): Promise<SyncStatusInfo> {
   const res = await apiFetch('/api/sync/status');
   if (!res.ok) throw new Error('Failed to fetch sync status');
+  return res.json();
+}
+
+export async function fetchPlayingNow(): Promise<PlayingNowInfo> {
+  const res = await fetch(`${API_BASE}/api/playing-now`);
+  if (!res.ok) return { is_playing: false };
   return res.json();
 }

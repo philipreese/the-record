@@ -184,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playing-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Playing Now
+         * @description Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing.
+         */
+        get: operations["get_playing_now_api_playing_now_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sync": {
         parameters: {
             query?: never;
@@ -241,6 +261,15 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LastPlayedEntry */
+        LastPlayedEntry: {
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+            /** Unix Ts */
+            unix_ts: number;
+        };
         /** ListenEntry */
         ListenEntry: {
             /** Id */
@@ -260,6 +289,20 @@ export interface components {
             month: string;
             /** Count */
             count: number;
+        };
+        /** PlayingNowResponse */
+        PlayingNowResponse: {
+            /** Is Playing */
+            is_playing: boolean;
+            /** Artist */
+            artist?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Release */
+            release?: string | null;
+            /** Cover Art Url */
+            cover_art_url?: string | null;
+            last_played?: components["schemas"]["LastPlayedEntry"] | null;
         };
         /** StatsSummaryResponse */
         StatsSummaryResponse: {
@@ -631,6 +674,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_playing_now_api_playing_now_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayingNowResponse"];
                 };
             };
         };
