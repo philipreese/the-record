@@ -34,13 +34,14 @@ migrations/        — Alembic env + versioned migration scripts
 ## Frontend layer map
 
 ```
-api.ts             — Fetch wrapper, typed against api-types.ts; retries idempotent GETs through Neon/Render cold starts
+api.ts             — Fetch wrapper, typed against api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
     ↓
-store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation
+store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
+                     and 20s visibility-locked playing-now polling (with baseline data recovery on reconnect)
     ↓
 Views              — OverviewView, ChartsView, WrappedView, SettingsView
     ↓
-Components         — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid, AnimatedCounter
+Components         — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid, AnimatedCounter, NowPlaying
 ```
 
 **Source of truth:** [frontend/src/](../frontend/src/)
@@ -61,6 +62,8 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/wrapped` | `year` (required), `quarter` (Q1–Q4, optional), `month` (M1–M12, optional) | `WrappedDataResponse` |
 | POST | `/api/sync` | `mode` (normal/full, default normal); requires `X-Sync-Token` header | `SyncStartResponse` |
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
+| GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback + cover art) |
+| GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
 
 ### Sync authentication
 
