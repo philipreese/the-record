@@ -124,8 +124,13 @@
 
 <div class="flex flex-col gap-12 text-base-content">
   {#if loadingCharts}
-    <div class="flex justify-center items-center py-20">
+    <div class="flex flex-col justify-center items-center gap-3 py-20">
       <span class="loading loading-spinner loading-md text-primary"></span>
+      {#if appCache.isWakingUp}
+        <span class="text-xs font-mono tracking-widest uppercase text-theme-muted animate-pulse">
+          Waking up the server…
+        </span>
+      {/if}
     </div>
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">

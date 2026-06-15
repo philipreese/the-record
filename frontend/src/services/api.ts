@@ -22,9 +22,74 @@ export type SyncStartInfo = components['schemas']['SyncStartResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
+// Cold-start resilience: Neon free-tier suspends after inactivity, so the first
+// request after a wake fails with a connection error or a gateway status while the
+// backend/DB spin up. Briefly retry idempotent GETs to ride out that window.
+const RETRY_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 1000;
+const COLD_START_STATUSES = new Set([502, 503, 504]);
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+type WakingListener = (waking: boolean) => void;
+let wakingListener: WakingListener | null = null;
+let activeRetries = 0;
+
+/** Register a callback notified when a cold-start retry is in progress. */
+export function registerWakingListener(listener: WakingListener): void {
+  wakingListener = listener;
+}
+
+function beginWaking(): void {
+  activeRetries += 1;
+  if (activeRetries === 1) wakingListener?.(true);
+}
+
+function endWaking(): void {
+  if (activeRetries === 0) return;
+  activeRetries -= 1;
+  if (activeRetries === 0) wakingListener?.(false);
+}
+
 async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
-  return fetch(url, options);
+  const method = (options?.method ?? 'GET').toUpperCase();
+
+  // Only retry idempotent GETs — never replay a mutating POST (e.g. /api/sync).
+  if (method !== 'GET') return fetch(url, options);
+
+  let waking = false;
+  const markWaking = () => {
+    if (!waking) {
+      waking = true;
+      beginWaking();
+    }
+  };
+
+  try {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= RETRY_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch(url, options);
+        if (COLD_START_STATUSES.has(res.status) && attempt < RETRY_ATTEMPTS) {
+          markWaking();
+          await delay(RETRY_DELAY_MS);
+          continue;
+        }
+        return res;
+      } catch (err) {
+        lastError = err;
+        if (attempt < RETRY_ATTEMPTS) {
+          markWaking();
+          await delay(RETRY_DELAY_MS);
+          continue;
+        }
+      }
+    }
+    throw lastError;
+  } finally {
+    if (waking) endWaking();
+  }
 }
 
 export async function fetchStats(): Promise<StatsInfo> {
