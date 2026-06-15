@@ -89,6 +89,43 @@ def read_recent(
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
 
+async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> Optional[str]:
+    """Resolve a direct archive.org image URL from Cover Art Archive (avoids the redirect)."""
+    try:
+        r = await client.get(
+            f"https://coverartarchive.org/release/{release_mbid}",
+            headers={"User-Agent": "the-record-dashboard/1.0"},
+            timeout=httpx.Timeout(4.0),
+            follow_redirects=True,
+        )
+        if r.status_code == 200:
+            images = r.json().get("images", [])
+            front = next((img for img in images if img.get("front")), images[0] if images else None)
+            if front:
+                return front.get("thumbnails", {}).get("250") or front.get("image")
+    except Exception:
+        pass
+    return None
+
+
+async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: str) -> Optional[str]:
+    """Look up the best release MBID for a recording via MusicBrainz."""
+    try:
+        r = await client.get(
+            f"https://musicbrainz.org/ws/2/recording/{recording_mbid}",
+            params={"inc": "releases", "fmt": "json"},
+            headers={"User-Agent": "the-record-dashboard/1.0"},
+            timeout=httpx.Timeout(3.0),
+        )
+        if r.status_code == 200:
+            releases = r.json().get("releases", [])
+            if releases:
+                return releases[0]["id"]
+    except Exception:
+        pass
+    return None
+
+
 @router.get("/playing-now", response_model=PlayingNowResponse)
 async def get_playing_now() -> Any:
     """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
@@ -104,36 +141,45 @@ async def get_playing_now() -> Any:
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         return PlayingNowResponse(is_playing=False, last_played=_last_played())
 
-    url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/playing-now"
+    lb_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/playing-now"
     headers = {
         "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
         "User-Agent": "the-record-dashboard/1.0",
     }
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0)) as client:
-            res = await client.get(url, headers=headers)
+        async with httpx.AsyncClient() as client:
+            res = await client.get(lb_url, headers=headers, timeout=httpx.Timeout(8.0))
             res.raise_for_status()
+
+            listens = res.json().get("payload", {}).get("listens", [])
+            if not listens:
+                return PlayingNowResponse(is_playing=False, last_played=_last_played())
+
+            meta = listens[0].get("track_metadata", {})
+            artist = meta.get("artist_name")
+            title = meta.get("track_name")
+            release = meta.get("release_name")
+            additional_info = meta.get("additional_info", {})
+            release_mbid = additional_info.get("release_mbid")
+            recording_mbid = additional_info.get("recording_mbid")
+
+            # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction
+            cover_art_url: Optional[str] = None
+            mbid = release_mbid
+            if not mbid and recording_mbid:
+                mbid = await _recording_to_release_mbid(client, recording_mbid)
+            if mbid:
+                cover_art_url = await _get_caa_direct_url(client, mbid)
+
+            return PlayingNowResponse(
+                is_playing=bool(artist and title),
+                artist=artist,
+                title=title,
+                release=release,
+                cover_art_url=cover_art_url,
+            )
     except Exception:
         return PlayingNowResponse(is_playing=False, last_played=_last_played())
-
-    listens = res.json().get("payload", {}).get("listens", [])
-    if not listens:
-        return PlayingNowResponse(is_playing=False, last_played=_last_played())
-
-    meta = listens[0].get("track_metadata", {})
-    artist = meta.get("artist_name")
-    title = meta.get("track_name")
-    release = meta.get("release_name")
-    mbid = meta.get("additional_info", {}).get("release_mbid")
-    cover_art_url = f"https://coverartarchive.org/release/{mbid}/front-250" if mbid else None
-
-    return PlayingNowResponse(
-        is_playing=bool(artist and title),
-        artist=artist,
-        title=title,
-        release=release,
-        cover_art_url=cover_art_url,
-    )
 
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(
