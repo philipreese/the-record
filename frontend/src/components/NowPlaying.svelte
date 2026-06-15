@@ -9,7 +9,8 @@
   let prevCoverUrl = $state<string | null>(null);
 
   $effect(() => {
-    const url = compact ? null : (appCache.playingNow?.cover_art_url ?? null);
+    if (compact) return;
+    const url = appCache.playingNow?.cover_art_url ?? null;
     if (url !== prevCoverUrl) {
       imgLoaded = false;
       prevCoverUrl = url;
@@ -51,9 +52,19 @@
           {isPlaying ? 'Now Playing' : 'Last Played'}
         </span>
       </div>
-      <div class="pl-3.5">
-        <div class="text-xs font-medium text-theme-text truncate leading-snug">{title}</div>
-        <div class="text-xs text-theme-muted truncate">{artist}</div>
+      <div class="flex items-center gap-2.5 pl-3.5">
+        {#if isPlaying && coverUrl}
+          <img
+            src={coverUrl}
+            alt="Album art"
+            crossorigin="anonymous"
+            class="w-8 h-8 rounded shrink-0 object-cover opacity-90"
+          />
+        {/if}
+        <div class="min-w-0">
+          <div class="text-xs font-medium text-theme-text truncate leading-snug">{title}</div>
+          <div class="text-xs text-theme-muted truncate">{artist}</div>
+        </div>
       </div>
     </div>
   {:else}
@@ -88,6 +99,7 @@
             <img
               src={coverUrl}
               alt="Album art"
+              crossorigin="anonymous"
               class="w-full h-full object-cover transition-opacity duration-300"
               class:opacity-0={!imgLoaded}
               class:opacity-100={imgLoaded}
