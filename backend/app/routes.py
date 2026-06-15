@@ -90,7 +90,13 @@ def read_recent(
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
-_cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
+# Only successful lookups are stored; failed attempts are counted separately so transient
+# failures (MB timeouts, rate limits) don't permanently suppress art for the session.
+_cover_art_cache: dict[tuple[str, str], str] = {}
+_cover_art_attempts: dict[tuple[str, str], int] = {}
+_MAX_ART_ATTEMPTS = 3
+
+_UA = "the-record-dashboard/1.0 (https://github.com/philipreese/the-record)"
 
 
 async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> Optional[str]:
@@ -98,7 +104,7 @@ async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> O
     try:
         r = await client.get(
             f"https://coverartarchive.org/release/{release_mbid}",
-            headers={"User-Agent": "the-record-dashboard/1.0"},
+            headers={"User-Agent": _UA},
             timeout=httpx.Timeout(4.0),
             follow_redirects=True,
         )
@@ -118,7 +124,7 @@ async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: 
         r = await client.get(
             f"https://musicbrainz.org/ws/2/recording/{recording_mbid}",
             params={"inc": "releases", "fmt": "json"},
-            headers={"User-Agent": "the-record-dashboard/1.0"},
+            headers={"User-Agent": _UA},
             timeout=httpx.Timeout(3.0),
         )
         if r.status_code == 200:
@@ -142,7 +148,7 @@ async def _search_cover_art_by_text(
                 "fmt": "json",
                 "limit": "1",
             },
-            headers={"User-Agent": "the-record-dashboard/1.0"},
+            headers={"User-Agent": _UA},
             timeout=httpx.Timeout(4.0),
         )
         if r.status_code == 200:
@@ -156,34 +162,75 @@ async def _search_cover_art_by_text(
     return None
 
 
+async def _resolve_cover_art(
+    client: httpx.AsyncClient,
+    artist: str,
+    title: str,
+    release_mbid: Optional[str],
+    recording_mbid: Optional[str],
+) -> Optional[str]:
+    """Resolve cover art URL with caching. Only caches successes; retries failures up to _MAX_ART_ATTEMPTS."""
+    cache_key = (artist, title)
+    if cache_key in _cover_art_cache:
+        return _cover_art_cache[cache_key]
+    if _cover_art_attempts.get(cache_key, 0) >= _MAX_ART_ATTEMPTS:
+        return None
+
+    _cover_art_attempts[cache_key] = _cover_art_attempts.get(cache_key, 0) + 1
+
+    mbid = release_mbid
+    if not mbid and recording_mbid:
+        mbid = await _recording_to_release_mbid(client, recording_mbid)
+    url: Optional[str] = None
+    if mbid:
+        url = await _get_caa_direct_url(client, mbid)
+    if not url:
+        url = await _search_cover_art_by_text(client, artist, title)
+
+    if url:
+        _cover_art_cache[cache_key] = url
+    return url
+
+
 @router.get("/playing-now", response_model=PlayingNowResponse)
 async def get_playing_now() -> Any:
     """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
     from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
 
-    def _last_played() -> Optional[LastPlayedEntry]:
+    if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         rows = repo.get_recent_listens(limit=1)
         if not rows:
-            return None
+            return PlayingNowResponse(is_playing=False)
         r = rows[0]
-        return LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"])
-
-    if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
-        return PlayingNowResponse(is_playing=False, last_played=_last_played())
+        return PlayingNowResponse(
+            is_playing=False,
+            last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+        )
 
     lb_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/playing-now"
-    headers = {
+    lb_headers = {
         "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
-        "User-Agent": "the-record-dashboard/1.0",
+        "User-Agent": _UA,
     }
     try:
         async with httpx.AsyncClient() as client:
-            res = await client.get(lb_url, headers=headers, timeout=httpx.Timeout(8.0))
+            res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(8.0))
             res.raise_for_status()
 
             listens = res.json().get("payload", {}).get("listens", [])
             if not listens:
-                return PlayingNowResponse(is_playing=False, last_played=_last_played())
+                # Nothing playing — resolve cover art for the most recent DB listen.
+                rows = repo.get_recent_listens(limit=1)
+                if not rows:
+                    return PlayingNowResponse(is_playing=False)
+                r = rows[0]
+                art = await _resolve_cover_art(client, r["artist"], r["title"], None, None)
+                return PlayingNowResponse(
+                    is_playing=False,
+                    last_played=LastPlayedEntry(
+                        artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=art
+                    ),
+                )
 
             meta = listens[0].get("track_metadata", {})
             artist = meta.get("artist_name")
@@ -194,20 +241,11 @@ async def get_playing_now() -> Any:
             recording_mbid = additional_info.get("recording_mbid")
 
             # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction.
-            # Cache by (artist, title) so repeated polls for the same track skip the lookups.
             cover_art_url: Optional[str] = None
-            cache_key = (artist or "", title or "")
-            if cache_key in _cover_art_cache:
-                cover_art_url = _cover_art_cache[cache_key]
-            else:
-                mbid = release_mbid
-                if not mbid and recording_mbid:
-                    mbid = await _recording_to_release_mbid(client, recording_mbid)
-                if mbid:
-                    cover_art_url = await _get_caa_direct_url(client, mbid)
-                if not cover_art_url and artist and title:
-                    cover_art_url = await _search_cover_art_by_text(client, artist, title)
-                _cover_art_cache[cache_key] = cover_art_url
+            if artist and title:
+                cover_art_url = await _resolve_cover_art(
+                    client, artist, title, release_mbid, recording_mbid
+                )
 
             return PlayingNowResponse(
                 is_playing=bool(artist and title),
@@ -217,7 +255,14 @@ async def get_playing_now() -> Any:
                 cover_art_url=cover_art_url,
             )
     except Exception:
-        return PlayingNowResponse(is_playing=False, last_played=_last_played())
+        rows = repo.get_recent_listens(limit=1)
+        if not rows:
+            return PlayingNowResponse(is_playing=False)
+        r = rows[0]
+        return PlayingNowResponse(
+            is_playing=False,
+            last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+        )
 
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(
