@@ -269,6 +269,8 @@ export interface components {
             title: string;
             /** Unix Ts */
             unix_ts: number;
+            /** Cover Art Url */
+            cover_art_url?: string | null;
         };
         /** ListenEntry */
         ListenEntry: {
