@@ -1,6 +1,7 @@
 import {
   triggerSync,
   getSyncStatus,
+  fetchStats,
   type StatsInfo,
   type StreakInfo,
   type ArtistInfo,
@@ -83,7 +84,13 @@ class AppCache {
             if (status.error) {
               this.syncError = status.error;
             } else {
-              this.invalidate(); // Clear cache so views will refetch fresh data
+              this.invalidate();
+              try {
+                this.stats = await fetchStats();
+                this.statsLoaded = true;
+              } catch {
+                // Non-fatal — sidebar shows "Connecting…" until OverviewView mounts.
+              }
             }
           }
         } catch (err) {
