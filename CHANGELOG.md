@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1](https://github.com/philipreese/the-record/compare/v0.4.0...v0.4.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* **api:** Require X-Sync-Token on POST /api/sync and fix sync-state race ([878601f](https://github.com/philipreese/the-record/commit/878601f15f6872a6698e8968f902eee9d12083a3))
+* **frontend:** Clarify the sync token is a server secret, not the ListenBrainz token ([95b89bc](https://github.com/philipreese/the-record/commit/95b89bca5aa250f4aecc5227cc56908efd2d8182))
+* **frontend:** Point dev API proxy at 127.0.0.1 instead of localhost ([231ec9b](https://github.com/philipreese/the-record/commit/231ec9b0c244f6dee53bd8022fc9840cad616f2f))
+
+
+### Documentation
+
+* Add Git Workflow, Environment, Svelte, and Deployment rules to CLAUDE.md ([6fd400a](https://github.com/philipreese/the-record/commit/6fd400a940216ae15389a4a28b4ec29ec80bcbb4))
+* **spec:** Document SYNC_TOKEN auth on POST /api/sync ([8e434de](https://github.com/philipreese/the-record/commit/8e434deecd5df55fe9bebe4f6eabad9bf62f7cc6))
+
+
+### Tests
+
+* **api:** Add route tests for sync token auth and start-sync race ([ecdd449](https://github.com/philipreese/the-record/commit/ecdd449dbca953dcef9b7ec9f4cd7de9c127b11d))
+* **frontend:** Add vitest harness with sync token unit tests ([a712350](https://github.com/philipreese/the-record/commit/a7123500dd2d2b6060bc962aa1901173a549b81f))
+
+
+### Miscellaneous
+
+* **api:** Regenerate OpenAPI spec and types for X-Sync-Token header ([1962ba1](https://github.com/philipreese/the-record/commit/1962ba1920d427d29a4a77e6a94d5e4b8e45d3a0))
+* **frontend:** Add ESLint + Prettier and resolve lint and format issues ([3b115e8](https://github.com/philipreese/the-record/commit/3b115e83c6128f36904c00dd6b1df21687feff2a))
+
 ## [0.4.0](https://github.com/philipreese/the-record/compare/v0.3.6...v0.4.0) (2026-06-15)
 
 
