@@ -59,8 +59,18 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/trends/monthly` | — | `MonthlyTrendInfo[]` |
 | GET | `/api/trends/streak` | — | `StreakStatsResponse` |
 | GET | `/api/wrapped` | `year` (required), `quarter` (Q1–Q4, optional), `month` (M1–M12, optional) | `WrappedDataResponse` |
-| POST | `/api/sync` | `mode` (normal/full, default normal) | `SyncStartResponse` |
+| POST | `/api/sync` | `mode` (normal/full, default normal); requires `X-Sync-Token` header | `SyncStartResponse` |
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
+
+### Sync authentication
+
+`POST /api/sync` is the only mutating route and is protected by a shared secret:
+
+- The request must send header `X-Sync-Token` matching the `SYNC_TOKEN` environment variable, else `401`.
+- If `SYNC_TOKEN` is unset on the server the route **fails closed** with `503` rather than running unauthenticated.
+- `GET /api/sync/status` stays public (read-only). Public visitors without a token see the dashboard read-only; sync controls are hidden in the UI until a token is saved.
+
+The frontend stores the token in `localStorage` (`syncToken`) via `AppCache.setSyncToken()` and attaches it in `triggerSync()`.
 
 ## Sync strategy
 

@@ -109,3 +109,4 @@ interface SyncStatusResponse {
 | `TZ`                    | _(unset)_                     | Timezone applied to PostgreSQL sessions (`SET timezone=…`). No effect on SQLite.                                                             |
 | `LISTENBRAINZ_USERNAME` | _(required for sync)_         | ListenBrainz account username.                                                                                                               |
 | `LISTENBRAINZ_TOKEN`    | _(required for sync)_         | ListenBrainz user token.                                                                                                                     |
+| `SYNC_TOKEN`            | _(required to enable sync)_   | Shared secret guarding `POST /api/sync`. Requests must send a matching `X-Sync-Token` header. If unset, the route fails closed with `503`. Set this in the Render service env. |
