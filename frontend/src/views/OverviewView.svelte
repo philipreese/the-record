@@ -1,6 +1,6 @@
 <script lang="ts">
   // Layout refresh trigger
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { inView } from '../utils/inView';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
@@ -129,14 +129,32 @@
     }
   });
 
+  // Tracks pending heatmap fetches per year so rapid prev/next switching reuses the
+  // in-flight request instead of firing a second, racing one.
+  const heatmapInFlight = new Map<number, Promise<Record<string, number>>>();
+
+  async function loadHeatmap(year: number) {
+    let request = heatmapInFlight.get(year);
+    if (!request) {
+      request = fetchHeatmap(year).finally(() => {
+        heatmapInFlight.delete(year);
+      });
+      heatmapInFlight.set(year, request);
+    }
+    try {
+      appCache.heatmap[year] = await request;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   // Handle heatmap refresh automatically when selected year changes (including mount)
   $effect(() => {
     const year = heatmapYear;
-    fetchHeatmap(year)
-      .then((data) => {
-        appCache.heatmap[year] = data;
-      })
-      .catch((err) => console.error(err));
+    untrack(() => {
+      if (appCache.heatmap[year]) return;
+      loadHeatmap(year);
+    });
   });
 
   let currentStats = $derived(
