@@ -342,8 +342,15 @@
     </div>
     <div class="reveal-content">
       {#if loadingStats}
-        <div class="flex justify-center items-center py-10">
+        <div class="flex flex-col justify-center items-center gap-3 py-10">
           <span class="loading loading-spinner loading-md text-primary"></span>
+          {#if appCache.isWakingUp}
+            <span
+              class="text-xs font-mono tracking-widest uppercase text-theme-muted animate-pulse"
+            >
+              Waking up the server…
+            </span>
+          {/if}
         </div>
       {:else}
         <StatsGrid stats={currentStats} />

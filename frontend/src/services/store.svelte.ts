@@ -2,6 +2,7 @@ import {
   triggerSync,
   getSyncStatus,
   fetchStats,
+  registerWakingListener,
   type StatsInfo,
   type StreakInfo,
   type ArtistInfo,
@@ -47,6 +48,15 @@ class AppCache {
   syncStatus = $state<SyncStatusInfo | null>(null);
   syncError = $state<string | null>(null);
   private pollInterval: ReturnType<typeof setInterval> | null = null;
+
+  // True while a cold-start retry is riding out a suspended backend/DB wake.
+  isWakingUp = $state(false);
+
+  constructor() {
+    registerWakingListener((waking) => {
+      this.isWakingUp = waking;
+    });
+  }
 
   // Clear cache on sync completion
   invalidate() {

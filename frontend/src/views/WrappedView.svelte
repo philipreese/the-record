@@ -1,7 +1,12 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { generateWrapped, type WrappedQuarter, type WrappedMonth } from '../services/api';
+  import {
+    generateWrapped,
+    type WrappedQuarter,
+    type WrappedMonth,
+    type WrappedDataInfo,
+  } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
   import SelectDropdown from '../components/layout/SelectDropdown.svelte';
@@ -72,6 +77,10 @@
     });
   });
 
+  // Tracks pending fetches per cache key so rapid period switching (A->B->A)
+  // reuses the in-flight request for A instead of firing a second, racing one.
+  const inFlight = new Map<string, Promise<WrappedDataInfo>>();
+
   async function runGenerateWrapped(
     period: 'year' | 'quarter' | 'month',
     year: number,
@@ -86,12 +95,20 @@
     loadingWrapped = true;
     wrappedError = null;
     try {
-      const data = await generateWrapped(period, year, quarter, month);
+      let request = inFlight.get(key);
+      if (!request) {
+        request = generateWrapped(period, year, quarter, month).finally(() => {
+          inFlight.delete(key);
+        });
+        inFlight.set(key, request);
+      }
+      const data = await request;
       appCache.wrapped[key] = data;
     } catch (e) {
       wrappedError = e instanceof Error ? e.message : String(e);
     } finally {
-      loadingWrapped = false;
+      // Only clear the spinner if this resolution is for the period still selected.
+      if (key === cacheKey) loadingWrapped = false;
     }
   }
 
@@ -207,8 +224,13 @@
 
   <!-- Wrapped Result Card -->
   {#if loadingWrapped}
-    <div class="flex justify-center items-center py-20">
+    <div class="flex flex-col justify-center items-center gap-3 py-20">
       <span class="loading loading-spinner loading-md text-primary"></span>
+      {#if appCache.isWakingUp}
+        <span class="text-xs font-mono tracking-widest uppercase text-theme-muted animate-pulse">
+          Waking up the server…
+        </span>
+      {/if}
     </div>
   {:else if wrappedError}
     <div

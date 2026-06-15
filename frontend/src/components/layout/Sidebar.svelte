@@ -222,6 +222,10 @@
               > / day
             </div>
           </div>
+        {:else if appCache.isWakingUp}
+          <div class="text-sm font-mono text-theme-accent animate-pulse">
+            Waking up the server...
+          </div>
         {:else}
           <div class="text-sm font-mono text-theme-muted">Connecting to archive...</div>
         {/if}
