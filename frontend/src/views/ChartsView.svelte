@@ -24,9 +24,14 @@
   ];
   let loadingCharts = $state(false);
 
-  // Automatically fetch when the selected range changes
+  // Automatically fetch when the selected range changes. Reading the cache entry here
+  // keeps the effect reactive to invalidation: a sync clears appCache.charts and this refetches.
   $effect(() => {
     const range = topRange;
+    if (appCache.charts[range]) {
+      loadingCharts = false;
+      return;
+    }
     untrack(() => {
       fetchTopCharts(range);
     });
@@ -37,9 +42,7 @@
   const inFlight = new Map<TimeRange, Promise<{ artists: ArtistInfo[]; tracks: TrackInfo[] }>>();
 
   async function fetchTopCharts(range: TimeRange) {
-    if (!appCache.charts[range]) {
-      loadingCharts = true;
-    }
+    loadingCharts = true;
     try {
       let request = inFlight.get(range);
       if (!request) {

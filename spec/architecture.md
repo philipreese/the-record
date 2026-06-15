@@ -34,9 +34,9 @@ migrations/        — Alembic env + versioned migration scripts
 ## Frontend layer map
 
 ```
-api.ts             — Fetch wrapper, typed against api-types.ts, response caching per endpoint
+api.ts             — Fetch wrapper, typed against api-types.ts; retries idempotent GETs through Neon/Render cold starts
     ↓
-store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns sync orchestration + cache invalidation
+store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation
     ↓
 Views              — OverviewView, ChartsView, WrappedView, SettingsView
     ↓

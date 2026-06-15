@@ -170,7 +170,6 @@ Remaining findings from the June 2026 codebase analysis not covered by the Phase
 
 | Item | Notes | Bites when |
 |---|---|---|
-| **Frontend resilience** | Type `triggerSync` (`Promise<any>` → `SyncStartResponse`); in-flight request dedup in `WrappedView` (cache is checked but pending fetches aren't — rapid period-switching races); minimal retry + "backend waking up" messaging for Neon/Render cold starts. | Today, on every cold start |
 | **View decomposition** | `WrappedView` (~420 LOC) and `OverviewView` (~340 LOC) mix fetching, derived state, and duplicated mobile/desktop control markup (`.sticky-sub-header` in both `WrappedView` and `ChartsView`). Extract a shared period-selector and data-loading pattern. | Before Phase 1/2 add views and drill-downs |
 | **Chart keyboard accessibility** | ~10 `svelte-ignore a11y_*` suppressions on interactive SVGs (`Heatmap`, `HourlyHeatClock`, `ChartsView`); hover-only interactions have no keyboard equivalent. | Phase 2 drill-downs (also noted there) |
 | **Dependency pins** | `fastapi`/`uvicorn`/`httpx` are `"*"` in `pixi.toml` — cap to current majors so a breaking bump can't arrive unreviewed via `pixi update`. | Next `pixi update` |
