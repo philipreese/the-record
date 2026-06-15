@@ -89,6 +89,10 @@ def read_recent(
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
 
+# Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
+_cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
+
+
 async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> Optional[str]:
     """Resolve a direct archive.org image URL from Cover Art Archive (avoids the redirect)."""
     try:
@@ -121,6 +125,32 @@ async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: 
             releases = r.json().get("releases", [])
             if releases:
                 return releases[0]["id"]
+    except Exception:
+        pass
+    return None
+
+
+async def _search_cover_art_by_text(
+    client: httpx.AsyncClient, artist: str, title: str
+) -> Optional[str]:
+    """Last-resort cover art lookup via MB text search when no MBID is in the LB response."""
+    try:
+        r = await client.get(
+            "https://musicbrainz.org/ws/2/recording",
+            params={
+                "query": f'recording:"{title}" AND artistname:"{artist}"',
+                "fmt": "json",
+                "limit": "1",
+            },
+            headers={"User-Agent": "the-record-dashboard/1.0"},
+            timeout=httpx.Timeout(4.0),
+        )
+        if r.status_code == 200:
+            recordings = r.json().get("recordings", [])
+            if recordings:
+                releases = recordings[0].get("releases", [])
+                if releases:
+                    return await _get_caa_direct_url(client, releases[0]["id"])
     except Exception:
         pass
     return None
@@ -163,13 +193,21 @@ async def get_playing_now() -> Any:
             release_mbid = additional_info.get("release_mbid")
             recording_mbid = additional_info.get("recording_mbid")
 
-            # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction
+            # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction.
+            # Cache by (artist, title) so repeated polls for the same track skip the lookups.
             cover_art_url: Optional[str] = None
-            mbid = release_mbid
-            if not mbid and recording_mbid:
-                mbid = await _recording_to_release_mbid(client, recording_mbid)
-            if mbid:
-                cover_art_url = await _get_caa_direct_url(client, mbid)
+            cache_key = (artist or "", title or "")
+            if cache_key in _cover_art_cache:
+                cover_art_url = _cover_art_cache[cache_key]
+            else:
+                mbid = release_mbid
+                if not mbid and recording_mbid:
+                    mbid = await _recording_to_release_mbid(client, recording_mbid)
+                if mbid:
+                    cover_art_url = await _get_caa_direct_url(client, mbid)
+                if not cover_art_url and artist and title:
+                    cover_art_url = await _search_cover_art_by_text(client, artist, title)
+                _cover_art_cache[cache_key] = cover_art_url
 
             return PlayingNowResponse(
                 is_playing=bool(artist and title),
