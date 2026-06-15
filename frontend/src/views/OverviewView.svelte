@@ -201,7 +201,7 @@
             >
               <AnimatedCounter value={currentStats.total_listens} />
             </span>
-            <span class="text-xs font-serif italic text-theme-secondary">plays</span>
+            <span class="text-xs font-serif italic text-theme-secondary pr-2">plays</span>
           </div>
         </div>
       {/if}

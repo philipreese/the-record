@@ -15,6 +15,8 @@ import {
   type ListenEntry,
   type PlayingNowInfo,
 } from './api';
+import { getDominantColor } from '../utils/dominantColor';
+import { themeManager } from './theme.svelte';
 
 class AppCache {
   // Dashboard / Stats Cache
@@ -85,6 +87,8 @@ class AppCache {
   // on a single miss — wait for 2 consecutive empty responses (~40s) before switching.
   private _notPlayingCount = 0;
   private readonly NOT_PLAYING_GRACE = 2;
+  // Tracks the last URL we extracted a color from, so we don't re-extract on every poll.
+  private _lastExtractedCoverUrl: string | null = null;
 
   private _poll = async () => {
     if (document.visibilityState === 'hidden') return;
@@ -111,6 +115,20 @@ class AppCache {
         }
       } else {
         this.playingNow = result;
+      }
+
+      // Extract ambient color from cover art in the store so it works on any tab,
+      // not only when the full NowPlaying component is mounted.
+      const coverUrl = result.is_playing
+        ? (result.cover_art_url ?? null)
+        : (result.last_played?.cover_art_url ?? null);
+      if (coverUrl !== this._lastExtractedCoverUrl) {
+        this._lastExtractedCoverUrl = coverUrl;
+        if (coverUrl) {
+          getDominantColor(coverUrl).then((color) => themeManager.setAmbientColor(color));
+        } else {
+          themeManager.setAmbientColor(null);
+        }
       }
     } catch {
       // silently skip failed polls

@@ -141,10 +141,12 @@
                     style="background-color: {theme.colors.bg}"
                     title="Background"
                   ></div>
-                  <!-- Accent Block -->
+                  <!-- Accent Block — music-mood uses the live CSS var so it reflects the current dynamic color -->
                   <div
                     class="w-1/2 h-full"
-                    style="background-color: {theme.colors.accent}"
+                    style="background-color: {theme.id === 'music-mood'
+                      ? 'var(--accent)'
+                      : theme.colors.accent}"
                     title="Accent"
                   ></div>
                 </div>
