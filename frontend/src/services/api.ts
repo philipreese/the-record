@@ -89,7 +89,11 @@ export async function generateWrapped(
 
 export async function triggerSync(forceFull: boolean): Promise<any> {
   const url = forceFull ? '/api/sync?mode=full' : '/api/sync';
-  const res = await apiFetch(url, { method: 'POST' });
+  const token = localStorage.getItem('syncToken') ?? '';
+  const res = await apiFetch(url, {
+    method: 'POST',
+    headers: { 'X-Sync-Token': token },
+  });
   if (!res.ok) {
     const errData = await res.json();
     throw new Error(errData.detail || 'Sync failed to start.');

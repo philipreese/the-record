@@ -1,4 +1,6 @@
-from fastapi import APIRouter, BackgroundTasks, Query, HTTPException
+import os
+
+from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException
 from typing import Any, List, Literal, Optional, Dict
 
 import app.repository as repo
@@ -87,21 +89,35 @@ def read_recent(
 async def start_sync(
     background_tasks: BackgroundTasks,
     mode: Literal["normal", "full"] = Query("normal", description="Sync mode: 'normal' or 'full'"),
+    x_sync_token: Optional[str] = Header(None),
 ) -> Any:
     """
     Kick off a background sync with ListenBrainz and return immediately.
     Poll GET /api/sync/status for progress and results.
     """
-    if sync_worker._sync_state.running:
-        return {
-            "status": "already_running",
-            "message": "A sync is already in progress. Poll /api/sync/status for updates.",
-        }
+    sync_token = os.getenv("SYNC_TOKEN")
+    if not sync_token:
+        raise HTTPException(status_code=503, detail="Sync endpoint is not configured.")
+    if x_sync_token != sync_token:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Sync-Token.")
 
-    # Reset state for this run
-    sync_worker._sync_state = sync_worker.SyncState(running=True, mode=mode)
+    async with sync_worker._sync_lock:
+        if sync_worker._sync_state.running:
+            return {
+                "status": "already_running",
+                "message": "A sync is already in progress. Poll /api/sync/status for updates.",
+            }
+        s = sync_worker._sync_state
+        s.running = True
+        s.mode = mode
+        s.batches_fetched = 0
+        s.synced_count = 0
+        s.lb_total = 0
+        s.local_total = 0
+        s.error = None
+        s.finished = False
+
     background_tasks.add_task(sync_worker._run_sync, mode)
-
     return {"status": "started", "mode": mode}
 
 @router.get("/sync/status", response_model=SyncStatusResponse)
