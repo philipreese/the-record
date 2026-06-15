@@ -2,7 +2,13 @@
   // Layout refresh trigger
   import { untrack } from 'svelte';
   import { inView } from '../utils/inView';
-  import { fetchTopArtists, fetchTopTracks, type TimeRange } from '../services/api';
+  import {
+    fetchTopArtists,
+    fetchTopTracks,
+    type TimeRange,
+    type ArtistInfo,
+    type TrackInfo,
+  } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
   import { tooltip } from '../utils/tooltip';
@@ -26,20 +32,30 @@
     });
   });
 
+  // Tracks pending fetches per range so rapid switching (A->B->A) reuses the
+  // in-flight request for A instead of firing a second, racing one.
+  const inFlight = new Map<TimeRange, Promise<{ artists: ArtistInfo[]; tracks: TrackInfo[] }>>();
+
   async function fetchTopCharts(range: TimeRange) {
     if (!appCache.charts[range]) {
       loadingCharts = true;
     }
     try {
-      const [artistsRes, tracksRes] = await Promise.all([
-        fetchTopArtists(range, 15),
-        fetchTopTracks(range, 15),
-      ]);
-      appCache.charts[range] = { artists: artistsRes, tracks: tracksRes };
+      let request = inFlight.get(range);
+      if (!request) {
+        request = Promise.all([fetchTopArtists(range, 15), fetchTopTracks(range, 15)])
+          .then(([artists, tracks]) => ({ artists, tracks }))
+          .finally(() => {
+            inFlight.delete(range);
+          });
+        inFlight.set(range, request);
+      }
+      appCache.charts[range] = await request;
     } catch (e) {
       console.error('Failed to fetch top charts:', e);
     } finally {
-      loadingCharts = false;
+      // Only clear the spinner if this resolution is for the range still selected.
+      if (range === topRange) loadingCharts = false;
     }
   }
 
