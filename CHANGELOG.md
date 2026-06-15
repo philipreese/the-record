@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/philipreese/the-record/compare/v0.3.6...v0.4.0) (2026-06-15)
+
+
+### Features
+
+* Add recently played journal view with cursor-based pagination ([59cdfca](https://github.com/philipreese/the-record/commit/59cdfca22ac1834596ad4fac3df6d3e347f332b4))
+
+
+### Bug Fixes
+
+* **frontend:** Fix source label mapping and extract listen helpers to shared util ([4f41fcc](https://github.com/philipreese/the-record/commit/4f41fccd044691524b486237947f6e9f9aeaf523))
+* **frontend:** Re-fetch journal on sync invalidation while view is mounted ([c3d77dc](https://github.com/philipreese/the-record/commit/c3d77dc56e276262e927de2c13756d9c9bbd5001))
+* **frontend:** Re-fetch stats after sync so sidebar updates immediately ([0dea592](https://github.com/philipreese/the-record/commit/0dea5925b607972c1b7b96277b2161bd48079171))
+
+
+### Documentation
+
+* **spec:** Add CI and release-please setup guide ([8d086b5](https://github.com/philipreese/the-record/commit/8d086b5ffa5ff362591b45af33f3179a58796fde))
+
+
+### Miscellaneous
+
+* **frontend:** Apply canonical Tailwind class names ([02536b4](https://github.com/philipreese/the-record/commit/02536b4cd6b4a24e11438f87571dead98b83971f))
+
 ## [0.3.6](https://github.com/philipreese/the-record/compare/v0.3.5...v0.3.6) (2026-06-13)
 
 
