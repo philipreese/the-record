@@ -4,6 +4,24 @@ Welcome, AI Coding Assistant. This workspace is configured with structured archi
 
 ---
 
+## Git Workflow
+- NEVER put 'Closes #n' / 'Fixes #n' in commit messages — only in the PR body.
+- Always use `gh issue develop <n>` to create issue branches, NOT `git checkout -b`.
+- Do NOT add Co-authored-by or any AI attribution lines to commits.
+
+## Environment
+- `gh` IS installed and available on this machine — locate the binary (e.g., check PATH) rather than claiming it is unavailable.
+- Scripts run under PowerShell 5.1: avoid em-dashes and other non-ASCII chars in scripts, and use `;` not `&&` as the command separator.
+
+## Svelte Conventions
+- Files using the `$state` (or other) runes must use the `.svelte.ts` extension, not `.ts`.
+- Run svelte-check / type verification after edits when possible before committing.
+
+## Deployment
+- Ensure the Dockerfile COPIES migrations and that the dev server is restarted (no stale process) when verifying new endpoints.
+
+---
+
 ## Workflow
 
 For non-trivial tasks, follow this sequence:
