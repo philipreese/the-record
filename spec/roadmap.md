@@ -171,11 +171,10 @@ Remaining findings from the June 2026 codebase analysis not covered by the Phase
 | Item | Notes | Bites when |
 |---|---|---|
 | **View decomposition** | `WrappedView` (~420 LOC) and `OverviewView` (~340 LOC) mix fetching, derived state, and duplicated mobile/desktop control markup (`.sticky-sub-header` in both `WrappedView` and `ChartsView`). Extract a shared period-selector and data-loading pattern. | Before Phase 1/2 add views and drill-downs |
-| **Chart keyboard accessibility** | ~10 `svelte-ignore a11y_*` suppressions on interactive SVGs (`Heatmap`, `HourlyHeatClock`, `ChartsView`); hover-only interactions have no keyboard equivalent. | Phase 2 drill-downs (also noted there) |
+| **Chart keyboard accessibility** | `svelte-ignore a11y_*` suppressions on interactive SVGs in `Heatmap` and `HourlyHeatClock`; hover-only interactions have no keyboard equivalent. | Phase 2 drill-downs (also noted there) |
 | **Dependency pins** | `fastapi`/`uvicorn`/`httpx` are `"*"` in `pixi.toml` — cap to current majors so a breaking bump can't arrive unreviewed via `pixi update`. | Next `pixi update` |
 | **Docker image** | Pixi base image is conda-stack-sized; multi-stage build would cut Render cold-start pulls. Add a `HEALTHCHECK`. | Whenever deploys feel slow |
 | **Route return types** | Handlers are annotated `-> Any`; real return types let `pyrefly` catch handler/schema drift statically (`response_model` only enforces at runtime). | Opportunistic |
 | **Config module** | Centralize magic numbers: sync batch size (1000), backoff table, 2s inter-batch sleep, 60s dedup window, 3.5-min duration estimate. | Opportunistic |
 | **Wrapped year range** | Hardcoded 2020–2026 in `WrappedView`; `/api/stats` already returns `first_year` — derive it. | January 2027 |
 | **Dead code** | `get_db_connection()` in `db.py` appears unused by the app — verify and delete. | Opportunistic |
-| **Frontend lint/format** | Only `svelte-check` exists; add Prettier/ESLint for style consistency once more contributors (human or AI) write frontend code. | Opportunistic |

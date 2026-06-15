@@ -124,7 +124,11 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Lint frontend (svelte-check)
+      - name: Run frontend tests
+        run: npm run test
+        working-directory: frontend
+
+      - name: Lint frontend (prettier, eslint, svelte-check)
         run: npm run lint
         working-directory: frontend
 ```
