@@ -26,8 +26,8 @@ const API_BASE = import.meta.env.VITE_API_BASE || '';
 // Cold-start resilience: Neon free-tier suspends after inactivity, so the first
 // request after a wake fails with a connection error or a gateway status while the
 // backend/DB spin up. Briefly retry idempotent GETs to ride out that window.
-const RETRY_ATTEMPTS = 2;
-const RETRY_DELAY_MS = 1000;
+const RETRY_ATTEMPTS = 6;
+const RETRY_DELAY_MS = 2000;
 const COLD_START_STATUSES = new Set([502, 503, 504]);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -190,6 +190,17 @@ export async function getSyncStatus(): Promise<SyncStatusInfo> {
 export async function fetchPlayingNow(): Promise<PlayingNowInfo> {
   try {
     const res = await apiFetch('/api/playing-now');
+    if (!res.ok) return { is_playing: false };
+    return res.json();
+  } catch {
+    return { is_playing: false };
+  }
+}
+
+/** DB-only pre-population: no LB call, responds in ~50ms. */
+export async function fetchLastPlayed(): Promise<PlayingNowInfo> {
+  try {
+    const res = await apiFetch('/api/last-played');
     if (!res.ok) return { is_playing: false };
     return res.json();
   } catch {

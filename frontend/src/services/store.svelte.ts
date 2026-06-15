@@ -4,6 +4,7 @@ import {
   fetchStats,
   fetchRecentListens,
   fetchPlayingNow,
+  fetchLastPlayed,
   registerWakingListener,
   type StatsInfo,
   type StreakInfo,
@@ -86,7 +87,7 @@ class AppCache {
   // LB's playing-now endpoint has brief keep-alive gaps; don't flip to "last played"
   // on a single miss — wait for 2 consecutive empty responses (~40s) before switching.
   private _notPlayingCount = 0;
-  private readonly NOT_PLAYING_GRACE = 2;
+  private readonly NOT_PLAYING_GRACE = 3;
   // Tracks the last URL we extracted a color from, so we don't re-extract on every poll.
   private _lastExtractedCoverUrl: string | null = null;
 
@@ -117,23 +118,40 @@ class AppCache {
         this.playingNow = result;
       }
 
-      // Extract ambient color from cover art in the store so it works on any tab,
-      // not only when the full NowPlaying component is mounted.
-      const coverUrl = result.is_playing
-        ? (result.cover_art_url ?? null)
-        : (result.last_played?.cover_art_url ?? null);
+      // If baseline data never loaded (backend was down at startup), recover it now.
+      // _poll already runs every 20s, so within one cycle of the backend coming back
+      // the page will populate without a manual refresh.
+      if (!this.statsLoaded) {
+        fetchStats()
+          .then((s) => { this.stats = s; this.statsLoaded = true; })
+          .catch(() => {});
+      }
+      if (this.recentListens.length === 0 && !this.recentExhausted) {
+        fetchRecentListens(50)
+          .then((r) => {
+            this.recentListens = r;
+            if (r.length < 50) this.recentExhausted = true;
+          })
+          .catch(() => {});
+      }
+
+      // Extract ambient color from the *displayed* state (this.playingNow), not the raw
+      // LB result. During the grace period this.playingNow still holds the previous
+      // "now playing" entry, so we keep the track's color rather than switching to
+      // last_played (which may have no art and would reset the accent to blue).
+      const displayed = this.playingNow;
+      const coverUrl = displayed?.is_playing
+        ? (displayed.cover_art_url ?? null)
+        : (displayed?.last_played?.cover_art_url ?? null);
       if (coverUrl !== this._lastExtractedCoverUrl) {
         this._lastExtractedCoverUrl = coverUrl;
         if (coverUrl) {
           getDominantColor(coverUrl).then((color) => {
-            // Only update when extraction succeeds. A null result (CORS block, load error)
-            // is not the same as "no art" — keep the current ambient color in that case.
             if (color) themeManager.setAmbientColor(color);
           });
-        } else {
-          // No cover URL at all — genuinely reset the dynamic accent
-          themeManager.setAmbientColor(null);
         }
+        // No art → keep last extracted color. setAmbientColor(null) would reset to
+        // default blue, which is jarring when art is missing for one track mid-session.
       }
     } catch {
       // silently skip failed polls
@@ -148,6 +166,13 @@ class AppCache {
 
   startPlayingNowPolling() {
     if (this._playingPollInterval !== null) return;
+    // Pre-populate immediately from DB (no LB call, ~50ms) so the widget is
+    // visible at once rather than blank for the duration of the first LB fetch.
+    fetchLastPlayed().then((result) => {
+      if (!this.playingNow && result.last_played) {
+        this.playingNow = result;
+      }
+    }).catch(() => {});
     this._poll();
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
