@@ -9,7 +9,10 @@
     isFuture: boolean;
   }
 
-  let { data = {}, year = new Date().getFullYear() }: { data?: Record<string, number>, year?: number } = $props();
+  let {
+    data = {},
+    year = new Date().getFullYear(),
+  }: { data?: Record<string, number>; year?: number } = $props();
 
   let daysOfYear = $derived(getDaysOfYear(year));
   let weeks = $derived(chunkIntoWeeks(daysOfYear));
@@ -45,22 +48,22 @@
     const days: (DayInfo | null)[] = [];
     const startDate = new Date(y, 0, 1);
     const endDate = new Date(y, 11, 31);
-    
+
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    
+
     // Fill leading empty days of the first week
     const firstDayOfWeek = startDate.getDay(); // 0 = Sunday, 6 = Saturday
     for (let i = 0; i < firstDayOfWeek; i++) {
       days.push(null);
     }
-    
+
     let currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
       const count = data[dateStr] || 0;
       const isFuture = currentDate > today;
-      
+
       let weight = 0;
       if (!isFuture) {
         if (count > 0 && count <= 2) weight = 1;
@@ -68,22 +71,22 @@
         else if (count > 5 && count <= 10) weight = 3;
         else if (count > 10) weight = 4;
       }
-      
+
       days.push({
         date: new Date(currentDate),
         dateStr,
         count,
         weight,
-        isFuture
+        isFuture,
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     // Fill trailing empty days of the last week
     while (days.length % 7 !== 0) {
       days.push(null);
     }
-    
+
     return days;
   }
 
@@ -95,15 +98,28 @@
     return result;
   }
 
-  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
+  const monthLabels = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   // Find which week column each month starts in
   let monthHeaders = $derived(getMonthHeaders(weeks));
-  
+
   function getMonthHeaders(weeksList: (DayInfo | null)[][]) {
     const headers: { name: string; x: number }[] = [];
     let lastMonth = -1;
-    
+
     weeksList.forEach((week, weekIndex) => {
       // Find the first non-null day in the week
       const firstDay = week.find((d): d is DayInfo => d !== null);
@@ -112,41 +128,75 @@
         if (currentMonth !== lastMonth) {
           headers.push({
             name: monthLabels[currentMonth],
-            x: weekIndex * 15 + 30
+            x: weekIndex * 15 + 30,
           });
           lastMonth = currentMonth;
         }
       }
     });
-    
+
     return headers;
   }
 
   function formatDate(d: Date | null | undefined): string {
-    if (!d) return "";
-    return d.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    if (!d) return '';
+    return d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 </script>
 
-<div 
-  bind:this={containerElement} 
-  use:inView={{ once: true }} 
-  class="w-full memory-surface heatmap-container !p-6 relative overflow-visible" 
+<div
+  bind:this={containerElement}
+  use:inView={{ once: true }}
+  class="w-full memory-surface heatmap-container !p-6 relative overflow-visible"
   style="min-width: 320px; max-width: 100%;"
 >
   <div class="w-full overflow-x-auto scrollbar-thin">
-    <svg viewBox="0 0 835 150" class="min-w-[780px] w-full h-auto" preserveAspectRatio="xMidYMid meet" style="color: var(--text-primary);">
+    <svg
+      viewBox="0 0 835 150"
+      class="min-w-[780px] w-full h-auto"
+      preserveAspectRatio="xMidYMid meet"
+      style="color: var(--text-primary);"
+    >
       <!-- Month Labels -->
       {#each monthHeaders as header}
-        <text x={header.x} y="15" font-size="11" font-family="var(--font-mono)" class="fill-current opacity-60">
+        <text
+          x={header.x}
+          y="15"
+          font-size="11"
+          font-family="var(--font-mono)"
+          class="fill-current opacity-60"
+        >
           {header.name}
         </text>
       {/each}
 
       <!-- Weekday Labels -->
-      <text x="5" y="44" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Mon</text>
-      <text x="5" y="74" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Wed</text>
-      <text x="5" y="104" font-size="10" font-family="var(--font-mono)" class="fill-current opacity-50">Fri</text>
+      <text
+        x="5"
+        y="44"
+        font-size="10"
+        font-family="var(--font-mono)"
+        class="fill-current opacity-50">Mon</text
+      >
+      <text
+        x="5"
+        y="74"
+        font-size="10"
+        font-family="var(--font-mono)"
+        class="fill-current opacity-50">Wed</text
+      >
+      <text
+        x="5"
+        y="104"
+        font-size="10"
+        font-family="var(--font-mono)"
+        class="fill-current opacity-50">Fri</text
+      >
 
       <!-- Heatmap Grid -->
       <g transform="translate(30, 20)">
@@ -154,55 +204,55 @@
           <g transform="translate({wIndex * 15}, 0)">
             {#each week as day, dIndex}
               {#if day}
-                 {#if day.isFuture}
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <!-- svelte-ignore a11y_mouse_events_have_key_events -->
-                    <rect
-                      y={dIndex * 15}
-                      width="12"
-                      height="12"
-                      rx="2.5"
-                      fill="transparent"
-                      class="heatmap-cell"
-                      style="
+                {#if day.isFuture}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <rect
+                    y={dIndex * 15}
+                    width="12"
+                    height="12"
+                    rx="2.5"
+                    fill="transparent"
+                    class="heatmap-cell"
+                    style="
                         stroke: var(--text-primary); 
                         stroke-opacity: 0.15; 
                         stroke-width: 1px;
                         animation-delay: {wIndex * 12}ms;
                       "
-                      stroke-dasharray="1.5 1.5"
-                      onmouseenter={(e) => showPopover(day, e)}
-                      onmousemove={movePopover}
-                      onmouseleave={hidePopover}
-                    />
-                 {:else}
-                   <!-- svelte-ignore a11y_no_static_element_interactions -->
-                   <!-- svelte-ignore a11y_mouse_events_have_key_events -->
-                   <rect
-                     y={dIndex * 15}
-                     width="12"
-                     height="12"
-                     rx="2.5"
-                     class="heatmap-cell transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 cursor-pointer"
-                     class:fill-base-300={day.weight === 0}
-                     style="
+                    stroke-dasharray="1.5 1.5"
+                    onmouseenter={(e) => showPopover(day, e)}
+                    onmousemove={movePopover}
+                    onmouseleave={hidePopover}
+                  />
+                {:else}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <rect
+                    y={dIndex * 15}
+                    width="12"
+                    height="12"
+                    rx="2.5"
+                    class="heatmap-cell transition-all duration-[var(--t-immediate)] var(--ease-fluid) hover:stroke-[color:var(--text-primary)] hover:stroke-1 cursor-pointer"
+                    class:fill-base-300={day.weight === 0}
+                    style="
                        fill: {day.weight > 0 ? 'var(--accent)' : ''};
-                       --target-opacity: {day.weight === 0 ? '0.1' : day.weight === 1 ? '0.22' : day.weight === 2 ? '0.5' : day.weight === 3 ? '0.75' : '1.0'};
+                       --target-opacity: {day.weight === 0
+                      ? '0.1'
+                      : day.weight === 1
+                        ? '0.22'
+                        : day.weight === 2
+                          ? '0.5'
+                          : day.weight === 3
+                            ? '0.75'
+                            : '1.0'};
                        animation-delay: {wIndex * 12}ms;
                      "
-                     onmouseenter={(e) => showPopover(day, e)}
-                     onmousemove={movePopover}
-                     onmouseleave={hidePopover}
-                   />
-                 {/if}
+                    onmouseenter={(e) => showPopover(day, e)}
+                    onmousemove={movePopover}
+                    onmouseleave={hidePopover}
+                  />
+                {/if}
               {:else}
-                <rect
-                  y={dIndex * 15}
-                  width="12"
-                  height="12"
-                  rx="2.5"
-                  fill="transparent"
-                />
+                <rect y={dIndex * 15} width="12" height="12" rx="2.5" fill="transparent" />
               {/if}
             {/each}
           </g>
@@ -210,56 +260,59 @@
       </g>
     </svg>
   </div>
-    
-    <!-- Legend -->
-    <div class="flex items-center justify-end gap-2 mt-4 px-2 text-xs font-mono" style="color: var(--text-muted);">
-      <span>Quiet</span>
-      <div class="w-3 h-3 rounded-sm bg-base-300 opacity-10"></div>
-      <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.22;"></div>
-      <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.50;"></div>
-      <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.75;"></div>
-      <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 1.00;"></div>
-      <span>Resonant</span>
-    </div>
 
-    <!-- Custom Floating HTML Popover -->
-    {#if hoveredDay}
-      <div 
-        class="absolute z-50 pointer-events-none p-3 rounded-lg text-xs leading-relaxed shadow-xl border border-theme-border-heavy backdrop-blur-md text-theme-text"
-        style="
+  <!-- Legend -->
+  <div
+    class="flex items-center justify-end gap-2 mt-4 px-2 text-xs font-mono"
+    style="color: var(--text-muted);"
+  >
+    <span>Quiet</span>
+    <div class="w-3 h-3 rounded-sm bg-base-300 opacity-10"></div>
+    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.22;"></div>
+    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.50;"></div>
+    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.75;"></div>
+    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 1.00;"></div>
+    <span>Resonant</span>
+  </div>
+
+  <!-- Custom Floating HTML Popover -->
+  {#if hoveredDay}
+    <div
+      class="absolute z-50 pointer-events-none p-3 rounded-lg text-xs leading-relaxed shadow-xl border border-theme-border-heavy backdrop-blur-md text-theme-text"
+      style="
           left: {popoverX}px; 
           top: {popoverY}px;
           background-color: var(--bg-base);
           opacity: 0.96;
         "
-      >
-        <div class="font-mono text-micro uppercase tracking-wider opacity-60">
-          {formatDate(hoveredDay.date)}
-        </div>
-        <div class="font-semibold mt-1">
-          {hoveredDay.count} play{hoveredDay.count === 1 ? '' : 's'}
-        </div>
-        {#if hoveredDay.count > 0}
-          <div class="text-micro opacity-75 mt-0.5" style="color: var(--text-secondary);">
-            {#if hoveredDay.weight === 1}
-              Quiet, observed resonance
-            {:else if hoveredDay.weight === 2}
-              Active connection
-            {:else if hoveredDay.weight === 3}
-              Deep musical immersion
-            {:else}
-              Intense emotional archaeology
-            {/if}
-          </div>
-        {:else if hoveredDay.isFuture}
-          <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
-            Unwritten moment
-          </div>
-        {:else}
-          <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
-            Silence and space
-          </div>
-        {/if}
+    >
+      <div class="font-mono text-micro uppercase tracking-wider opacity-60">
+        {formatDate(hoveredDay.date)}
       </div>
-    {/if}
+      <div class="font-semibold mt-1">
+        {hoveredDay.count} play{hoveredDay.count === 1 ? '' : 's'}
+      </div>
+      {#if hoveredDay.count > 0}
+        <div class="text-micro opacity-75 mt-0.5" style="color: var(--text-secondary);">
+          {#if hoveredDay.weight === 1}
+            Quiet, observed resonance
+          {:else if hoveredDay.weight === 2}
+            Active connection
+          {:else if hoveredDay.weight === 3}
+            Deep musical immersion
+          {:else}
+            Intense emotional archaeology
+          {/if}
+        </div>
+      {:else if hoveredDay.isFuture}
+        <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
+          Unwritten moment
+        </div>
+      {:else}
+        <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
+          Silence and space
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>

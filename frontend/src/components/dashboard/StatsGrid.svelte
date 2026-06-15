@@ -15,7 +15,7 @@
     </div>
     <div class="text-detail text-theme-faint">all-time collection</div>
   </div>
-  
+
   <div class="space-y-1.5">
     <div class="text-caps text-theme-muted">Unique Creators</div>
     <div class="text-display-medium text-theme-accent">
@@ -50,7 +50,10 @@
 
   <div class="space-y-1.5">
     <div class="text-caps text-theme-muted">Top Source</div>
-    <div class="text-lg font-light tracking-wide truncate h-[3rem] flex items-center capitalize text-theme-text" use:tooltip>
+    <div
+      class="text-lg font-light tracking-wide truncate h-[3rem] flex items-center capitalize text-theme-text"
+      use:tooltip
+    >
       {stats.top_source.replace('_', ' ')}
     </div>
     <div class="text-detail text-theme-faint">music pipeline</div>

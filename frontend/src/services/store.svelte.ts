@@ -34,7 +34,7 @@ class AppCache {
 
   // Sync Authentication
   syncToken = $state<string>(
-    typeof window !== 'undefined' ? (localStorage.getItem('syncToken') ?? '') : ''
+    typeof window !== 'undefined' ? (localStorage.getItem('syncToken') ?? '') : '',
   );
 
   setSyncToken(token: string) {
@@ -46,7 +46,7 @@ class AppCache {
   isSyncing = $state(false);
   syncStatus = $state<SyncStatusInfo | null>(null);
   syncError = $state<string | null>(null);
-  private pollInterval: any = null;
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   // Clear cache on sync completion
   invalidate() {
@@ -61,7 +61,7 @@ class AppCache {
     this.recentListens = [];
     this.recentScrollOffset = 0;
     this.recentExhausted = false;
-    console.log("[cache] Store cache cleared.");
+    console.log('[cache] Store cache cleared.');
   }
 
   // Centralized sync task runner
@@ -78,7 +78,7 @@ class AppCache {
 
     try {
       await triggerSync(forceFull);
-      
+
       // Poll every 2 seconds
       this.pollInterval = setInterval(async () => {
         try {
