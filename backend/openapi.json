@@ -470,6 +470,25 @@
         }
       }
     },
+    "/api/playing-now": {
+      "get": {
+        "summary": "Get Playing Now",
+        "description": "Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing.",
+        "operationId": "get_playing_now_api_playing_now_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayingNowResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sync": {
       "post": {
         "summary": "Start Sync",
@@ -586,6 +605,29 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "LastPlayedEntry": {
+        "properties": {
+          "artist": {
+            "type": "string",
+            "title": "Artist"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "unix_ts": {
+            "type": "integer",
+            "title": "Unix Ts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "artist",
+          "title",
+          "unix_ts"
+        ],
+        "title": "LastPlayedEntry"
+      },
       "ListenEntry": {
         "properties": {
           "id": {
@@ -636,6 +678,73 @@
           "count"
         ],
         "title": "MonthlyTrendInfo"
+      },
+      "PlayingNowResponse": {
+        "properties": {
+          "is_playing": {
+            "type": "boolean",
+            "title": "Is Playing"
+          },
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "release": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release"
+          },
+          "cover_art_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Art Url"
+          },
+          "last_played": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastPlayedEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_playing"
+        ],
+        "title": "PlayingNowResponse"
       },
       "StatsSummaryResponse": {
         "properties": {
