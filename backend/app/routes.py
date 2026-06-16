@@ -22,6 +22,7 @@ from app.schemas import (
     SyncStatusResponse,
     PlayingNowResponse,
     LastPlayedEntry,
+    TrackStatsResponse,
 )
 
 router = APIRouter()
@@ -91,6 +92,15 @@ def read_recent(
 ) -> Any:
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
+
+@router.get("/track-stats", response_model=TrackStatsResponse)
+def read_track_stats(
+    artist: str = Query(..., description="Artist name"),
+    title: str = Query(..., description="Track title"),
+) -> Any:
+    """Retrieve all-time play count (and duration when available) for a specific track."""
+    play_count = repo.get_track_play_count(artist=artist, title=title)
+    return {"play_count": play_count, "duration_secs": None}
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
 # Only successful lookups are stored; failed attempts are counted separately so transient

@@ -20,6 +20,7 @@ export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
 export type ListenEntry = components['schemas']['ListenEntry'];
 export type SyncStartInfo = components['schemas']['SyncStartResponse'];
 export type PlayingNowInfo = components['schemas']['PlayingNowResponse'];
+export type TrackStatsInfo = components['schemas']['TrackStatsResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -206,4 +207,11 @@ export async function fetchLastPlayed(): Promise<PlayingNowInfo> {
   } catch {
     return { is_playing: false };
   }
+}
+
+export async function fetchTrackStats(artist: string, title: string): Promise<TrackStatsInfo> {
+  const params = new URLSearchParams({ artist, title });
+  const res = await apiFetch(`/api/track-stats?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch track stats');
+  return res.json();
 }

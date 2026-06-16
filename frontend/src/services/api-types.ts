@@ -184,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/track-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Track Stats
+         * @description Retrieve all-time play count (and duration when available) for a specific track.
+         */
+        get: operations["read_track_stats_api_track_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playing-now": {
         parameters: {
             query?: never;
@@ -196,6 +216,26 @@ export interface paths {
          * @description Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing.
          */
         get: operations["get_playing_now_api_playing_now_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/last-played": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Last Played
+         * @description Return the most recent listen from the local DB with no LB network call — fast cold-start pre-population.
+         */
+        get: operations["get_last_played_api_last_played_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -368,6 +408,13 @@ export interface components {
             title: string;
             /** Play Count */
             play_count: number;
+        };
+        /** TrackStatsResponse */
+        TrackStatsResponse: {
+            /** Play Count */
+            play_count: number;
+            /** Duration Secs */
+            duration_secs?: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -680,7 +727,61 @@ export interface operations {
             };
         };
     };
+    read_track_stats_api_track_stats_get: {
+        parameters: {
+            query: {
+                /** @description Artist name */
+                artist: string;
+                /** @description Track title */
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_playing_now_api_playing_now_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayingNowResponse"];
+                };
+            };
+        };
+    };
+    get_last_played_api_last_played_get: {
         parameters: {
             query?: never;
             header?: never;

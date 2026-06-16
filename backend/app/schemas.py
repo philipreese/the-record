@@ -83,3 +83,7 @@ class PlayingNowResponse(BaseModel):
     release: Optional[str] = None
     cover_art_url: Optional[str] = None
     last_played: Optional[LastPlayedEntry] = None
+
+class TrackStatsResponse(BaseModel):
+    play_count: int
+    duration_secs: Optional[int] = None

@@ -314,6 +314,17 @@ def get_recent_listens(
             for r in rows
         ]
 
+def get_track_play_count(artist: str, title: str) -> int:
+    """Count all-time plays for a specific artist + title combination."""
+    with get_engine().connect() as conn:
+        result = conn.execute(
+            select(func.count(Listen.id)).where(
+                Listen.artist == artist,
+                Listen.title == title,
+            )
+        ).scalar()
+        return result or 0
+
 def deduplicate_listens() -> int:
     """
     Remove duplicate listens where the same artist and title are scrobbled

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { fetchRecentListens, type ListenEntry } from '../services/api';
+  import { fetchRecentListens, fetchTrackStats, type ListenEntry, type TrackStatsInfo } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import ListenRow from '../components/dashboard/ListenRow.svelte';
@@ -11,6 +11,31 @@
   let sentinel: HTMLElement | undefined = $state(undefined);
   let observer: IntersectionObserver | undefined;
   let scrollThrottle: ReturnType<typeof setTimeout> | undefined;
+
+  let expandedKey: string | null = $state(null);
+  let trackStatsCache = $state(new Map<string, TrackStatsInfo>());
+
+  function trackKey(entry: ListenEntry): string {
+    return `${entry.artist}||${entry.title}`;
+  }
+
+  async function handleToggle(entry: ListenEntry): Promise<void> {
+    const key = trackKey(entry);
+    if (expandedKey === key) {
+      expandedKey = null;
+      return;
+    }
+    expandedKey = key;
+    if (!trackStatsCache.has(key)) {
+      try {
+        const stats = await fetchTrackStats(entry.artist, entry.title);
+        trackStatsCache.set(key, stats);
+        trackStatsCache = trackStatsCache;
+      } catch {
+        // Leave cache empty; the panel shows without stats rather than crashing.
+      }
+    }
+  }
 
   function dayKey(unix_ts: number): string {
     return new Date(unix_ts * 1000).toLocaleDateString(undefined, {
@@ -128,7 +153,13 @@
 
           <div>
             {#each group.entries as entry (entry.id)}
-              <ListenRow {entry} showAbsoluteTime={true} />
+              <ListenRow
+                {entry}
+                showAbsoluteTime={true}
+                expanded={expandedKey === trackKey(entry)}
+                stats={trackStatsCache.get(trackKey(entry)) ?? null}
+                onToggle={() => handleToggle(entry)}
+              />
             {/each}
           </div>
         </div>
