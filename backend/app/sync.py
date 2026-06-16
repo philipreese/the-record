@@ -1,8 +1,10 @@
 import asyncio
+import logging
 import os
-import traceback
 from dataclasses import dataclass
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 import httpx
 
@@ -64,7 +66,7 @@ async def _run_sync(mode: str) -> None:
                 count_res.raise_for_status()
                 lb_total_count = count_res.json().get("payload", {}).get("count", 0)
             except Exception:
-                traceback.print_exc()
+                logger.exception("LB listen-count fetch failed")
 
             _sync_state.lb_total = lb_total_count
 
@@ -114,7 +116,7 @@ async def _run_sync(mode: str) -> None:
                     except (httpx.RemoteProtocolError, httpx.ReadTimeout, httpx.ConnectError) as e:
                         if attempt < retries - 1:
                             wait = [5, 15, 30, 60, 120][attempt]  # generous backoff for LB rate limiting/connection issues
-                            print(f"[sync] Transient error ({e}), retrying in {wait}s (attempt {attempt + 1}/{retries})")
+                            logger.warning("Transient error (%s), retrying in %ds (attempt %d/%d)", e, wait, attempt + 1, retries)
                             await asyncio.sleep(wait)
                         else:
                             _sync_state.error = f"ListenBrainz API unreachable after {retries} attempts: {e}"
@@ -123,7 +125,7 @@ async def _run_sync(mode: str) -> None:
                         _sync_state.error = f"ListenBrainz API error {e.response.status_code}: {e}"
                         return []
                     except Exception as e:
-                        traceback.print_exc()
+                        logger.exception("Unexpected error fetching LB page")
                         _sync_state.error = f"Unexpected error: {e}"
                         return []
                 return []
@@ -223,18 +225,18 @@ async def _run_sync(mode: str) -> None:
                     _sync_state.local_total = local_count
 
                 # Pass 2: Backfill Sync (if a gap remains, scan from oldest_ts downwards)
-                print(f"[sync] Pass 2 check: lb_total_count={lb_total_count}, local_count={local_count}, oldest_ts={oldest_ts}")
+                logger.debug("Pass 2 check: lb_total_count=%d, local_count=%d, oldest_ts=%d", lb_total_count, local_count, oldest_ts)
                 if lb_total_count > local_count:
                     missing_remaining = lb_total_count - local_count
                     current_max_ts = oldest_ts
-                    print(f"[sync] Pass 2 starting: missing_remaining={missing_remaining}, current_max_ts={current_max_ts}")
+                    logger.info("Pass 2 starting: missing_remaining=%d, current_max_ts=%s", missing_remaining, current_max_ts)
                     while True:
                         listens = await _fetch_page(current_max_ts)
                         if not listens or _sync_state.error:
-                            print(f"[sync] Pass 2 fetch returned no listens or error occurred. Error: {_sync_state.error}")
+                            logger.warning("Pass 2 fetch returned no listens or error occurred. Error: %s", _sync_state.error)
                             break
                         _sync_state.batches_fetched += 1
-                        print(f"[sync] Pass 2 fetched batch {_sync_state.batches_fetched}, count={len(listens)}")
+                        logger.debug("Pass 2 fetched batch %d, count=%d", _sync_state.batches_fetched, len(listens))
 
                         for listen in listens:
                             ts = listen.get("listened_at")
@@ -252,12 +254,12 @@ async def _run_sync(mode: str) -> None:
                                     missing_remaining -= 1
 
                         if missing_remaining <= 0 or len(listens) < batch_size:
-                            print(f"[sync] Pass 2 stop condition met. missing_remaining={missing_remaining}, len(listens)={len(listens)}")
+                            logger.debug("Pass 2 stop condition met. missing_remaining=%d, len(listens)=%d", missing_remaining, len(listens))
                             break
                         current_max_ts = listens[-1].get("listened_at")
                         await asyncio.sleep(2)
                 else:
-                    print("[sync] Pass 2 skipped because condition not met.")
+                    logger.debug("Pass 2 skipped: lb_total_count=%d <= local_count=%d", lb_total_count, local_count)
 
             # 5. Persist any remaining new entries
             if new_listens:
@@ -267,15 +269,16 @@ async def _run_sync(mode: str) -> None:
             # 6. Post-sync cleanup for duplicate plays (e.g. from multiple scrobbler apps)
             deleted_dupes = deduplicate_listens()
             if deleted_dupes > 0:
-                print(f"[sync] Post-sync cleanup: Removed {deleted_dupes} duplicate play(s).")
+                logger.info("Post-sync cleanup: removed %d duplicate play(s)", deleted_dupes)
 
-            print(
-                f"[sync] Done — fetched {_sync_state.batches_fetched} batch(es), "
-                f"inserted {_sync_state.synced_count} new play(s)."
+            logger.info(
+                "Done — fetched %d batch(es), inserted %d new play(s)",
+                _sync_state.batches_fetched,
+                _sync_state.synced_count,
             )
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception("Sync crashed")
         _sync_state.error = f"Sync crashed: {e}"
     finally:
         _sync_state.running = False

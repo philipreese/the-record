@@ -1,8 +1,11 @@
+import logging
 import os
 import json
 from pathlib import Path
 from sqlalchemy import create_engine, Column, Integer, String, Index
 from sqlalchemy.orm import declarative_base, sessionmaker
+
+logger = logging.getLogger(__name__)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.dirname(APP_DIR)
@@ -106,14 +109,14 @@ def bootstrap_db_from_json() -> bool:
         # Check if database is empty
         count = session.query(Listen).count()
         if count > 0:
-            print(f"Database already contains {count:,} entries. Skipping bootstrap.")
+            logger.info("Database already contains %d entries. Skipping bootstrap.", count)
             return False
 
         if not os.path.exists(JSON_PATH):
-            print(f"merged_history.json not found at '{JSON_PATH}'. Skipping bootstrap.")
+            logger.warning("merged_history.json not found at %r. Skipping bootstrap.", JSON_PATH)
             return False
-            
-        print(f"Bootstrapping database from {JSON_PATH}...")
+
+        logger.info("Bootstrapping database from %s ...", JSON_PATH)
         with open(JSON_PATH, "r", encoding="utf-8") as f:
             history = json.load(f)
             
@@ -131,11 +134,11 @@ def bootstrap_db_from_json() -> bool:
         session.commit()
         
         new_count = session.query(Listen).count()
-        print(f"Successfully bootstrapped database with {new_count:,} records.")
+        logger.info("Successfully bootstrapped database with %d records.", new_count)
         return True
     except Exception as e:
         session.rollback()
-        print(f"Error bootstrapping database: {e}")
+        logger.error("Error bootstrapping database: %s", e)
         return False
     finally:
         session.close()

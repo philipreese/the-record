@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -11,6 +12,14 @@ from dotenv import load_dotenv
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(APP_DIR))
 load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+
+_log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
+_log_handler = logging.StreamHandler()
+_log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+_app_logger = logging.getLogger("app")
+_app_logger.setLevel(_log_level)
+_app_logger.handlers = [_log_handler]
+_app_logger.propagate = False  # Alembic's fileConfig sets root to WARN; bypass it
 
 sys.path.append(PROJECT_ROOT)
 
