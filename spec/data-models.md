@@ -99,7 +99,7 @@ interface SyncStatusResponse {
 
 ## Environment config
 
-**Source of truth:** [backend/app/db.py](../backend/app/db.py), [backend/app/sync.py](../backend/app/sync.py)
+**Source of truth:** [backend/app/db.py](../backend/app/db.py), [backend/app/sync.py](../backend/app/sync.py), [backend/app/main.py](../backend/app/main.py)
 
 | Variable                | Default                       | Purpose                                                                                                                                      |
 | ----------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,3 +110,4 @@ interface SyncStatusResponse {
 | `LISTENBRAINZ_USERNAME` | _(required for sync)_         | ListenBrainz account username.                                                                                                               |
 | `LISTENBRAINZ_TOKEN`    | _(required for sync)_         | ListenBrainz user token.                                                                                                                     |
 | `SYNC_TOKEN`            | _(required to enable sync)_   | Shared secret guarding `POST /api/sync`. Requests must send a matching `X-Sync-Token` header. If unset, the route fails closed with `503`. Set this in the Render service env. |
+| `LOG_LEVEL`             | `INFO`                        | Python logging level for `app.*` loggers (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Set to `DEBUG` on Render when diagnosing issues. |
