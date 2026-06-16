@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/philipreese/the-record/compare/v0.5.3...v0.6.0) (2026-06-16)
+
+
+### Features
+
+* **journal:** Add expandable listen detail panel with per-track play count ([35dbdef](https://github.com/philipreese/the-record/commit/35dbdef73f089fbfd5d519e0b4a773432d1a92d4))
+
+
+### Bug Fixes
+
+* **journal:** Always show source in detail band, including ListenBrainz ([4e3f104](https://github.com/philipreese/the-record/commit/4e3f1049a4701ceb123237796de72f8ec81f145a))
+* **journal:** Fix expandable row bugs — duplicate expansion and stuck loading state ([4171301](https://github.com/philipreese/the-record/commit/41713013e01df198b380594f6636c1e7a544d027))
+
+
+### Documentation
+
+* **spec:** Add GET /api/recent and /api/track-stats to architecture; update data-models with TrackStatsResponse and planned Listen columns ([1600983](https://github.com/philipreese/the-record/commit/160098303b416db030138f4015862f3c2b920533))
+
+
+### Miscellaneous
+
+* **frontend:** Apply prettier formatting to RecentView import ([75b277a](https://github.com/philipreese/the-record/commit/75b277ac0f47cade0f80b2e515ea291538d6ede3))
+
 ## [0.5.3](https://github.com/philipreese/the-record/compare/v0.5.2...v0.5.3) (2026-06-16)
 
 
