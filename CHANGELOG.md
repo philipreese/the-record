@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/philipreese/the-record/compare/v0.6.0...v0.7.0) (2026-06-16)
+
+
+### Features
+
+* **dashboard:** Add On This Day widget showing prior-year listens for today's date ([397b0de](https://github.com/philipreese/the-record/commit/397b0de709b07443e6d93e148cab1fcc5ea18927))
+
+
+### Bug Fixes
+
+* **dashboard:** Fix daily play rate flicker, make On This Day collapsible, fix section numbering ([5d539b9](https://github.com/philipreese/the-record/commit/5d539b9c6dc5786da50eceee978f7e24cbbe0e1c))
+* **dashboard:** Hide relative time in On This Day rows, show in Recent Scrobbles ([35af619](https://github.com/philipreese/the-record/commit/35af619e182342993c529348a72db8c466dbecb6))
+* **dashboard:** Section spacing, listen row layout, relative time, and On This Day current-year filter ([15ceb1e](https://github.com/philipreese/the-record/commit/15ceb1ee91e9547bae813cff01557e0e22b940e6))
+
 ## [0.6.0](https://github.com/philipreese/the-record/compare/v0.5.3...v0.6.0) (2026-06-16)
 
 
