@@ -1,7 +1,10 @@
+import logging
 import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException
 from typing import Any, List, Literal, Optional, Dict
+
+logger = logging.getLogger(__name__)
 
 import app.repository as repo
 import app.sync as sync_worker
@@ -114,7 +117,7 @@ async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> O
             if front:
                 return front.get("thumbnails", {}).get("250") or front.get("image")
     except Exception:
-        pass
+        logger.debug("CAA direct lookup failed for release_mbid=%s", release_mbid, exc_info=True)
     return None
 
 
@@ -133,7 +136,7 @@ async def _get_caa_release_group_url(client: httpx.AsyncClient, release_group_mb
             if front:
                 return front.get("thumbnails", {}).get("250") or front.get("image")
     except Exception:
-        pass
+        logger.debug("CAA release-group lookup failed for release_group_mbid=%s", release_group_mbid, exc_info=True)
     return None
 
 
@@ -151,7 +154,7 @@ async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: 
             if releases:
                 return releases[0]["id"]
     except Exception:
-        pass
+        logger.debug("MB recording-to-release lookup failed for recording_mbid=%s", recording_mbid, exc_info=True)
     return None
 
 
@@ -177,7 +180,7 @@ async def _search_cover_art_by_text(
                 if releases:
                     return await _get_caa_direct_url(client, releases[0]["id"])
     except Exception:
-        pass
+        logger.debug("MB text-search cover art lookup failed for %r / %r", artist, title, exc_info=True)
     return None
 
 
@@ -273,7 +276,7 @@ async def get_playing_now() -> Any:
                             lp_recording_mbid = ai.get("recording_mbid")
                             lp_release_group_mbid = ai.get("release_group_mbid")
                 except Exception:
-                    pass
+                    logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
                 art = await _resolve_cover_art(
                     client, r["artist"], r["title"],
                     lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
@@ -309,6 +312,7 @@ async def get_playing_now() -> Any:
                 cover_art_url=cover_art_url,
             )
     except Exception:
+        logger.warning("LB playing-now request failed; falling back to last DB listen")
         rows = repo.get_recent_listens(limit=1)
         if not rows:
             return PlayingNowResponse(is_playing=False)
