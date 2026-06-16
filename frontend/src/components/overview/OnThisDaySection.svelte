@@ -1,7 +1,12 @@
 <script lang="ts">
   import { inView } from '../../utils/inView';
-  import { timeOnly, sourceLabel } from '../../utils/listens';
-  import type { OnThisDayGroup } from '../../services/api';
+  import {
+    fetchTrackStats,
+    type OnThisDayGroup,
+    type ListenEntry,
+    type TrackStatsInfo,
+  } from '../../services/api';
+  import ListenRow from '../dashboard/ListenRow.svelte';
 
   let {
     groups,
@@ -16,15 +21,46 @@
   } = $props();
 
   const currentYear = new Date().getFullYear();
-
-  const todayLabel = $derived(() => {
-    const now = new Date();
-    return now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-  });
+  const todayLabel = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   function yearsAgo(year: number): string {
     const n = currentYear - year;
     return n === 1 ? '1 year ago' : `${n} years ago`;
+  }
+
+  let expandedYears = $state<Set<number>>(new Set());
+
+  function toggleYear(year: number) {
+    const next = new Set(expandedYears);
+    if (next.has(year)) {
+      next.delete(year);
+    } else {
+      next.add(year);
+    }
+    expandedYears = next;
+  }
+
+  let expandedId = $state<number | null>(null);
+  let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
+
+  function trackKey(entry: ListenEntry): string {
+    return `${entry.artist}||${entry.title}`;
+  }
+
+  async function handleToggle(entry: ListenEntry): Promise<void> {
+    if (expandedId === entry.id) {
+      expandedId = null;
+      return;
+    }
+    expandedId = entry.id;
+    const key = trackKey(entry);
+    if (!(key in trackStatsCache)) {
+      try {
+        trackStatsCache[key] = await fetchTrackStats(entry.artist, entry.title);
+      } catch {
+        trackStatsCache[key] = null;
+      }
+    }
   }
 </script>
 
@@ -38,38 +74,46 @@
   id="on-this-day"
 >
   <div class="pb-2 border-b border-theme-border-soft reveal-label">
-    <h2 class="editorial-text-h2">04 / On This Day &mdash; {todayLabel()}</h2>
+    <h2 class="editorial-text-h2">04 / On This Day &mdash; {todayLabel}</h2>
   </div>
 
-  <div class="reveal-content space-y-8">
+  <div class="reveal-content space-y-2">
     {#each groups as group (group.year)}
-      <div class="space-y-1">
-        <p class="text-xs font-mono text-theme-muted uppercase tracking-widest">
-          {group.year} &bull; {yearsAgo(group.year)}
-        </p>
-        <div class="space-y-0">
-          {#each group.listens as entry (entry.id)}
-            <div
-              class="flex items-center gap-3 py-2 px-2 rounded hover:bg-base-200/40 transition-colors"
-            >
-              <span class="text-xs font-mono text-theme-muted w-12 shrink-0 tabular-nums">
-                {timeOnly(entry.unix_ts)}
-              </span>
-              <span class="text-sm text-theme-secondary font-medium truncate">
-                {entry.artist}
-              </span>
-              <span class="text-theme-muted/50 text-xs shrink-0">&mdash;</span>
-              <span class="text-sm text-theme-secondary/70 truncate">
-                {entry.title}
-              </span>
-              <span
-                class="ml-auto text-[10px] font-mono text-theme-muted/60 uppercase tracking-wider shrink-0"
-              >
-                {sourceLabel(entry.source)}
-              </span>
-            </div>
-          {/each}
-        </div>
+      {@const isExpanded = expandedYears.has(group.year)}
+      <div class="rounded border border-theme-border-soft/60 overflow-hidden">
+        <button
+          class="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-base-200/40 transition-colors cursor-pointer"
+          onclick={() => toggleYear(group.year)}
+          aria-expanded={isExpanded}
+        >
+          <span class="text-xs font-mono text-theme-accent tabular-nums">{group.year}</span>
+          <span class="text-xs font-mono text-theme-muted">&bull;</span>
+          <span class="text-xs font-mono text-theme-muted">{yearsAgo(group.year)}</span>
+          <span class="text-xs font-mono text-theme-faint ml-auto">
+            {group.listens.length}
+            {group.listens.length === 1 ? 'track' : 'tracks'}
+          </span>
+          <span
+            class="text-xs text-theme-muted/60 transition-transform duration-200"
+            class:rotate-90={isExpanded}
+          >
+            ›
+          </span>
+        </button>
+
+        {#if isExpanded}
+          <div class="border-t border-theme-border-soft/40 px-1 py-1">
+            {#each group.listens as entry (entry.id)}
+              <ListenRow
+                {entry}
+                showAbsoluteTime={true}
+                expanded={expandedId === entry.id}
+                stats={trackStatsCache[trackKey(entry)]}
+                onToggle={() => handleToggle(entry)}
+              />
+            {/each}
+          </div>
+        {/if}
       </div>
     {/each}
   </div>

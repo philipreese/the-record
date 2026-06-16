@@ -286,6 +286,7 @@
       onfocusenter={() => (currentFocusZone = 'recent')}
       onfocusclear={() => (currentFocusZone = null)}
       onViewAll={() => (activeTab = 'recent')}
+      sectionNumber={appCache.onThisDay.length > 0 ? '05' : '04'}
     />
 
     <!-- Now Playing / Last Played column -->
