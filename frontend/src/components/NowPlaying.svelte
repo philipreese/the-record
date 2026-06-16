@@ -17,7 +17,7 @@
 
   // Reset fade-in state when cover art changes.
   $effect(() => {
-    coverUrl;
+    void coverUrl;
     imgLoaded = false;
   });
 </script>
