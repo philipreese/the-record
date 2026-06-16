@@ -87,3 +87,7 @@ class PlayingNowResponse(BaseModel):
 class TrackStatsResponse(BaseModel):
     play_count: int
     duration_secs: Optional[int] = None
+
+class OnThisDayGroup(BaseModel):
+    year: int
+    listens: List[ListenEntry]

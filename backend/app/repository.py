@@ -4,7 +4,7 @@ import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_
 from app.db import get_engine, Listen
-from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_year_expr
+from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr
 
 def get_current_local_date() -> date:
     """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
@@ -324,6 +324,30 @@ def get_track_play_count(artist: str, title: str) -> int:
             )
         ).scalar()
         return result or 0
+
+def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
+    """Retrieve all listens for today's calendar date across prior years, grouped by year."""
+    month_expr = get_month_num_expr(Listen.unix_ts)
+    day_expr = get_day_num_expr(Listen.unix_ts)
+    year_expr = get_year_expr(Listen.unix_ts)
+
+    with get_engine().connect() as conn:
+        stmt = (
+            select(
+                Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source,
+                year_expr.label("year"),
+            )
+            .where(month_expr == month, day_expr == day)
+            .order_by(desc(Listen.unix_ts))
+        )
+        rows = conn.execute(stmt).all()
+
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        groups.setdefault(str(r.year), []).append(
+            {"id": r.id, "artist": r.artist, "title": r.title, "unix_ts": r.unix_ts, "source": r.source}
+        )
+    return [{"year": int(k), "listens": v} for k, v in groups.items()]
 
 def deduplicate_listens() -> int:
     """
