@@ -29,7 +29,7 @@
 <svelte:window bind:scrollY />
 
 <div
-  class="navbar fixed top-0 left-0 right-0 z-40 border-b border-theme-border-soft lg:hidden flex justify-between px-4 text-theme-text"
+  class="navbar sticky top-0 left-0 right-0 z-40 border-b border-theme-border-soft lg:hidden flex justify-between px-4 text-theme-text"
   style="background-color: color-mix(in srgb, var(--bg-sidebar) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);"
 >
   <div class="flex items-center gap-2">

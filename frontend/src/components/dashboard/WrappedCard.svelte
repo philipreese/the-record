@@ -52,9 +52,11 @@
   <!-- Glow backings -->
   <div
     class="absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft"
+    style="will-change: transform; transform: translateZ(0);"
   ></div>
   <div
     class="absolute -bottom-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none transition-transform duration-700 bg-theme-accent-soft/80"
+    style="will-change: transform; transform: translateZ(0);"
   ></div>
 
   <div class="grow grid grid-cols-1 grid-rows-1 items-center">

@@ -16,7 +16,7 @@
   $effect(() => {
     if (scrollY > 80) {
       isShrunk = true;
-    } else if (scrollY < 20) {
+    } else if (scrollY === 0) {
       isShrunk = false;
     }
   });

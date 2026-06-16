@@ -22,7 +22,7 @@
 </script>
 
 <!-- Mobile Sticky Controls -->
-<div class="sticky-sub-header lg:hidden flex flex-col gap-3">
+<div class="sticky-sub-header lg:hidden flex flex-col gap-2 mb-4">
   <div class="nav-selector w-full justify-between gap-1">
     {#each [['year', 'Year'], ['quarter', 'Quarter'], ['month', 'Month']] as [p, label]}
       <button
@@ -60,7 +60,7 @@
 </div>
 
 <!-- Desktop Controls -->
-<div class="hidden lg:flex flex-wrap gap-8 items-center px-2">
+<div class="hidden lg:flex flex-wrap gap-8 items-center px-2 lg:pt-2 pb-6">
   <div class="flex items-center gap-3">
     <span class="text-caps text-xs text-theme-muted">Year</span>
     <SelectDropdown bind:value={year} options={yearOptions} />

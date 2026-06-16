@@ -42,6 +42,11 @@ body {
   overflow-y: scroll;
 }
 
+/* Ensure drawer overflow doesn't break sticky positioning */
+.drawer {
+  overflow-x: clip !important;
+}
+
 /* Define custom themes with audited WCAG AA contrast ratios and DaisyUI v5 mappings */
 [data-theme='warm-dark'] {
   --bg-base: #131009;
@@ -289,6 +294,8 @@ body {
   background-color: color-mix(in srgb, var(--bg-base) 94%, transparent);
   opacity: 0.98;
   backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transform: translateZ(0);
   border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
   border-radius: 1.5rem; /* Standardized 24px */
   padding: 2rem;
@@ -716,6 +723,10 @@ body {
   transition: all var(--t-responsive) var(--ease-fluid);
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 @media (min-width: 1024px) {
@@ -726,6 +737,10 @@ body {
     background-color: color-mix(in srgb, var(--bg-base) 85%, transparent);
     backdrop-filter: blur(12px);
     margin-top: -0.75rem;
+    margin-left: -2rem;
+    margin-right: -2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 
