@@ -17,27 +17,25 @@
   let observer: IntersectionObserver | undefined;
   let scrollThrottle: ReturnType<typeof setTimeout> | undefined;
 
-  let expandedKey: string | null = $state(null);
-  let trackStatsCache = $state(new Map<string, TrackStatsInfo>());
+  let expandedId: number | null = $state(null);
+  let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
 
   function trackKey(entry: ListenEntry): string {
     return `${entry.artist}||${entry.title}`;
   }
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
-    const key = trackKey(entry);
-    if (expandedKey === key) {
-      expandedKey = null;
+    if (expandedId === entry.id) {
+      expandedId = null;
       return;
     }
-    expandedKey = key;
-    if (!trackStatsCache.has(key)) {
+    expandedId = entry.id;
+    const statsKey = trackKey(entry);
+    if (!(statsKey in trackStatsCache)) {
       try {
-        const stats = await fetchTrackStats(entry.artist, entry.title);
-        trackStatsCache.set(key, stats);
-        trackStatsCache = trackStatsCache;
+        trackStatsCache[statsKey] = await fetchTrackStats(entry.artist, entry.title);
       } catch {
-        // Leave cache empty; the panel shows without stats rather than crashing.
+        trackStatsCache[statsKey] = null;
       }
     }
   }
@@ -161,8 +159,8 @@
               <ListenRow
                 {entry}
                 showAbsoluteTime={true}
-                expanded={expandedKey === trackKey(entry)}
-                stats={trackStatsCache.get(trackKey(entry)) ?? null}
+                expanded={expandedId === entry.id}
+                stats={trackStatsCache[trackKey(entry)]}
                 onToggle={() => handleToggle(entry)}
               />
             {/each}

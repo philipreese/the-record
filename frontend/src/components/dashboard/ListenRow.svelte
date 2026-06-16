@@ -6,13 +6,13 @@
     entry,
     showAbsoluteTime = false,
     expanded = false,
-    stats = null,
+    stats = undefined,
     onToggle,
   }: {
     entry: ListenEntry;
     showAbsoluteTime?: boolean;
     expanded?: boolean;
-    stats?: TrackStatsInfo | null;
+    stats?: TrackStatsInfo | null | undefined;
     onToggle?: () => void;
   } = $props();
 
@@ -68,7 +68,11 @@
       {#if label}
         <span>source: <span class="text-base-content/70">{label}</span></span>
       {/if}
-      {#if stats}
+      {#if stats === undefined}
+        <span class="opacity-40">loading…</span>
+      {:else if stats === null}
+        <span class="opacity-40">—</span>
+      {:else}
         <span
           >played <span class="text-base-content/70">{stats.play_count}</span>
           {stats.play_count === 1 ? 'time' : 'times'}</span
@@ -83,8 +87,6 @@
             ></span
           >
         {/if}
-      {:else}
-        <span class="opacity-40">loading…</span>
       {/if}
     </div>
   {/if}
