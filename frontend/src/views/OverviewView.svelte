@@ -10,6 +10,7 @@
   import DiurnalSection from '../components/overview/DiurnalSection.svelte';
   import TelemetrySection from '../components/overview/TelemetrySection.svelte';
   import RecentScrobblesSection from '../components/overview/RecentScrobblesSection.svelte';
+  import OnThisDaySection from '../components/overview/OnThisDaySection.svelte';
   import listeningJournalImg from '../assets/listening_journal.png';
 
   import {
@@ -19,6 +20,7 @@
     fetchHourlyTrends,
     fetchMonthlyTrends,
     fetchRecentListens,
+    fetchOnThisDay,
   } from '../services/api';
 
   import { appCache } from '../services/store.svelte';
@@ -52,6 +54,7 @@
       { id: 'insights-section', label: 'insights' },
       { id: 'diurnal-patterns', label: 'patterns' },
       { id: 'telemetry-volumes', label: 'volumes' },
+      { id: 'on-this-day', label: 'on this day' },
       { id: 'recent-scrobbles', label: 'recent' },
     ];
 
@@ -89,17 +92,19 @@
       loadingStats = true;
     }
     try {
-      const [statsRes, streakRes, hourlyRes, monthlyRes] = await Promise.all([
+      const [statsRes, streakRes, hourlyRes, monthlyRes, onThisDayRes] = await Promise.all([
         fetchStats(),
         fetchStreak(),
         fetchHourlyTrends(),
         fetchMonthlyTrends(),
+        fetchOnThisDay(),
       ]);
 
       appCache.stats = statsRes;
       appCache.streak = streakRes;
       appCache.hourlyTrends = hourlyRes;
       appCache.monthlyTrends = monthlyRes;
+      appCache.onThisDay = onThisDayRes;
       appCache.statsLoaded = true;
 
       if (appCache.recentListens.length === 0) {
@@ -263,6 +268,15 @@
     onfocusenter={() => (currentFocusZone = 'telemetry')}
     onfocusclear={() => (currentFocusZone = null)}
   />
+
+  {#if appCache.onThisDay.length > 0}
+    <OnThisDaySection
+      groups={appCache.onThisDay}
+      dimmed={currentFocusZone !== null && currentFocusZone !== 'on-this-day'}
+      onfocusenter={() => (currentFocusZone = 'on-this-day')}
+      onfocusclear={() => (currentFocusZone = null)}
+    />
+  {/if}
 
   <div class="pt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
     <RecentScrobblesSection

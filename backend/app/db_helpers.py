@@ -29,6 +29,12 @@ def get_month_num_expr(col):
         return func.extract("month", func.to_timestamp(col))
     return func.cast(func.strftime("%m", col, "unixepoch", "localtime"), Integer)
 
+def get_day_num_expr(col):
+    """Return dialect-specific day-of-month integer extraction (1-31)."""
+    if IS_POSTGRES:
+        return func.extract("day", func.to_timestamp(col))
+    return func.cast(func.strftime("%d", col, "unixepoch", "localtime"), Integer)
+
 def get_year_expr(col):
     """Return dialect-specific year formatting expression (YYYY)."""
     if IS_POSTGRES:

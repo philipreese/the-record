@@ -16,6 +16,7 @@ import {
   type ListenEntry,
   type PlayingNowInfo,
 } from './api';
+import type { OnThisDayGroup } from './api';
 import { getDominantColor } from '../utils/dominantColor';
 import { themeManager } from './theme.svelte';
 
@@ -33,6 +34,9 @@ class AppCache {
 
   // Wrapped/Reviews Cache (keyed by period + parameters)
   wrapped = $state<Record<string, WrappedDataInfo>>({});
+
+  // On This Day Cache
+  onThisDay = $state<OnThisDayGroup[]>([]);
 
   // Recent Listens Cache
   recentListens = $state<ListenEntry[]>([]);
@@ -74,6 +78,7 @@ class AppCache {
     this.statsLoaded = false;
     this.charts = {};
     this.wrapped = {};
+    this.onThisDay = [];
     this.recentListens = [];
     this.recentScrollOffset = 0;
     this.recentExhausted = false;

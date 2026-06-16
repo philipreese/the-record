@@ -23,6 +23,7 @@ from app.schemas import (
     PlayingNowResponse,
     LastPlayedEntry,
     TrackStatsResponse,
+    OnThisDayGroup,
 )
 
 router = APIRouter()
@@ -393,3 +394,10 @@ def get_sync_status() -> Any:
         "local_total": s.local_total,
         "error": s.error,
     }
+
+@router.get("/on-this-day", response_model=List[OnThisDayGroup])
+def read_on_this_day() -> Any:
+    """Retrieve listens for today's calendar date grouped by prior year."""
+    from datetime import datetime
+    today = datetime.now()
+    return repo.get_on_this_day(today.month, today.day)

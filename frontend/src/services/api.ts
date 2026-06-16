@@ -21,6 +21,7 @@ export type ListenEntry = components['schemas']['ListenEntry'];
 export type SyncStartInfo = components['schemas']['SyncStartResponse'];
 export type PlayingNowInfo = components['schemas']['PlayingNowResponse'];
 export type TrackStatsInfo = components['schemas']['TrackStatsResponse'];
+export type OnThisDayGroup = components['schemas']['OnThisDayGroup'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -213,5 +214,11 @@ export async function fetchTrackStats(artist: string, title: string): Promise<Tr
   const params = new URLSearchParams({ artist, title });
   const res = await apiFetch(`/api/track-stats?${params}`);
   if (!res.ok) throw new Error('Failed to fetch track stats');
+  return res.json();
+}
+
+export async function fetchOnThisDay(): Promise<OnThisDayGroup[]> {
+  const res = await apiFetch('/api/on-this-day');
+  if (!res.ok) throw new Error('Failed to fetch on-this-day data');
   return res.json();
 }
