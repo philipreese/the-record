@@ -3,7 +3,7 @@
   import { fetchRecentListens, type ListenEntry } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
-  import { sourceLabel, timeOnly, relativeTimeShort, absoluteTime } from '../utils/listens';
+  import ListenRow from '../components/dashboard/ListenRow.svelte';
 
   const PAGE_SIZE = 50;
 
@@ -114,7 +114,6 @@
     <div class="space-y-10 mt-6">
       {#each grouped as group}
         <div>
-          <!-- Day divider with play count -->
           <div
             class="flex items-baseline justify-between border-b border-base-content/10 pb-1.5 mb-1"
           >
@@ -127,44 +126,9 @@
             </span>
           </div>
 
-          <!-- Entries -->
           <div>
             {#each group.entries as entry (entry.id)}
-              {@const label = sourceLabel(entry.source)}
-              <div
-                class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group"
-              >
-                <!-- Timestamp: HH:MM · relative -->
-                <div class="w-36 shrink-0 text-right" title={absoluteTime(entry.unix_ts)}>
-                  <span
-                    class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
-                  >
-                    {timeOnly(entry.unix_ts)}
-                    {#if relativeTimeShort(entry.unix_ts)}
-                      <span class="text-base-content/35">
-                        · {relativeTimeShort(entry.unix_ts)}</span
-                      >
-                    {/if}
-                  </span>
-                </div>
-
-                <!-- Title + artist -->
-                <div class="flex-1 min-w-0">
-                  <span class="text-sm font-medium leading-snug truncate block text-base-content"
-                    >{entry.title}</span
-                  >
-                  <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
-                </div>
-
-                <!-- Source badge: only for non-LB sources -->
-                {#if label}
-                  <div class="shrink-0">
-                    <span class="badge badge-ghost badge-xs text-base-content/45 font-mono"
-                      >{label}</span
-                    >
-                  </div>
-                {/if}
-              </div>
+              <ListenRow {entry} showAbsoluteTime={true} />
             {/each}
           </div>
         </div>
