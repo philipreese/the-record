@@ -90,7 +90,7 @@ async def _run_sync(mode: str) -> None:
             _sync_state.local_total = local_count
 
             batch_size = 1000
-            new_listens: list[tuple[str, str, int, str]] = []
+            new_listens: list[dict[str, Any]] = []
 
             async def _fetch_page(max_ts: Optional[int], retries: int = 5) -> list[dict[str, Any]]:
                 """
@@ -130,18 +130,20 @@ async def _run_sync(mode: str) -> None:
                         return []
                 return []
 
-            def persist_listens(listens_to_insert: list[tuple[str, str, int, str]]) -> None:
+            def persist_listens(listens_to_insert: list[dict[str, Any]]) -> None:
                 if not listens_to_insert:
                     return
-                listens_to_insert.sort(key=lambda x: x[2])
+                listens_to_insert.sort(key=lambda x: x["unix_ts"])
                 session = get_session()
                 try:
                     objects = [
                         Listen(
-                            artist=item[0],
-                            title=item[1],
-                            unix_ts=item[2],
-                            source=item[3]
+                            artist=item["artist"],
+                            title=item["title"],
+                            unix_ts=item["unix_ts"],
+                            source=item["source"],
+                            duration_secs=item.get("duration_secs"),
+                            album=item.get("album")
                         )
                         for item in listens_to_insert
                     ]
@@ -173,7 +175,29 @@ async def _run_sync(mode: str) -> None:
                         if artist and title:
                             key = (ts, artist.lower(), title.lower())
                             if key not in local_keys:
-                                new_listens.append((artist, title, ts, "listenbrainz_sync"))
+                                additional_info = meta.get("additional_info") or {}
+                                duration_ms = additional_info.get("duration_ms")
+                                duration_secs = None
+                                if duration_ms is not None:
+                                    try:
+                                        duration_secs = int(float(duration_ms) / 1000)
+                                    except (ValueError, TypeError):
+                                        pass
+                                album = meta.get("release_name")
+                                if album and isinstance(album, str):
+                                    album = album.strip()
+                                    if not album:
+                                        album = None
+                                else:
+                                    album = None
+                                new_listens.append({
+                                    "artist": artist,
+                                    "title": title,
+                                    "unix_ts": ts,
+                                    "source": "listenbrainz_sync",
+                                    "duration_secs": duration_secs,
+                                    "album": album
+                                })
                                 local_keys.add(key)
 
                     if len(listens) < batch_size:
@@ -207,7 +231,29 @@ async def _run_sync(mode: str) -> None:
                         if artist and title:
                             key = (ts, artist.lower(), title.lower())
                             if key not in local_keys:
-                                new_listens.append((artist, title, ts, "listenbrainz_sync"))
+                                additional_info = meta.get("additional_info") or {}
+                                duration_ms = additional_info.get("duration_ms")
+                                duration_secs = None
+                                if duration_ms is not None:
+                                    try:
+                                        duration_secs = int(float(duration_ms) / 1000)
+                                    except (ValueError, TypeError):
+                                        pass
+                                album = meta.get("release_name")
+                                if album and isinstance(album, str):
+                                    album = album.strip()
+                                    if not album:
+                                        album = None
+                                else:
+                                    album = None
+                                new_listens.append({
+                                    "artist": artist,
+                                    "title": title,
+                                    "unix_ts": ts,
+                                    "source": "listenbrainz_sync",
+                                    "duration_secs": duration_secs,
+                                    "album": album
+                                })
                                 local_keys.add(key)
 
                     if stop_scan or len(listens) < batch_size:
@@ -249,7 +295,29 @@ async def _run_sync(mode: str) -> None:
                             if artist and title:
                                 key = (ts, artist.lower(), title.lower())
                                 if key not in local_keys:
-                                    new_listens.append((artist, title, ts, "listenbrainz_sync"))
+                                    additional_info = meta.get("additional_info") or {}
+                                    duration_ms = additional_info.get("duration_ms")
+                                    duration_secs = None
+                                    if duration_ms is not None:
+                                        try:
+                                            duration_secs = int(float(duration_ms) / 1000)
+                                        except (ValueError, TypeError):
+                                            pass
+                                    album = meta.get("release_name")
+                                    if album and isinstance(album, str):
+                                        album = album.strip()
+                                        if not album:
+                                            album = None
+                                    else:
+                                        album = None
+                                    new_listens.append({
+                                        "artist": artist,
+                                        "title": title,
+                                        "unix_ts": ts,
+                                        "source": "listenbrainz_sync",
+                                        "duration_secs": duration_secs,
+                                        "album": album
+                                    })
                                     local_keys.add(key)
                                     missing_remaining -= 1
 

@@ -38,7 +38,7 @@
   let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
 
   function trackKey(entry: ListenEntry): string {
-    return `${entry.artist}||${entry.title}`;
+    return `${entry.artist}||${entry.title}||${entry.album || ''}`;
   }
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
@@ -50,7 +50,7 @@
     const key = trackKey(entry);
     if (!(key in trackStatsCache)) {
       try {
-        trackStatsCache[key] = await fetchTrackStats(entry.artist, entry.title);
+        trackStatsCache[key] = await fetchTrackStats(entry.artist, entry.title, entry.album);
       } catch {
         trackStatsCache[key] = null;
       }

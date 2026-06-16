@@ -31,19 +31,19 @@ class TestDatabaseQueries(unittest.TestCase):
         self.ts_10_days_ago = int((self.now - timedelta(days=10)).timestamp())
         self.ts_100_days_ago = int((self.now - timedelta(days=100)).timestamp())
         
-        # We will insert a mix of scrobbles
+        # We will insert a mix of scrobbles with duration and album fields
         test_plays = [
-            ("Artist A", "Track 1", self.ts_now, "youtube_music"),
-            ("Artist A", "Track 1", self.ts_now - 10, "youtube_music"),  # same day
-            ("Artist A", "Track 2", self.ts_yesterday, "last_fm"),
-            ("Artist A", "Track 1", self.ts_100_days_ago, "last_fm"),
-            ("Artist B", "Track 3", self.ts_yesterday - 60, "youtube_music"),
-            ("Artist B", "Track 4", self.ts_10_days_ago, "last_fm"),
-            ("Artist C", "Track 5", self.ts_2_days_ago, "youtube_music"),
+            ("Artist A", "Track 1", self.ts_now, "youtube_music", 180, "Album A"),
+            ("Artist A", "Track 1", self.ts_now - 10, "youtube_music", None, "Album A"),  # same day
+            ("Artist A", "Track 2", self.ts_yesterday, "last_fm", 240, "Album B"),
+            ("Artist A", "Track 1", self.ts_100_days_ago, "last_fm", None, None),
+            ("Artist B", "Track 3", self.ts_yesterday - 60, "youtube_music", 200, None),
+            ("Artist B", "Track 4", self.ts_10_days_ago, "last_fm", None, "Album C"),
+            ("Artist C", "Track 5", self.ts_2_days_ago, "youtube_music", 300, "Album D"),
         ]
         
         self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+            "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album) VALUES (?, ?, ?, ?, ?, ?)",
             test_plays
         )
         self.conn.commit()
@@ -132,7 +132,33 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(wrapped["top_artist"]["plays"], 4)
         self.assertEqual(wrapped["top_track"]["title"], "Track 1")
         self.assertEqual(wrapped["top_track"]["plays"], 3)
-        self.assertEqual(wrapped["minutes_listened"], round(7 * 3.5))
+        # Expected duration seconds:
+        # - Artist A, Track 1 (now) -> 180s
+        # - Artist A, Track 1 (now - 10) -> None -> 210s
+        # - Artist A, Track 2 (yesterday) -> 240s
+        # - Artist A, Track 1 (100_days_ago) -> None -> 210s
+        # - Artist B, Track 3 (yesterday - 60) -> 200s
+        # - Artist B, Track 4 (10_days_ago) -> None -> 210s
+        # - Artist C, Track 5 (2_days_ago) -> 300s
+        # Total = 180 + 210 + 240 + 210 + 200 + 210 + 300 = 1550 seconds
+        # Minutes = round(1550 / 60) = 26
+        self.assertEqual(wrapped["minutes_listened"], 26)
+
+    def test_track_stats(self):
+        # Without album parameter
+        play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1")
+        self.assertEqual(play_count, 3)
+        self.assertEqual(duration, 180)  # first non-null duration
+
+        # With album parameter matching Album A
+        play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album A")
+        self.assertEqual(play_count, 2)
+        self.assertEqual(duration, 180)
+
+        # With album parameter matching Album B
+        play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album B")
+        self.assertEqual(play_count, 0)
+        self.assertIsNone(duration)
 
 if __name__ == "__main__":
     unittest.main()

@@ -103,10 +103,12 @@ def read_recent(
 def read_track_stats(
     artist: str = Query(..., description="Artist name"),
     title: str = Query(..., description="Track title"),
+    album: Optional[str] = Query(None, description="Optional album name to scope the count"),
 ) -> Any:
     """Retrieve all-time play count (and duration when available) for a specific track."""
-    play_count = repo.get_track_play_count(artist=artist, title=title)
-    return {"play_count": play_count, "duration_secs": None}
+    album_val = album.strip() if album and album.strip() else None
+    play_count, duration = repo.get_track_stats(artist=artist, title=title, album=album_val)
+    return {"play_count": play_count, "duration_secs": duration}
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
 # Only successful lookups are stored; failed attempts are counted separately so transient

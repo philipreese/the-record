@@ -26,6 +26,8 @@ class ListenEntry(BaseModel):
     title: str
     unix_ts: int
     source: str
+    duration_secs: Optional[int] = None
+    album: Optional[str] = None
 
 class MonthlyTrendInfo(BaseModel):
     month: str
