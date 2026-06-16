@@ -326,10 +326,11 @@ def get_track_play_count(artist: str, title: str) -> int:
         return result or 0
 
 def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
-    """Retrieve all listens for today's calendar date across prior years, grouped by year."""
+    """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
     month_expr = get_month_num_expr(Listen.unix_ts)
     day_expr = get_day_num_expr(Listen.unix_ts)
     year_expr = get_year_expr(Listen.unix_ts)
+    current_year = datetime.now().year
 
     with get_engine().connect() as conn:
         stmt = (
@@ -344,6 +345,8 @@ def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
 
     groups: dict[str, list[dict[str, Any]]] = {}
     for r in rows:
+        if int(r.year) == current_year:
+            continue
         groups.setdefault(str(r.year), []).append(
             {"id": r.id, "artist": r.artist, "title": r.title, "unix_ts": r.unix_ts, "source": r.source}
         )

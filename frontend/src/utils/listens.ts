@@ -28,17 +28,16 @@ export function timeOnly(unix_ts: number): string {
   });
 }
 
-/**
- * Short relative time for entries within the last 7 days.
- * Returns empty string for older entries — the day divider already provides the date.
- */
+/** Short relative time for any entry, always returns a non-empty string. */
 export function relativeTimeShort(unix_ts: number): string {
   const diff = Math.floor(Date.now() / 1000) - unix_ts;
   if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-  return '';
+  if (diff < 86400 * 30) return `${Math.floor(diff / (86400 * 7))}w ago`;
+  if (diff < 86400 * 365) return `${Math.floor(diff / (86400 * 30))}mo ago`;
+  return `${Math.floor(diff / (86400 * 365))}yr ago`;
 }
 
 /** Full absolute datetime string for use in title/tooltip attributes. */

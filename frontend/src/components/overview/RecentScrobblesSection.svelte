@@ -1,6 +1,6 @@
 <script lang="ts">
   import { inView } from '../../utils/inView';
-  import type { ListenEntry } from '../../services/api';
+  import { fetchTrackStats, type ListenEntry, type TrackStatsInfo } from '../../services/api';
   import ListenRow from '../dashboard/ListenRow.svelte';
 
   let {
@@ -20,6 +20,29 @@
     onViewAll: () => void;
     sectionNumber?: string;
   } = $props();
+
+  let expandedId = $state<number | null>(null);
+  let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
+
+  function trackKey(entry: ListenEntry): string {
+    return `${entry.artist}||${entry.title}`;
+  }
+
+  async function handleToggle(entry: ListenEntry): Promise<void> {
+    if (expandedId === entry.id) {
+      expandedId = null;
+      return;
+    }
+    expandedId = entry.id;
+    const key = trackKey(entry);
+    if (!(key in trackStatsCache)) {
+      try {
+        trackStatsCache[key] = await fetchTrackStats(entry.artist, entry.title);
+      } catch {
+        trackStatsCache[key] = null;
+      }
+    }
+  }
 </script>
 
 <div
@@ -57,7 +80,12 @@
     {:else}
       <div class="space-y-0">
         {#each recentListens.slice(0, 10) as entry (entry.id)}
-          <ListenRow {entry} />
+          <ListenRow
+            {entry}
+            expanded={expandedId === entry.id}
+            stats={trackStatsCache[trackKey(entry)]}
+            onToggle={() => handleToggle(entry)}
+          />
         {/each}
       </div>
       <div class="pt-2">
