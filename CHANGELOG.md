@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3](https://github.com/philipreese/the-record/compare/v0.5.2...v0.5.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **frontend:** Fix mobile navbar, header sizing, counter re-animation, and period tab visibility ([2c63542](https://github.com/philipreese/the-record/commit/2c6354259c6eff31c975f9be57a2bab676fe2e91))
+
+
+### Documentation
+
+* **spec:** Update frontend component tree and remove completed view decomposition backlog item ([0c252c5](https://github.com/philipreese/the-record/commit/0c252c50f78773580cc09f2a1b23240f5b4aa777))
+
+
+### Miscellaneous
+
+* **frontend:** Decompose all views into focused sub-components ([e942a73](https://github.com/philipreese/the-record/commit/e942a731da557002f7892876da14e774bf539100))
+
 ## [0.5.2](https://github.com/philipreese/the-record/compare/v0.5.1...v0.5.2) (2026-06-16)
 
 
