@@ -107,6 +107,7 @@
               <ListenRow
                 {entry}
                 showAbsoluteTime={true}
+                showRelativeTime={false}
                 expanded={expandedId === entry.id}
                 stats={trackStatsCache[trackKey(entry)]}
                 onToggle={() => handleToggle(entry)}
