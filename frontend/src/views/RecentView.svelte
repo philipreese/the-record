@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { fetchRecentListens, fetchTrackStats, type ListenEntry, type TrackStatsInfo } from '../services/api';
+  import {
+    fetchRecentListens,
+    fetchTrackStats,
+    type ListenEntry,
+    type TrackStatsInfo,
+  } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import ListenRow from '../components/dashboard/ListenRow.svelte';
