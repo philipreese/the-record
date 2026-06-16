@@ -11,12 +11,14 @@
   let {
     entry,
     showAbsoluteTime = false,
+    showRelativeTime = true,
     expanded = false,
     stats = undefined,
     onToggle,
   }: {
     entry: ListenEntry;
     showAbsoluteTime?: boolean;
+    showRelativeTime?: boolean;
     expanded?: boolean;
     stats?: TrackStatsInfo | null | undefined;
     onToggle?: () => void;
@@ -53,7 +55,7 @@
       >
         {timeOnly(entry.unix_ts)}
       </span>
-      {#if relativeTimeShort(entry.unix_ts)}
+      {#if showRelativeTime && relativeTimeShort(entry.unix_ts)}
         <span class="text-xs font-mono text-base-content/35">
           <span class="hidden sm:inline">· </span>{relativeTimeShort(entry.unix_ts)}
         </span>
