@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trends/punchcard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Punchcard
+         * @description Retrieve play counts grouped by day-of-week and hour (keys: '{dow}_{HH}', dow 0=Sun).
+         */
+        get: operations["read_punchcard_api_trends_punchcard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trends/monthly": {
         parameters: {
             query?: never;
@@ -621,6 +641,28 @@ export interface operations {
         };
     };
     read_hourly_trends_api_trends_hourly_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    read_punchcard_api_trends_punchcard_get: {
         parameters: {
             query?: never;
             header?: never;

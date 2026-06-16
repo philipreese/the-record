@@ -119,6 +119,12 @@ export async function fetchHourlyTrends(): Promise<Record<string, number>> {
   return res.json();
 }
 
+export async function fetchPunchcard(): Promise<Record<string, number>> {
+  const res = await apiFetch('/api/trends/punchcard');
+  if (!res.ok) throw new Error('Failed to fetch punchcard data');
+  return res.json();
+}
+
 export async function fetchMonthlyTrends(): Promise<MonthlyTrendInfo[]> {
   const res = await apiFetch('/api/trends/monthly');
   if (!res.ok) throw new Error('Failed to fetch monthly trends');

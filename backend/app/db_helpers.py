@@ -40,3 +40,9 @@ def get_year_expr(col):
     if IS_POSTGRES:
         return func.to_char(func.to_timestamp(col), "YYYY")
     return func.strftime("%Y", col, "unixepoch", "localtime")
+
+def get_day_of_week_expr(col):
+    """Return dialect-specific day-of-week integer (0=Sunday, 6=Saturday)."""
+    if IS_POSTGRES:
+        return func.cast(func.extract("dow", func.to_timestamp(col)), Integer)
+    return func.cast(func.strftime("%w", col, "unixepoch", "localtime"), Integer)

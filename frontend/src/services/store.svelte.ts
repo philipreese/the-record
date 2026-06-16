@@ -26,6 +26,7 @@ class AppCache {
   streak = $state<StreakInfo | null>(null);
   heatmap = $state<Record<number, Record<string, number>>>({});
   hourlyTrends = $state<Record<string, number>>({});
+  punchcardData = $state<Record<string, number>>({});
   monthlyTrends = $state<MonthlyTrendInfo[]>([]);
   statsLoaded = $state(false);
 
@@ -74,6 +75,7 @@ class AppCache {
     this.streak = null;
     this.heatmap = {};
     this.hourlyTrends = {};
+    this.punchcardData = {};
     this.monthlyTrends = [];
     this.statsLoaded = false;
     this.charts = {};
