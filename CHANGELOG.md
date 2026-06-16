@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/philipreese/the-record/compare/v0.4.2...v0.5.0) (2026-06-16)
+
+
+### Features
+
+* **backend:** Add GET /api/playing-now endpoint with last-played fallback ([5180600](https://github.com/philipreese/the-record/commit/518060070fa321fcf6b62a69849b7934a6dbcd3f))
+* **frontend:** Add Now Playing widget with visibility-locked polling and album art mood color ([c7ed8f8](https://github.com/philipreese/the-record/commit/c7ed8f86ed4a816a1bdabf711d560487e99f0143))
+
+
+### Bug Fixes
+
+* **backend:** Add session cache and MB text-search fallback for cover art ([553ccd1](https://github.com/philipreese/the-record/commit/553ccd1b93d6aeb442eb5d82f0fec7cc5bd8fbc8))
+* **backend:** Resolve direct CAA URL and fall back to recording_mbid for cover art ([f470dab](https://github.com/philipreese/the-record/commit/f470dabeebf81b2ec5ad18cb4b5921756f8b7990))
+* **backend:** Resolve last-played art, fix UA, stop caching failed art lookups ([66285ce](https://github.com/philipreese/the-record/commit/66285ce160b6723948a2304f0757124c76f74d5e))
+* **frontend:** Fix Now Playing widget — compact art, CORS, ambient color ([e52d764](https://github.com/philipreese/the-record/commit/e52d7643c414087557fb0f36419e39ad4ae64bc8))
+* **frontend:** Harden now-playing polling — cold start, grace period, immediate sync ([1c3c767](https://github.com/philipreese/the-record/commit/1c3c7674288e03fe751dff571f4e6f270d0fd1e2))
+* **frontend:** Harden now-playing widget color, art, and resilience ([f9f5439](https://github.com/philipreese/the-record/commit/f9f543995c80d0c96cecc38bbdf008a6ec4d4f56))
+* **frontend:** Live dynamic color in settings chip; extract accent in store ([c813bb6](https://github.com/philipreese/the-record/commit/c813bb6bc8ead659aa23184855c5a212092adfc7))
+* **frontend:** Persist dynamic accent across refresh and theme switches ([7dfaac5](https://github.com/philipreese/the-record/commit/7dfaac5c011fc9c9d3db9afbf4fabb40831a363c))
+* **frontend:** Show art and ambient color for last-played, fix soft sync reload ([63b0eaf](https://github.com/philipreese/the-record/commit/63b0eafafbfe39defbfec1e48ef3d894678cc72c))
+* **frontend:** Silence eslint no-unused-expressions in NowPlaying effect ([2b4e857](https://github.com/philipreese/the-record/commit/2b4e857aaf1b808242f50b1eb92a9751c17cee53))
+
+
+### Tests
+
+* **frontend:** Update retry tests for 6x2s retry parameters ([b01cc18](https://github.com/philipreese/the-record/commit/b01cc1893308c04478a0b8c4d8e6760d1307b731))
+
+
+### Miscellaneous
+
+* Add gitattributes to normalize line endings to LF ([161dff2](https://github.com/philipreese/the-record/commit/161dff28eeb403aa916de3d36d018fa688ac78ae))
+* **ci:** Bump Node to 24 to match local npm 11 lock file; update architecture doc ([4b64ae7](https://github.com/philipreese/the-record/commit/4b64ae7ab03cd1f8b10a7f62e4af7ce3b72dc775))
+* **ci:** Split test task into test-backend and test-frontend ([9966f1a](https://github.com/philipreese/the-record/commit/9966f1a0c4e69b13e99ff43e740cb9e78f82704a))
+* **frontend:** Add eslint-plugin-tailwindcss for Tailwind v4 linting ([e0154a1](https://github.com/philipreese/the-record/commit/e0154a101bdb01fb4c7e04c199ea4f7501253dd9))
+* **frontend:** Replace arbitrary px/rem values with Tailwind shorthands ([3735bea](https://github.com/philipreese/the-record/commit/3735bea06a29f0a6afcb5e6bde422c9013ef7b65))
+
 ## [0.4.2](https://github.com/philipreese/the-record/compare/v0.4.1...v0.4.2) (2026-06-15)
 
 
