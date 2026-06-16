@@ -15,7 +15,7 @@
   ];
 
   const CELL = 18;
-  const GAP = 2;
+  const GAP = 4;
   const STEP = CELL + GAP;
   const LEFT_MARGIN = 36;
   const TOP_MARGIN = 20;
@@ -66,7 +66,7 @@
   <div class="w-full overflow-x-auto scrollbar-thin">
     <svg
       viewBox="0 0 {W} {H}"
-      class="min-w-84 w-full h-auto"
+      class="min-w-140 w-full h-auto"
       style="color: var(--text-primary);"
       preserveAspectRatio="xMidYMid meet"
     >
@@ -130,7 +130,10 @@
     style="color: var(--text-muted);"
   >
     <span>Quiet</span>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--text-primary); opacity: 0.07;"></div>
+    <div
+      class="w-3 h-3 rounded-sm"
+      style="background-color: var(--text-primary); opacity: 0.07;"
+    ></div>
     <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.22;"></div>
     <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.50;"></div>
     <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.75;"></div>

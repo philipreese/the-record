@@ -23,6 +23,7 @@
   use:inView={{ once: true }}
   class="mt-30 flex flex-col gap-6 reveal-container"
   role="region"
+  id="heatmap-section"
 >
   <div
     class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2 reveal-label pb-2 border-b border-theme-border-soft"
