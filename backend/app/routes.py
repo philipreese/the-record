@@ -61,6 +61,11 @@ def read_hourly_trends() -> Any:
     """Retrieve play counts grouped by the hour of the day."""
     return repo.get_hourly_trends()
 
+@router.get("/trends/punchcard", response_model=Dict[str, int])
+def read_punchcard() -> Any:
+    """Retrieve play counts grouped by day-of-week and hour (keys: '{dow}_{HH}', dow 0=Sun)."""
+    return repo.get_punchcard_data()
+
 @router.get("/trends/monthly", response_model=List[MonthlyTrendInfo])
 def read_monthly_trends() -> Any:
     """Retrieve play counts grouped by month (chronological)."""

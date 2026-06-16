@@ -4,7 +4,7 @@ import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_
 from app.db import get_engine, Listen
-from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr
+from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 
 def get_current_local_date() -> date:
     """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
@@ -138,6 +138,24 @@ def get_hourly_trends() -> dict[str, int]:
         for r in rows:
             if r.hour:
                 trends[r.hour] = r.cnt
+        return trends
+
+def get_punchcard_data() -> dict[str, int]:
+    """Retrieve play counts grouped by day-of-week (0=Sun) and hour (00-23) in local time."""
+    dow_expr = get_day_of_week_expr(Listen.unix_ts)
+    hour_expr = get_hour_expr(Listen.unix_ts)
+
+    with get_engine().connect() as conn:
+        stmt = select(dow_expr.label("dow"), hour_expr.label("hour"), func.count(Listen.id).label("cnt"))\
+            .group_by(dow_expr, hour_expr)
+
+        rows = conn.execute(stmt).all()
+
+        # Initialize all 168 cells (7 days × 24 hours)
+        trends: dict[str, int] = {f"{d}_{h:02d}": 0 for d in range(7) for h in range(24)}
+        for r in rows:
+            if r.dow is not None and r.hour is not None:
+                trends[f"{int(r.dow)}_{r.hour}"] = r.cnt
         return trends
 
 def get_monthly_trends() -> list[dict[str, Any]]:

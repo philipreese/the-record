@@ -18,6 +18,7 @@
     fetchStreak,
     fetchHeatmap,
     fetchHourlyTrends,
+    fetchPunchcard,
     fetchMonthlyTrends,
     fetchRecentListens,
     fetchOnThisDay,
@@ -92,10 +93,11 @@
       loadingStats = true;
     }
     try {
-      const [statsRes, streakRes, hourlyRes, monthlyRes, onThisDayRes] = await Promise.all([
+      const [statsRes, streakRes, hourlyRes, punchcardRes, monthlyRes, onThisDayRes] = await Promise.all([
         fetchStats(),
         fetchStreak(),
         fetchHourlyTrends(),
+        fetchPunchcard(),
         fetchMonthlyTrends(),
         fetchOnThisDay(),
       ]);
@@ -103,6 +105,7 @@
       appCache.stats = statsRes;
       appCache.streak = streakRes;
       appCache.hourlyTrends = hourlyRes;
+      appCache.punchcardData = punchcardRes;
       appCache.monthlyTrends = monthlyRes;
       appCache.onThisDay = onThisDayRes;
       appCache.statsLoaded = true;
@@ -251,13 +254,17 @@
 
     <DiurnalSection
       hourlyData={appCache.hourlyTrends || {}}
+      punchcardData={appCache.punchcardData || {}}
       streakData={currentStreak}
       clockDimmed={currentFocusZone !== null && currentFocusZone !== 'clock'}
       streakDimmed={currentFocusZone !== null && currentFocusZone !== 'streak'}
+      punchcardDimmed={currentFocusZone !== null && currentFocusZone !== 'punchcard'}
       onClockFocusEnter={() => (currentFocusZone = 'clock')}
       onClockFocusClear={() => (currentFocusZone = null)}
       onStreakFocusEnter={() => (currentFocusZone = 'streak')}
       onStreakFocusClear={() => (currentFocusZone = null)}
+      onPunchcardFocusEnter={() => (currentFocusZone = 'punchcard')}
+      onPunchcardFocusClear={() => (currentFocusZone = null)}
     />
   </div>
 

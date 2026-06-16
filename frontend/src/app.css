@@ -542,6 +542,17 @@ body {
   animation: clock-segment-reveal 0.6s var(--ease-fluid) forwards;
 }
 
+/* Punchcard Chart Drawing Animation */
+.punchcard-container .punchcard-cell {
+  transform-origin: center;
+  transform-box: fill-box;
+  opacity: 0;
+  transform: scale(0.3);
+}
+.punchcard-container.in-view .punchcard-cell {
+  animation: cell-reveal 0.45s var(--ease-fluid) forwards;
+}
+
 /* General Staggered List Reveal */
 @keyframes list-item-reveal {
   from {
