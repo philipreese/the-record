@@ -39,9 +39,14 @@ api.ts             — Fetch wrapper, typed against api-types.ts; retries idempo
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
                      and 20s visibility-locked playing-now polling (with baseline data recovery on reconnect)
     ↓
-Views              — OverviewView, ChartsView, WrappedView, SettingsView
+Views              — OverviewView, ChartsView, WrappedView, SettingsView, RecentView
     ↓
-Components         — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid, AnimatedCounter, NowPlaying
+Components
+  layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown
+  dashboard/       — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid,
+                     AnimatedCounter, NowPlaying, WrappedCard, ListenRow
+  overview/        — HeatmapSection, DiurnalSection, TelemetrySection, RecentScrobblesSection
+  settings/        — ThemeSelector, DataSyncPanel
 ```
 
 **Source of truth:** [frontend/src/](../frontend/src/)
