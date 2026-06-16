@@ -14,11 +14,7 @@
 
 <div id="diurnal-patterns" class="mt-30 space-y-16">
   <!-- 02A / Diurnal Intensity -->
-  <div
-    use:inView={{ once: true }}
-    class="space-y-4 reveal-container"
-    role="region"
-  >
+  <div use:inView={{ once: true }} class="space-y-4 reveal-container" role="region">
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h3 class="editorial-text-h2">02A / Diurnal Intensity</h3>
     </div>
@@ -28,11 +24,7 @@
   </div>
 
   <!-- 02B / Weekly Cadence -->
-  <div
-    use:inView={{ once: true }}
-    class="space-y-4 reveal-container"
-    role="region"
-  >
+  <div use:inView={{ once: true }} class="space-y-4 reveal-container" role="region">
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h3 class="editorial-text-h2">02B / Weekly Cadence</h3>
     </div>

@@ -37,10 +37,10 @@
 
   let currentTarget = $derived.by(() => {
     void scrollY;
-    if (typeof document === 'undefined') return { id: 'insights-section', label: 'insights' };
+    if (typeof document === 'undefined') return { id: 'heatmap-section', label: 'insights' };
 
     if (scrollY < 10) {
-      return { id: 'insights-section', label: 'insights' };
+      return { id: 'heatmap-section', label: 'insights' };
     }
 
     const isAtBottom =
@@ -51,7 +51,7 @@
     }
 
     const sections = [
-      { id: 'insights-section', label: 'insights' },
+      { id: 'heatmap-section', label: 'insights' },
       { id: 'diurnal-patterns', label: 'patterns' },
       { id: 'streak-tracker', label: 'streak' },
       { id: 'on-this-day', label: 'on this day' },
@@ -71,16 +71,49 @@
     return { id: 'top', label: 'top' };
   });
 
+  let scrollAnimationId: number | null = null;
+
+  function smoothScrollTo(elementId: string, offset = 85) {
+    if (scrollAnimationId) cancelAnimationFrame(scrollAnimationId);
+
+    const target = document.getElementById(elementId);
+    if (!target) return;
+
+    const start = window.scrollY;
+    const startTime = performance.now();
+    const duration = 400; // ms
+
+    function easeInOutQuad(t: number) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function step(currentTime: number) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = easeInOutQuad(progress);
+
+      // Re-evaluate target position on every frame to handle layout shifts dynamically
+      const targetY = target!.getBoundingClientRect().top + window.scrollY - offset;
+      const currentScroll = start + (targetY - start) * ease;
+
+      window.scrollTo(0, currentScroll);
+
+      if (progress < 1) {
+        scrollAnimationId = requestAnimationFrame(step);
+      } else {
+        scrollAnimationId = null;
+      }
+    }
+
+    scrollAnimationId = requestAnimationFrame(step);
+  }
+
   function handleScrollClick() {
     if (currentTarget.id === 'top') {
+      if (scrollAnimationId) cancelAnimationFrame(scrollAnimationId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      const el = document.getElementById(currentTarget.id);
-      if (el) {
-        const elementPosition = el.getBoundingClientRect().top + window.scrollY;
-        const offsetPosition = elementPosition - 85;
-        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-      }
+      smoothScrollTo(currentTarget.id, 85);
     }
   }
 
@@ -240,21 +273,18 @@
     ></div>
   </div>
 
-  <!-- Sections -->
-  <div id="insights-section">
-    <HeatmapSection
-      bind:heatmapYear
-      {firstListenYear}
-      {currentYear}
-      heatmapData={appCache.heatmap[heatmapYear] || {}}
-      monthlyTrends={appCache.monthlyTrends || []}
-    />
+  <HeatmapSection
+    bind:heatmapYear
+    {firstListenYear}
+    {currentYear}
+    heatmapData={appCache.heatmap[heatmapYear] || {}}
+    monthlyTrends={appCache.monthlyTrends || []}
+  />
 
-    <DiurnalSection
-      hourlyData={appCache.hourlyTrends || {}}
-      punchcardData={appCache.punchcardData || {}}
-    />
-  </div>
+  <DiurnalSection
+    hourlyData={appCache.hourlyTrends || {}}
+    punchcardData={appCache.punchcardData || {}}
+  />
 
   <!-- 03 / Recollection Continuous — Streak -->
   <div
@@ -284,11 +314,7 @@
     />
 
     <!-- Now Playing / Last Played column -->
-    <div
-      use:inView={{ once: true }}
-      class="space-y-8 reveal-container"
-      role="region"
-    >
+    <div use:inView={{ once: true }} class="space-y-8 reveal-container" role="region">
       <NowPlaying />
     </div>
   </div>
