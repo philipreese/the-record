@@ -320,7 +320,11 @@
   </div>
 
   <!-- Telemetry & Volumes — reference panel, collapsible -->
-  <TelemetrySection loading={loadingStats} stats={currentStats} />
+  <TelemetrySection
+    loading={loadingStats}
+    stats={currentStats}
+    sectionNumber={appCache.onThisDay.length > 0 ? '06' : '05'}
+  />
 </div>
 
 <ScrollNavButton target={currentTarget} onclick={handleScrollClick} />
