@@ -11,6 +11,7 @@
   import TelemetrySection from '../components/overview/TelemetrySection.svelte';
   import RecentScrobblesSection from '../components/overview/RecentScrobblesSection.svelte';
   import OnThisDaySection from '../components/overview/OnThisDaySection.svelte';
+  import StreakTracker from '../components/StreakTracker.svelte';
   import listeningJournalImg from '../assets/listening_journal.png';
 
   import {
@@ -34,8 +35,6 @@
   let loadingStats = $state(!appCache.statsLoaded);
   let scrollY = $state(0);
 
-  let currentFocusZone = $state<string | null>(null);
-
   let currentTarget = $derived.by(() => {
     void scrollY;
     if (typeof document === 'undefined') return { id: 'insights-section', label: 'insights' };
@@ -54,9 +53,10 @@
     const sections = [
       { id: 'insights-section', label: 'insights' },
       { id: 'diurnal-patterns', label: 'patterns' },
-      { id: 'telemetry-volumes', label: 'volumes' },
+      { id: 'streak-tracker', label: 'streak' },
       { id: 'on-this-day', label: 'on this day' },
       { id: 'recent-scrobbles', label: 'recent' },
+      { id: 'telemetry-volumes', label: 'volumes' },
     ];
 
     for (const sec of sections) {
@@ -93,14 +93,15 @@
       loadingStats = true;
     }
     try {
-      const [statsRes, streakRes, hourlyRes, punchcardRes, monthlyRes, onThisDayRes] = await Promise.all([
-        fetchStats(),
-        fetchStreak(),
-        fetchHourlyTrends(),
-        fetchPunchcard(),
-        fetchMonthlyTrends(),
-        fetchOnThisDay(),
-      ]);
+      const [statsRes, streakRes, hourlyRes, punchcardRes, monthlyRes, onThisDayRes] =
+        await Promise.all([
+          fetchStats(),
+          fetchStreak(),
+          fetchHourlyTrends(),
+          fetchPunchcard(),
+          fetchMonthlyTrends(),
+          fetchOnThisDay(),
+        ]);
 
       appCache.stats = statsRes;
       appCache.streak = streakRes;
@@ -204,7 +205,7 @@
   </PageHeader>
 
   <!-- Hero Splash -->
-  <div class="hero-splash-container min-h-[62vh] lg:min-h-[72vh] flex flex-col justify-between">
+  <div class="hero-splash-container flex flex-col justify-between">
     <div class="relative grow flex items-center py-6 lg:py-10">
       <div
         class="absolute -right-8 -bottom-10 lg:right-12 lg:bottom-0 w-65 md:w-85 lg:w-100 aspect-square opacity-[0.06] dark:opacity-[0.09] pointer-events-none select-none overflow-hidden rounded-full"
@@ -240,58 +241,44 @@
   </div>
 
   <!-- Sections -->
-  <div class="space-y-40 pt-60" id="insights-section">
+  <div id="insights-section">
     <HeatmapSection
       bind:heatmapYear
       {firstListenYear}
       {currentYear}
       heatmapData={appCache.heatmap[heatmapYear] || {}}
       monthlyTrends={appCache.monthlyTrends || []}
-      dimmed={currentFocusZone !== null && currentFocusZone !== 'heatmap'}
-      onfocusenter={() => (currentFocusZone = 'heatmap')}
-      onfocusclear={() => (currentFocusZone = null)}
     />
 
     <DiurnalSection
       hourlyData={appCache.hourlyTrends || {}}
       punchcardData={appCache.punchcardData || {}}
-      streakData={currentStreak}
-      clockDimmed={currentFocusZone !== null && currentFocusZone !== 'clock'}
-      streakDimmed={currentFocusZone !== null && currentFocusZone !== 'streak'}
-      punchcardDimmed={currentFocusZone !== null && currentFocusZone !== 'punchcard'}
-      onClockFocusEnter={() => (currentFocusZone = 'clock')}
-      onClockFocusClear={() => (currentFocusZone = null)}
-      onStreakFocusEnter={() => (currentFocusZone = 'streak')}
-      onStreakFocusClear={() => (currentFocusZone = null)}
-      onPunchcardFocusEnter={() => (currentFocusZone = 'punchcard')}
-      onPunchcardFocusClear={() => (currentFocusZone = null)}
     />
   </div>
 
-  <TelemetrySection
-    loading={loadingStats}
-    stats={currentStats}
-    dimmed={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
-    onfocusenter={() => (currentFocusZone = 'telemetry')}
-    onfocusclear={() => (currentFocusZone = null)}
-  />
+  <!-- 03 / Recollection Continuous — Streak -->
+  <div
+    use:inView={{ once: true }}
+    class="mt-30 space-y-4 reveal-container"
+    role="region"
+    id="streak-tracker"
+  >
+    <div class="pb-2 border-b border-theme-border-soft reveal-label">
+      <h2 class="editorial-text-h2">03 / Recollection Continuous</h2>
+    </div>
+    <div class="reveal-content">
+      <StreakTracker streakData={currentStreak} />
+    </div>
+  </div>
 
   {#if appCache.onThisDay.length > 0}
-    <OnThisDaySection
-      groups={appCache.onThisDay}
-      dimmed={currentFocusZone !== null && currentFocusZone !== 'on-this-day'}
-      onfocusenter={() => (currentFocusZone = 'on-this-day')}
-      onfocusclear={() => (currentFocusZone = null)}
-    />
+    <OnThisDaySection groups={appCache.onThisDay} />
   {/if}
 
-  <div class="pt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
+  <div class="mt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
     <RecentScrobblesSection
       recentListens={appCache.recentListens}
       loading={loadingStats}
-      dimmed={currentFocusZone !== null && currentFocusZone !== 'recent'}
-      onfocusenter={() => (currentFocusZone = 'recent')}
-      onfocusclear={() => (currentFocusZone = null)}
       onViewAll={() => (activeTab = 'recent')}
       sectionNumber={appCache.onThisDay.length > 0 ? '05' : '04'}
     />
@@ -299,15 +286,15 @@
     <!-- Now Playing / Last Played column -->
     <div
       use:inView={{ once: true }}
-      class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-      class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
+      class="space-y-8 reveal-container"
       role="region"
-      onmouseenter={() => (currentFocusZone = 'recent')}
-      onmouseleave={() => (currentFocusZone = null)}
     >
       <NowPlaying />
     </div>
   </div>
+
+  <!-- Telemetry & Volumes — reference panel, collapsible -->
+  <TelemetrySection loading={loadingStats} stats={currentStats} />
 </div>
 
 <ScrollNavButton target={currentTarget} onclick={handleScrollClick} />

@@ -10,28 +10,19 @@
     currentYear,
     heatmapData,
     monthlyTrends,
-    dimmed,
-    onfocusenter,
-    onfocusclear,
   }: {
     heatmapYear: number;
     firstListenYear: number;
     currentYear: number;
     heatmapData: Record<string, number>;
     monthlyTrends: MonthlyTrendInfo[];
-    dimmed: boolean;
-    onfocusenter: () => void;
-    onfocusclear: () => void;
   } = $props();
 </script>
 
 <div
   use:inView={{ once: true }}
-  class="flex flex-col gap-6 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-  class:opacity-80={dimmed}
+  class="mt-30 flex flex-col gap-6 reveal-container"
   role="region"
-  onmouseenter={onfocusenter}
-  onmouseleave={onfocusclear}
 >
   <div
     class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2 reveal-label pb-2 border-b border-theme-border-soft"
