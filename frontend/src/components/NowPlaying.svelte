@@ -50,7 +50,9 @@
             class="w-8 h-8 rounded shrink-0 object-cover opacity-90"
           />
         {:else}
-          <div class="w-8 h-8 rounded shrink-0 bg-base-200 border border-theme-border-soft flex items-center justify-center">
+          <div
+            class="w-8 h-8 rounded shrink-0 bg-base-200 border border-theme-border-soft flex items-center justify-center"
+          >
             <span class="text-theme-muted text-xs">♫</span>
           </div>
         {/if}

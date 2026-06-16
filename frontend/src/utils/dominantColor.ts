@@ -51,8 +51,7 @@ export async function getDominantColor(imageUrl: string): Promise<string | null>
         }
 
         // Pick the bucket with the highest saturation-weighted score.
-        let best: { r: number; g: number; b: number; count: number; weight: number } | null =
-          null;
+        let best: { r: number; g: number; b: number; count: number; weight: number } | null = null;
         for (const bucket of Object.values(buckets)) {
           if (!best || bucket.weight > best.weight) best = bucket;
         }

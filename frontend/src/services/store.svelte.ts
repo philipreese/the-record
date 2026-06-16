@@ -123,7 +123,10 @@ class AppCache {
       // the page will populate without a manual refresh.
       if (!this.statsLoaded) {
         fetchStats()
-          .then((s) => { this.stats = s; this.statsLoaded = true; })
+          .then((s) => {
+            this.stats = s;
+            this.statsLoaded = true;
+          })
           .catch(() => {});
       }
       if (this.recentListens.length === 0 && !this.recentExhausted) {
@@ -168,11 +171,13 @@ class AppCache {
     if (this._playingPollInterval !== null) return;
     // Pre-populate immediately from DB (no LB call, ~50ms) so the widget is
     // visible at once rather than blank for the duration of the first LB fetch.
-    fetchLastPlayed().then((result) => {
-      if (!this.playingNow && result.last_played) {
-        this.playingNow = result;
-      }
-    }).catch(() => {});
+    fetchLastPlayed()
+      .then((result) => {
+        if (!this.playingNow && result.last_played) {
+          this.playingNow = result;
+        }
+      })
+      .catch(() => {});
     this._poll();
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
