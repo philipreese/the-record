@@ -67,6 +67,8 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/wrapped` | `year` (required), `quarter` (Q1–Q4, optional), `month` (M1–M12, optional) | `WrappedDataResponse` |
 | POST | `/api/sync` | `mode` (normal/full, default normal); requires `X-Sync-Token` header | `SyncStartResponse` |
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
+| GET | `/api/recent` | `limit` (default 50, max 100), `before_ts`, `before_id` (cursor pagination) | `ListenEntry[]` |
+| GET | `/api/track-stats` | `artist` (required), `title` (required) | `TrackStatsResponse` |
 | GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback + cover art) |
 | GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
 
