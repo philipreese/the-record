@@ -13,6 +13,7 @@
   import { themeManager, stringToColor } from '../services/theme.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
+  import LoadingSpinner from '../components/layout/LoadingSpinner.svelte';
 
   let topRange = $state<TimeRange>('all');
 
@@ -157,14 +158,7 @@
 
 <div class="flex flex-col gap-12 text-base-content">
   {#if loadingCharts}
-    <div class="flex flex-col justify-center items-center gap-3 py-20">
-      <span class="loading loading-spinner loading-md text-primary"></span>
-      {#if appCache.isWakingUp}
-        <span class="text-xs font-mono tracking-widest uppercase text-theme-muted animate-pulse">
-          Waking up the server…
-        </span>
-      {/if}
-    </div>
+    <LoadingSpinner />
   {:else}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
       <!-- Top Artists List -->

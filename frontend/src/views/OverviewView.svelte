@@ -1,16 +1,15 @@
 <script lang="ts">
-  // Layout refresh trigger
   import { onMount, untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { inView } from '../utils/inView';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
-  import Heatmap from '../components/Heatmap.svelte';
-  import MonthlyBarChart from '../components/MonthlyBarChart.svelte';
-  import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
-  import StreakTracker from '../components/StreakTracker.svelte';
-  import StatsGrid from '../components/dashboard/StatsGrid.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import NowPlaying from '../components/NowPlaying.svelte';
+  import ScrollNavButton from '../components/layout/ScrollNavButton.svelte';
+  import HeatmapSection from '../components/overview/HeatmapSection.svelte';
+  import DiurnalSection from '../components/overview/DiurnalSection.svelte';
+  import TelemetrySection from '../components/overview/TelemetrySection.svelte';
+  import RecentScrobblesSection from '../components/overview/RecentScrobblesSection.svelte';
   import listeningJournalImg from '../assets/listening_journal.png';
 
   import {
@@ -21,7 +20,6 @@
     fetchMonthlyTrends,
     fetchRecentListens,
   } from '../services/api';
-  import { sourceLabel, timeOnly, relativeTimeShort } from '../utils/listens';
 
   import { appCache } from '../services/store.svelte';
 
@@ -33,19 +31,16 @@
   let loadingStats = $state(!appCache.statsLoaded);
   let scrollY = $state(0);
 
-  // State for progressive focus dimming
   let currentFocusZone = $state<string | null>(null);
 
   let currentTarget = $derived.by(() => {
-    void scrollY; // register dependency on scrollY before any early return
+    void scrollY;
     if (typeof document === 'undefined') return { id: 'insights-section', label: 'insights' };
 
-    // If we are at the very top of the page, target the first section
     if (scrollY < 10) {
       return { id: 'insights-section', label: 'insights' };
     }
 
-    // Check if we are at the bottom of the page (within 24px buffer) and have actually scrolled down
     const isAtBottom =
       scrollY > 50 &&
       window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24;
@@ -64,7 +59,6 @@
       const el = document.getElementById(sec.id);
       if (el) {
         const rect = el.getBoundingClientRect();
-        // If the top of this section is below the top margin of the viewport (with 120px threshold)
         if (rect.top > 120) {
           return sec;
         }
@@ -80,11 +74,8 @@
       const el = document.getElementById(currentTarget.id);
       if (el) {
         const elementPosition = el.getBoundingClientRect().top + window.scrollY;
-        const offsetPosition = elementPosition - 85; // accounts for sticky header
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth',
-        });
+        const offsetPosition = elementPosition - 85;
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
       }
     }
   }
@@ -123,15 +114,12 @@
     }
   }
 
-  // Automatically refresh stats when background sync finishes and invalidates the cache
   $effect(() => {
     if (!appCache.isSyncing && !appCache.statsLoaded) {
       fetchDashboardData();
     }
   });
 
-  // Tracks pending heatmap fetches per year so rapid prev/next switching reuses the
-  // in-flight request instead of firing a second, racing one.
   const heatmapInFlight = new Map<number, Promise<Record<string, number>>>();
 
   async function loadHeatmap(year: number) {
@@ -176,7 +164,6 @@
 <svelte:window bind:scrollY />
 
 <div class="flex flex-col gap-12 text-base-content">
-  <!-- Sticky Header Section -->
   <PageHeader
     title="music journal"
     subtitle="Self-hosted scrobble archives and listening insights."
@@ -208,18 +195,15 @@
     {/snippet}
   </PageHeader>
 
-  <!-- Layer 1: High-Signal Emotional/Reflective Narrative Hero Splash -->
+  <!-- Hero Splash -->
   <div class="hero-splash-container min-h-[62vh] lg:min-h-[72vh] flex flex-col justify-between">
-    <!-- Middle Row: Narrative Text + Watermarked Artwork -->
     <div class="relative grow flex items-center py-6 lg:py-10">
-      <!-- Background artwork watermark -->
       <div
         class="absolute -right-8 -bottom-10 lg:right-12 lg:bottom-0 w-65 md:w-85 lg:w-100 aspect-square opacity-[0.06] dark:opacity-[0.09] pointer-events-none select-none overflow-hidden rounded-full"
       >
         <img src={listeningJournalImg} alt="" class="w-full h-full object-cover" />
       </div>
 
-      <!-- Left side: Narrative paragraph -->
       {#if !loadingStats && appCache.statsLoaded}
         <div class="max-w-3xl relative z-20">
           <p
@@ -242,219 +226,53 @@
       {/if}
     </div>
 
-    <!-- Bottom dissolve gradient overlay -->
     <div
       class="absolute bottom-0 left-0 right-0 h-28 bg-linear-to-t from-(--bg-base) to-transparent pointer-events-none z-10"
     ></div>
   </div>
 
-  <!-- Layer 2: Behavioral Patterns -->
+  <!-- Sections -->
   <div class="space-y-40 pt-60" id="insights-section">
-    <!-- 01 / Heatmap & Monthly Section -->
-    <div
-      use:inView={{ once: true }}
-      class="flex flex-col gap-6 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-      class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'heatmap'}
-      role="region"
-      onmouseenter={() => (currentFocusZone = 'heatmap')}
-      onmouseleave={() => (currentFocusZone = null)}
-    >
-      <div
-        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2 reveal-label pb-2 border-b border-theme-border-soft"
-      >
-        <div>
-          <h2 class="editorial-text-h2">01 / Temporal Archive & Trends</h2>
-          <p class="text-[11px] text-theme-muted font-mono tracking-wide mt-1">
-            Calendar activity grid and monthly play volume (selector affects both)
-          </p>
-        </div>
+    <HeatmapSection
+      bind:heatmapYear
+      {firstListenYear}
+      {currentYear}
+      heatmapData={appCache.heatmap[heatmapYear] || {}}
+      monthlyTrends={appCache.monthlyTrends || []}
+      dimmed={currentFocusZone !== null && currentFocusZone !== 'heatmap'}
+      onfocusenter={() => (currentFocusZone = 'heatmap')}
+      onfocusclear={() => (currentFocusZone = null)}
+    />
 
-        <div class="flex items-center gap-4">
-          <span class="text-[10px] font-mono uppercase tracking-widest text-theme-muted select-none"
-            >Select Year</span
-          >
-          <div
-            class="flex items-center gap-4 bg-theme-neutral-soft px-3 py-1 rounded-lg border border-theme-border-soft"
-          >
-            <button
-              class="btn-nav-text text-2xl! leading-none"
-              aria-label="Previous Year"
-              disabled={heatmapYear <= firstListenYear}
-              onclick={() => heatmapYear--}
-            >
-              &larr;
-            </button>
-            <span class="text-lg font-mono tracking-wider font-light text-theme-text select-none"
-              >{heatmapYear}</span
-            >
-            <button
-              class="btn-nav-text text-2xl! leading-none"
-              aria-label="Next Year"
-              disabled={heatmapYear >= currentYear}
-              onclick={() => heatmapYear++}
-            >
-              &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="reveal-content space-y-6">
-        <Heatmap data={appCache.heatmap[heatmapYear] || {}} year={heatmapYear} />
-        <MonthlyBarChart monthlyTrends={appCache.monthlyTrends} year={heatmapYear} />
-      </div>
-    </div>
-
-    <!-- 02 / Clock & Streaks Sub Grid -->
-    <div
-      class="grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 pt-30 items-start"
-      id="diurnal-patterns"
-    >
-      <!-- Hourly clock -->
-      <div
-        use:inView={{ once: true }}
-        class="space-y-4 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-        class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'clock'}
-        role="region"
-        onmouseenter={() => (currentFocusZone = 'clock')}
-        onmouseleave={() => (currentFocusZone = null)}
-      >
-        <div class="pb-2 border-b border-theme-border-soft reveal-label">
-          <h3 class="editorial-text-h2">02A / Diurnal Intensity</h3>
-        </div>
-        <div class="reveal-content">
-          <HourlyHeatClock hourlyData={appCache.hourlyTrends} />
-        </div>
-      </div>
-
-      <!-- Streak tracker -->
-      <div
-        use:inView={{ once: true }}
-        class="space-y-4 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-        class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'streak'}
-        role="region"
-        onmouseenter={() => (currentFocusZone = 'streak')}
-        onmouseleave={() => (currentFocusZone = null)}
-      >
-        <div class="pb-2 border-b border-theme-border-soft reveal-label">
-          <h3 class="editorial-text-h2">02B / Recollection Continuous</h3>
-        </div>
-        <div class="reveal-content">
-          <StreakTracker streakData={currentStreak} />
-        </div>
-      </div>
-    </div>
+    <DiurnalSection
+      hourlyData={appCache.hourlyTrends || {}}
+      streakData={currentStreak}
+      clockDimmed={currentFocusZone !== null && currentFocusZone !== 'clock'}
+      streakDimmed={currentFocusZone !== null && currentFocusZone !== 'streak'}
+      onClockFocusEnter={() => (currentFocusZone = 'clock')}
+      onClockFocusClear={() => (currentFocusZone = null)}
+      onStreakFocusEnter={() => (currentFocusZone = 'streak')}
+      onStreakFocusClear={() => (currentFocusZone = null)}
+    />
   </div>
 
-  <!-- Layer 3: Telemetry & Raw Counts -->
-  <div
-    use:inView={{ once: true }}
-    class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-    class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
-    role="region"
-    onmouseenter={() => (currentFocusZone = 'telemetry')}
-    onmouseleave={() => (currentFocusZone = null)}
-    id="telemetry-volumes"
-  >
-    <div class="pb-2 border-b border-theme-border-soft reveal-label">
-      <h2 class="editorial-text-h2">03 / Telemetry & Volumes</h2>
-    </div>
-    <div class="reveal-content">
-      {#if loadingStats}
-        <div class="flex flex-col justify-center items-center gap-3 py-10">
-          <span class="loading loading-spinner loading-md text-primary"></span>
-          {#if appCache.isWakingUp}
-            <span
-              class="text-xs font-mono tracking-widest uppercase text-theme-muted animate-pulse"
-            >
-              Waking up the server…
-            </span>
-          {/if}
-        </div>
-      {:else}
-        <StatsGrid stats={currentStats} />
-      {/if}
-    </div>
-  </div>
+  <TelemetrySection
+    loading={loadingStats}
+    stats={currentStats}
+    dimmed={currentFocusZone !== null && currentFocusZone !== 'telemetry'}
+    onfocusenter={() => (currentFocusZone = 'telemetry')}
+    onfocusclear={() => (currentFocusZone = null)}
+  />
 
-  <!-- Layer 4: Recent Scrobbles + Now Playing -->
   <div class="pt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
-    <div
-      use:inView={{ once: true }}
-      class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-      class:opacity-80={currentFocusZone !== null && currentFocusZone !== 'recent'}
-      role="region"
-      onmouseenter={() => (currentFocusZone = 'recent')}
-      onmouseleave={() => (currentFocusZone = null)}
-      id="recent-scrobbles"
-    >
-      <div
-        class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between"
-      >
-        <h2 class="editorial-text-h2">04 / Recent Scrobbles</h2>
-        <button
-          class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
-          onclick={() => (activeTab = 'recent')}
-        >
-          View full journal →
-        </button>
-      </div>
-      <div class="reveal-content">
-        {#if appCache.recentListens.length === 0 && loadingStats}
-          <div class="space-y-1">
-            {#each { length: 5 } as _}
-              <div class="flex items-center gap-3 py-2.5 px-2 animate-pulse">
-                <div class="h-3 bg-base-300 rounded w-20 shrink-0"></div>
-                <div class="flex-1 h-3 bg-base-300 rounded"></div>
-              </div>
-            {/each}
-          </div>
-        {:else if appCache.recentListens.length === 0}
-          <p class="text-sm text-base-content/40 font-mono">No listens yet.</p>
-        {:else}
-          <div class="space-y-0">
-            {#each appCache.recentListens.slice(0, 10) as entry (entry.id)}
-              {@const label = sourceLabel(entry.source)}
-              <div
-                class="flex items-center gap-4 py-2 px-2 rounded hover:bg-base-200/50 transition-colors group"
-              >
-                <div class="w-36 shrink-0 text-right">
-                  <span
-                    class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
-                  >
-                    {timeOnly(entry.unix_ts)}
-                    {#if relativeTimeShort(entry.unix_ts)}
-                      <span class="text-base-content/35">
-                        · {relativeTimeShort(entry.unix_ts)}</span
-                      >
-                    {/if}
-                  </span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <span class="text-sm font-medium truncate block text-base-content"
-                    >{entry.title}</span
-                  >
-                  <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
-                </div>
-                {#if label}
-                  <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0"
-                    >{label}</span
-                  >
-                {/if}
-              </div>
-            {/each}
-          </div>
-          <div class="pt-2">
-            <button
-              class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
-              onclick={() => (activeTab = 'recent')}
-            >
-              View full journal →
-            </button>
-          </div>
-        {/if}
-      </div>
-    </div>
+    <RecentScrobblesSection
+      recentListens={appCache.recentListens}
+      loading={loadingStats}
+      dimmed={currentFocusZone !== null && currentFocusZone !== 'recent'}
+      onfocusenter={() => (currentFocusZone = 'recent')}
+      onfocusclear={() => (currentFocusZone = null)}
+      onViewAll={() => (activeTab = 'recent')}
+    />
 
     <!-- Now Playing / Last Played column -->
     <div
@@ -470,47 +288,4 @@
   </div>
 </div>
 
-<div
-  class="fixed bottom-12 left-1/2 -translate-x-1/2 lg:left-[calc(50%+128px)] z-40 flex justify-center"
->
-  <button
-    onclick={handleScrollClick}
-    class="group flex flex-col items-center gap-2 cursor-pointer focus:outline-none bg-base-200/60 hover:bg-base-200/90 backdrop-blur-md px-5 py-2 rounded-full border border-theme-border-soft shadow-xl transition-all"
-    aria-label="Scroll Navigation"
-  >
-    <div class="flex items-center gap-2">
-      {#key currentTarget.label}
-        <span
-          in:fade={{ duration: 150 }}
-          class="font-mono text-theme-muted uppercase tracking-widest group-hover:text-theme-accent transition-colors select-none"
-        >
-          {currentTarget.id === 'top' ? 'return to top' : `scroll to ${currentTarget.label}`}
-        </span>
-      {/key}
-
-      {#if currentTarget.id === 'top'}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          class="w-4 h-4 text-theme-muted group-hover:text-theme-accent group-hover:-translate-y-0.5 transition-all duration-300"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-        </svg>
-      {:else}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          class="w-4 h-4 text-theme-muted group-hover:text-theme-accent group-hover:translate-y-0.5 transition-all duration-300 animate-bounce"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
-      {/if}
-    </div>
-  </button>
-</div>
+<ScrollNavButton target={currentTarget} onclick={handleScrollClick} />
