@@ -36,16 +36,19 @@
     const startTime = performance.now();
     const startVal = displayValue;
     const endVal = value;
+    // Preserve the target's decimal precision during animation so the counter
+    // never shows a floored integer that then jumps to a decimal at the end.
+    const decimals = (String(endVal).split('.')[1] ?? '').length;
 
     function update(now: number) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
-      displayValue = Math.floor(startVal + (endVal - startVal) * ease);
+      const raw = startVal + (endVal - startVal) * ease;
+      displayValue = progress < 1 ? parseFloat(raw.toFixed(decimals)) : endVal;
       if (progress < 1) {
         pendingFrame = requestAnimationFrame(update);
       } else {
-        displayValue = endVal;
         pendingFrame = null;
       }
     }

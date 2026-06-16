@@ -10,6 +10,7 @@
     onfocusenter,
     onfocusclear,
     onViewAll,
+    sectionNumber = '04',
   }: {
     recentListens: ListenEntry[];
     loading: boolean;
@@ -17,6 +18,7 @@
     onfocusenter: () => void;
     onfocusclear: () => void;
     onViewAll: () => void;
+    sectionNumber?: string;
   } = $props();
 </script>
 
@@ -32,7 +34,7 @@
   <div
     class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between"
   >
-    <h2 class="editorial-text-h2">04 / Recent Scrobbles</h2>
+    <h2 class="editorial-text-h2">{sectionNumber} / Recent Scrobbles</h2>
     <button
       class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
       onclick={onViewAll}
