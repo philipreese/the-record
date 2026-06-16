@@ -6,17 +6,11 @@
   let {
     recentListens,
     loading,
-    dimmed,
-    onfocusenter,
-    onfocusclear,
     onViewAll,
     sectionNumber = '04',
   }: {
     recentListens: ListenEntry[];
     loading: boolean;
-    dimmed: boolean;
-    onfocusenter: () => void;
-    onfocusclear: () => void;
     onViewAll: () => void;
     sectionNumber?: string;
   } = $props();
@@ -47,11 +41,8 @@
 
 <div
   use:inView={{ once: true }}
-  class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-  class:opacity-80={dimmed}
+  class="space-y-8 reveal-container"
   role="region"
-  onmouseenter={onfocusenter}
-  onmouseleave={onfocusclear}
   id="recent-scrobbles"
 >
   <div

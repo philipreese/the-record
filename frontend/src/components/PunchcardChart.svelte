@@ -66,8 +66,8 @@
   <div class="w-full overflow-x-auto scrollbar-thin">
     <svg
       viewBox="0 0 {W} {H}"
-      class="w-full h-auto"
-      style="min-width: {Math.round(W * 0.6)}px; color: var(--text-primary);"
+      class="min-w-84 w-full h-auto"
+      style="color: var(--text-primary);"
       preserveAspectRatio="xMidYMid meet"
     >
       <!-- Hour labels -->

@@ -10,14 +10,8 @@
 
   let {
     groups,
-    dimmed,
-    onfocusenter,
-    onfocusclear,
   }: {
     groups: OnThisDayGroup[];
-    dimmed: boolean;
-    onfocusenter: () => void;
-    onfocusclear: () => void;
   } = $props();
 
   const currentYear = new Date().getFullYear();
@@ -66,11 +60,8 @@
 
 <div
   use:inView={{ once: true }}
-  class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
-  class:opacity-80={dimmed}
+  class="mt-30 space-y-8 reveal-container"
   role="region"
-  onmouseenter={onfocusenter}
-  onmouseleave={onfocusclear}
   id="on-this-day"
 >
   <div class="pb-2 border-b border-theme-border-soft reveal-label">
