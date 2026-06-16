@@ -8,12 +8,12 @@
   let {
     loading,
     stats,
+    sectionNumber = '05',
   }: {
     loading: boolean;
     stats: StatsInfo;
+    sectionNumber?: string;
   } = $props();
-
-  let expanded = $state(true);
 </script>
 
 <div
@@ -22,26 +22,14 @@
   role="region"
   id="telemetry-volumes"
 >
-  <button
-    class="w-full pb-2 border-b border-theme-border-soft flex items-center justify-between group cursor-pointer reveal-label"
-    onclick={() => (expanded = !expanded)}
-  >
-    <h2 class="editorial-text-h2">Telemetry & Volumes</h2>
-    <span
-      class="text-xs font-mono tracking-wider transition-opacity opacity-40 group-hover:opacity-70"
-      style="color: var(--text-muted);"
-    >
-      {expanded ? '− collapse' : '+ expand'}
-    </span>
-  </button>
-
-  {#if expanded}
-    <div class="mt-8 reveal-content" transition:slide={{ duration: 250 }}>
-      {#if loading}
-        <LoadingSpinner py="py-10" />
-      {:else}
+  <h2 class="editorial-text-h2">{sectionNumber} / Telemetry & Volumes</h2>
+  <div class="mt-8 reveal-content" transition:slide={{ duration: 250 }}>
+    {#if loading}
+      <LoadingSpinner py="py-10" />
+    {:else}
+      <div class="pb-30">
         <StatsGrid {stats} />
-      {/if}
-    </div>
-  {/if}
+      </div>
+    {/if}
+  </div>
 </div>

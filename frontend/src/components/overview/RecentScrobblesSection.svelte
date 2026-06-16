@@ -79,14 +79,6 @@
           />
         {/each}
       </div>
-      <div class="pt-2">
-        <button
-          class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
-          onclick={onViewAll}
-        >
-          View full journal →
-        </button>
-      </div>
     {/if}
   </div>
 </div>
