@@ -110,22 +110,24 @@
   subtitle="Spotify Wrapped style summaries for custom time ranges."
 >
   {#snippet actions(isShrunk)}
-    <div
-      class="nav-selector hidden lg:flex transition-all duration-300"
-      class:text-xs={isShrunk}
-      class:text-sm={!isShrunk}
-    >
-      {#each [['year', 'Year'], ['quarter', 'Quarter'], ['month', 'Month']] as [period, label]}
-        <button
-          class="nav-selector-item"
-          class:active={wrappedPeriod === period}
-          onclick={() => {
-            wrappedPeriod = period as 'year' | 'quarter' | 'month';
-          }}
-        >
-          {label}
-        </button>
-      {/each}
+    <div class="hidden lg:block">
+      <div
+        class="nav-selector transition-all duration-300"
+        class:text-xs={isShrunk}
+        class:text-sm={!isShrunk}
+      >
+        {#each [['year', 'Year'], ['quarter', 'Quarter'], ['month', 'Month']] as [period, label]}
+          <button
+            class="nav-selector-item"
+            class:active={wrappedPeriod === period}
+            onclick={() => {
+              wrappedPeriod = period as 'year' | 'quarter' | 'month';
+            }}
+          >
+            {label}
+          </button>
+        {/each}
+      </div>
     </div>
   {/snippet}
 </PageHeader>
