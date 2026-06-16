@@ -1,15 +1,22 @@
 const LB_SOURCES = new Set(['listenbrainz', 'listenbrainz_sync']);
 
 const SOURCE_LABELS: Record<string, string> = {
+  listenbrainz: 'ListenBrainz',
+  listenbrainz_sync: 'ListenBrainz',
   youtube: 'YouTube Music',
   youtube_music: 'YouTube Music',
   google_takeout: 'Takeout',
   last_fm: 'Last.fm',
 };
 
-/** Returns a display label for non-LB sources, or null for ListenBrainz entries. */
+/** Returns a display label for non-LB sources, or null for ListenBrainz entries (badge hidden by design). */
 export function sourceLabel(source: string): string | null {
   if (LB_SOURCES.has(source)) return null;
+  return SOURCE_LABELS[source] ?? 'Other';
+}
+
+/** Always returns a display label — use in detail panels where the source should always be shown. */
+export function sourceLabelFull(source: string): string {
   return SOURCE_LABELS[source] ?? 'Other';
 }
 

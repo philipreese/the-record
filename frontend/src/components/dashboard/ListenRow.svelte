@@ -1,6 +1,12 @@
 <script lang="ts">
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
-  import { sourceLabel, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
+  import {
+    sourceLabel,
+    sourceLabelFull,
+    timeOnly,
+    relativeTimeShort,
+    absoluteTime,
+  } from '../../utils/listens';
 
   let {
     entry,
@@ -65,9 +71,7 @@
 
   {#if expanded}
     <div class="px-2 pb-2 pt-0.5 flex gap-6 text-xs font-mono text-base-content/50">
-      {#if label}
-        <span>source: <span class="text-base-content/70">{label}</span></span>
-      {/if}
+      <span>source: <span class="text-base-content/70">{sourceLabelFull(entry.source)}</span></span>
       {#if stats === undefined}
         <span class="opacity-40">loading…</span>
       {:else if stats === null}
