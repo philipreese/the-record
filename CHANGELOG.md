@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/philipreese/the-record/compare/v0.7.0...v0.8.0) (2026-06-16)
+
+
+### Features
+
+* **dashboard:** Add day-of-week × hour punchcard chart (02C / Weekly Cadence) ([152931a](https://github.com/philipreese/the-record/commit/152931a253997ca677eff9250a0fd3007deb3ca3))
+
+
+### Bug Fixes
+
+* **dashboard:** Fix scroll-nav alignment with rAF-based smooth scroll ([e0e4fa0](https://github.com/philipreese/the-record/commit/e0e4fa020390611d6569392570ac6fdd2bacb73f))
+
+
+### Code Refactoring
+
+* **dashboard:** Remove focus-zone dimming, standardize section spacing, add punchcard min-width ([2283fd9](https://github.com/philipreese/the-record/commit/2283fd958afe6a07c9df31e306d1d6eef0fbc205))
+
 ## [0.7.0](https://github.com/philipreese/the-record/compare/v0.6.0...v0.7.0) (2026-06-16)
 
 
