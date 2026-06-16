@@ -69,7 +69,7 @@ describe('apiFetch cold-start retry', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const promise = fetchStats();
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(2000);
     const result = await promise;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -84,7 +84,7 @@ describe('apiFetch cold-start retry', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const promise = fetchStats();
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(2000);
     const result = await promise;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -97,12 +97,12 @@ describe('apiFetch cold-start retry', () => {
 
     const promise = fetchStats();
     const assertion = expect(promise).rejects.toThrow('down');
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.advanceTimersByTimeAsync(1000);
+    // 6 retries × 2000ms each = 12 000ms total delay
+    await vi.advanceTimersByTimeAsync(13000);
     await assertion;
 
-    // Initial attempt + RETRY_ATTEMPTS (2) = 3 total.
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // Initial attempt + RETRY_ATTEMPTS (6) = 7 total.
+    expect(fetchMock).toHaveBeenCalledTimes(7);
   });
 
   it('does not retry a non-GET request', async () => {
