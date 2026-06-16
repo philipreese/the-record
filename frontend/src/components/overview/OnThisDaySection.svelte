@@ -66,7 +66,7 @@
 
 <div
   use:inView={{ once: true }}
-  class="space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
+  class="pt-30 space-y-8 transition-all duration-(--t-responsive) var(--ease-fluid) reveal-container"
   class:opacity-80={dimmed}
   role="region"
   onmouseenter={onfocusenter}
@@ -102,7 +102,7 @@
         </button>
 
         {#if isExpanded}
-          <div class="border-t border-theme-border-soft/40 px-1 py-1">
+          <div class="border-t border-theme-border-soft/40">
             {#each group.listens as entry (entry.id)}
               <ListenRow
                 {entry}

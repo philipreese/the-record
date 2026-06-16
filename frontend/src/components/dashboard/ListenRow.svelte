@@ -39,23 +39,25 @@
     role="button"
     tabindex="0"
     aria-expanded={expanded}
-    class="flex items-center gap-4 py-2 px-2 rounded cursor-pointer hover:bg-base-200/50 transition-colors group"
+    class="flex items-center gap-4 py-2 rounded cursor-pointer hover:bg-base-200/50 transition-colors group"
     class:hover:bg-transparent={expanded}
     onclick={onToggle}
     onkeydown={handleKeydown}
   >
     <div
-      class="w-36 shrink-0 text-right"
+      class="shrink-0 flex flex-col sm:flex-row sm:items-center sm:gap-1 ml-2"
       title={showAbsoluteTime ? absoluteTime(entry.unix_ts) : undefined}
     >
       <span
         class="text-xs font-mono tabular-nums text-base-content/55 group-hover:text-base-content/70 transition-colors"
       >
         {timeOnly(entry.unix_ts)}
-        {#if relativeTimeShort(entry.unix_ts)}
-          <span class="text-base-content/35"> · {relativeTimeShort(entry.unix_ts)}</span>
-        {/if}
       </span>
+      {#if relativeTimeShort(entry.unix_ts)}
+        <span class="text-xs font-mono text-base-content/35">
+          <span class="hidden sm:inline">· </span>{relativeTimeShort(entry.unix_ts)}
+        </span>
+      {/if}
     </div>
 
     <div class="flex-1 min-w-0">
@@ -64,7 +66,8 @@
     </div>
 
     {#if label}
-      <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0">{label}</span
+      <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0 mr-2"
+        >{label}</span
       >
     {/if}
   </div>
