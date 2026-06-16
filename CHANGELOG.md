@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2](https://github.com/philipreese/the-record/compare/v0.5.1...v0.5.2) (2026-06-16)
+
+
+### Documentation
+
+* **spec:** Document LOG_LEVEL env var in data-models and .env.example ([6d458d5](https://github.com/philipreese/the-record/commit/6d458d52df6a75db5b2b97d759c684999d9e8047))
+
+
+### Miscellaneous
+
+* **logging:** Replace print() with logging module in sync, db, and routes ([1928e7a](https://github.com/philipreese/the-record/commit/1928e7aee05a8c8f44486d30e10ff4db2874b184))
+
 ## [0.5.1](https://github.com/philipreese/the-record/compare/v0.5.0...v0.5.1) (2026-06-16)
 
 
