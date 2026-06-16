@@ -1,5 +1,5 @@
 from datetime import datetime, date, timezone, timedelta
-from typing import Any, List
+from typing import Any, List, Optional
 import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_
@@ -301,8 +301,10 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         day_row = conn.execute(stmt_peak).first()
         peak_day = {"date": day_row.day, "plays": day_row.cnt} if day_row else None
         
-        # E. Minutes Listened Estimate (industry average 3.5 minutes per play)
-        minutes_listened = round(total_plays * 3.5)
+        # E. Minutes Listened (true duration sum falling back to 3.5-min estimate for nulls)
+        stmt_duration = select(func.sum(func.coalesce(Listen.duration_secs, 210))).where(*filters)
+        total_seconds = conn.execute(stmt_duration).scalar() or 0
+        minutes_listened = round(total_seconds / 60)
         
         return {
             "total_plays": total_plays,
@@ -322,26 +324,55 @@ def get_recent_listens(
     Pass before_ts and before_id (from the last item of the previous page) to get the next page.
     """
     with get_engine().connect() as conn:
-        stmt = select(Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source)
+        stmt = select(
+            Listen.id,
+            Listen.artist,
+            Listen.title,
+            Listen.unix_ts,
+            Listen.source,
+            Listen.duration_secs,
+            Listen.album
+        )
         if before_ts is not None and before_id is not None:
             stmt = stmt.where(tuple_(Listen.unix_ts, Listen.id) < (before_ts, before_id))
         stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
         rows = conn.execute(stmt).all()
         return [
-            {"id": r.id, "artist": r.artist, "title": r.title, "unix_ts": r.unix_ts, "source": r.source}
+            {
+                "id": r.id,
+                "artist": r.artist,
+                "title": r.title,
+                "unix_ts": r.unix_ts,
+                "source": r.source,
+                "duration_secs": r.duration_secs,
+                "album": r.album
+            }
             for r in rows
         ]
 
+def get_track_stats(artist: str, title: str, album: Optional[str] = None) -> tuple[int, Optional[int]]:
+    """Get the all-time play count and first available non-null duration for a track."""
+    with get_engine().connect() as conn:
+        filters = [Listen.artist == artist, Listen.title == title]
+        if album is not None:
+            filters.append(Listen.album == album)
+            
+        play_count = conn.execute(
+            select(func.count(Listen.id)).where(*filters)
+        ).scalar() or 0
+        
+        duration = conn.execute(
+            select(Listen.duration_secs)
+            .where(*filters, Listen.duration_secs.isnot(None))
+            .limit(1)
+        ).scalar()
+        
+        return play_count, duration
+
 def get_track_play_count(artist: str, title: str) -> int:
     """Count all-time plays for a specific artist + title combination."""
-    with get_engine().connect() as conn:
-        result = conn.execute(
-            select(func.count(Listen.id)).where(
-                Listen.artist == artist,
-                Listen.title == title,
-            )
-        ).scalar()
-        return result or 0
+    count, _ = get_track_stats(artist, title)
+    return count
 
 def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
     """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
@@ -354,6 +385,7 @@ def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
         stmt = (
             select(
                 Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source,
+                Listen.duration_secs, Listen.album,
                 year_expr.label("year"),
             )
             .where(month_expr == month, day_expr == day)
@@ -366,7 +398,15 @@ def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
         if int(r.year) == current_year:
             continue
         groups.setdefault(str(r.year), []).append(
-            {"id": r.id, "artist": r.artist, "title": r.title, "unix_ts": r.unix_ts, "source": r.source}
+            {
+                "id": r.id,
+                "artist": r.artist,
+                "title": r.title,
+                "unix_ts": r.unix_ts,
+                "source": r.source,
+                "duration_secs": r.duration_secs,
+                "album": r.album
+            }
         )
     return [{"year": int(k), "listens": v} for k, v in groups.items()]
 

@@ -105,5 +105,26 @@ class TestSyncRace(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(results.count("already_running"), 2)
 
 
+class TestTrackStatsRoute(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_track_stats")
+    def test_track_stats_endpoint(self, mock_get_stats) -> None:
+        mock_get_stats.return_value = (5, 200)
+
+        # Call without album
+        res = self.client.get("/api/track-stats", params={"artist": "Radiohead", "title": "Creep"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {"play_count": 5, "duration_secs": 200})
+        mock_get_stats.assert_called_with(artist="Radiohead", title="Creep", album=None)
+
+        # Call with album
+        res = self.client.get("/api/track-stats", params={"artist": "Radiohead", "title": "Creep", "album": "Pablo Honey"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {"play_count": 5, "duration_secs": 200})
+        mock_get_stats.assert_called_with(artist="Radiohead", title="Creep", album="Pablo Honey")
+
+
 if __name__ == "__main__":
     unittest.main()

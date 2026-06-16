@@ -364,6 +364,10 @@ export interface components {
             unix_ts: number;
             /** Source */
             source: string;
+            /** Duration Secs */
+            duration_secs?: number | null;
+            /** Album */
+            album?: string | null;
         };
         /** MonthlyTrendInfo */
         MonthlyTrendInfo: {
@@ -803,6 +807,8 @@ export interface operations {
                 artist: string;
                 /** @description Track title */
                 title: string;
+                /** @description Optional album name to scope the count */
+                album?: string | null;
             };
             header?: never;
             path?: never;

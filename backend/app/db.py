@@ -24,6 +24,8 @@ class Listen(Base):
     title = Column(String, nullable=False)
     unix_ts = Column(Integer, nullable=False)
     source = Column(String, nullable=False)
+    duration_secs = Column(Integer, nullable=True)
+    album = Column(String, nullable=True)
 
     __table_args__ = (
         Index("idx_listens_unix_ts", "unix_ts"),

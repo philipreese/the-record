@@ -216,8 +216,15 @@ export async function fetchLastPlayed(): Promise<PlayingNowInfo> {
   }
 }
 
-export async function fetchTrackStats(artist: string, title: string): Promise<TrackStatsInfo> {
+export async function fetchTrackStats(
+  artist: string,
+  title: string,
+  album?: string | null,
+): Promise<TrackStatsInfo> {
   const params = new URLSearchParams({ artist, title });
+  if (album) {
+    params.set('album', album);
+  }
   const res = await apiFetch(`/api/track-stats?${params}`);
   if (!res.ok) throw new Error('Failed to fetch track stats');
   return res.json();
