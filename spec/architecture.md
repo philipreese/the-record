@@ -97,7 +97,7 @@ The frontend stores the token in `localStorage` (`syncToken`) via `AppCache.setS
 
 Duplicate key: `(unix_ts, artist.lower(), title.lower())`. Applied twice:
 1. **In-flight** — in-memory key set built before each pass; new entries are checked before inserting
-2. **Post-sync** — `deduplicate_listens()` in `repository.py` runs after every sync to catch cross-session duplicates (e.g. same scrobble from two apps)
+2. **Post-sync** — `deduplicate_listens()` in `repository.py` runs after every sync to catch cross-session duplicates (e.g. same scrobble from two apps); uses `LOWER()` in the JOIN so rows differing only in casing are correctly merged
 
 ### Retry / rate limiting
 

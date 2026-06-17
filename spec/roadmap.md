@@ -57,7 +57,7 @@ The current sync is additive-only — deletes on ListenBrainz are never reflecte
 - Settings UI: "Sync Deletions" button alongside the existing sync controls
 
 **Constraints (must be in the issue when created):**
-- The diff must use the same canonical listen identity as the dedup logic — `(unix_ts, artist.lower(), title.lower())` — or reconcile will mass-delete rows that differ only in casing. (Note: the post-sync dedup SQL is currently case-*sensitive* while the in-flight key is case-*insensitive*; unify before building deletion logic on top.)
+- The diff must use the same canonical listen identity as the dedup logic — `(unix_ts, artist.lower(), title.lower())` — or reconcile will mass-delete rows that differ only in casing. (The post-sync dedup SQL and data casing were unified in #105 / migration 005, so this prerequisite is satisfied.)
 - Reconcile must scope to `source LIKE 'listenbrainz%'` rows — imported YouTube/Takeout listens don't exist on LB and would otherwise be deleted wholesale.
 
 ### Dynamic Narrative Engine
