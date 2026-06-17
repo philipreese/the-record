@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/philipreese/the-record/compare/v0.10.0...v0.11.0) (2026-06-17)
+
+
+### Features
+
+* **wrapped:** Add On-Repeat Peak slide — max same-track plays in a day ([14eb757](https://github.com/philipreese/the-record/commit/14eb7572e0b49b519baaa32443383380a4a0c391))
+
+
+### Bug Fixes
+
+* **wrapped:** Case-insensitive GROUP BY for on-repeat peak ([60330b1](https://github.com/philipreese/the-record/commit/60330b1215ee0b6f5b6d115434bc2a359ecc18ee))
+
+
+### Documentation
+
+* **spec:** Mark export and on-repeat badges as shipped in Phase 2 ([e84dcc7](https://github.com/philipreese/the-record/commit/e84dcc77bcbcfd01a0df2792e214944b2fea6544))
+
 ## [0.10.0](https://github.com/philipreese/the-record/compare/v0.9.0...v0.10.0) (2026-06-17)
 
 
