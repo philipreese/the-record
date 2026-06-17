@@ -2,6 +2,7 @@ import sys
 import os
 import unittest
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
 # Adjust path to import backend modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -185,6 +186,129 @@ class TestDatabaseQueries(unittest.TestCase):
         play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album B")
         self.assertEqual(play_count, 1)  # 0 Album B + 1 null-album
         self.assertIsNone(duration)
+
+class TestDeduplicateCaseInsensitive(unittest.TestCase):
+    """Verify that deduplicate_listens() merges rows differing only in casing."""
+
+    def setUp(self):
+        self.test_db_path = "test_dedup_casing.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+        db.init_db()
+        self.conn = db.get_db_connection()
+        self.cursor = self.conn.cursor()
+        self.cursor.execute("DELETE FROM listens")
+        self.conn.commit()
+
+    def tearDown(self):
+        self.conn.close()
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_merges_rows_differing_only_in_casing_within_60s(self):
+        # Two rows: same track, casing differs, timestamps within 60 seconds.
+        self.cursor.executemany(
+            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+            [
+                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
+                ("Boards of Canada", "The Past is Dead", 1_000_030, "listenbrainz_sync"),
+            ],
+        )
+        self.conn.commit()
+
+        deleted = database.deduplicate_listens()
+        self.assertEqual(deleted, 1)
+
+        self.cursor.execute("SELECT COUNT(*) FROM listens")
+        self.assertEqual(self.cursor.fetchone()[0], 1)
+
+    def test_does_not_merge_rows_beyond_60s(self):
+        self.cursor.executemany(
+            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+            [
+                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
+                ("Boards of Canada", "The Past is Dead", 1_000_061, "listenbrainz_sync"),
+            ],
+        )
+        self.conn.commit()
+
+        deleted = database.deduplicate_listens()
+        self.assertEqual(deleted, 0)
+
+        self.cursor.execute("SELECT COUNT(*) FROM listens")
+        self.assertEqual(self.cursor.fetchone()[0], 2)
+
+
+class TestCasingNormalisationMigration(unittest.TestCase):
+    """Integration test for migration 005: verify LB casing wins and duplicates are removed."""
+
+    def setUp(self):
+        from alembic.config import Config
+        from alembic import command
+
+        self.test_db_path = "test_migration_005.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+
+        backend_dir = Path(db.APP_DIR).parent
+        cfg = Config(str(backend_dir / "alembic.ini"))
+        cfg.set_main_option("script_location", str(backend_dir / "migrations"))
+        command.upgrade(cfg, "004")
+
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.executemany(
+            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+            [
+                # Casing conflict: YT import vs LB sync for the same listen
+                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
+                ("Boards of Canada", "The Past is Dead", 1_000_000, "listenbrainz_sync"),
+                # True duplicate (same casing, same listen) — should also be removed
+                ("Boards of Canada", "Roygbiv", 2_000_000, "listenbrainz_sync"),
+                ("Boards of Canada", "Roygbiv", 2_000_000, "listenbrainz_sync"),
+                # Unique listen — untouched
+                ("Boards of Canada", "Aquarius", 3_000_000, "listenbrainz_sync"),
+            ],
+        )
+        conn.commit()
+        conn.close()
+
+        self.cfg = cfg
+
+    def tearDown(self):
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_lb_casing_wins_and_duplicates_removed(self):
+        from alembic import command
+
+        command.upgrade(self.cfg, "005")
+
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM listens")
+        self.assertEqual(cursor.fetchone()[0], 3)
+
+        cursor.execute("SELECT title FROM listens WHERE unix_ts = 1000000")
+        self.assertEqual(cursor.fetchone()[0], "The Past is Dead")
+
+        conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()

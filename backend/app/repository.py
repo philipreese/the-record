@@ -477,13 +477,13 @@ def deduplicate_listens() -> int:
     """
     with get_engine().begin() as conn:
         stmt = """
-            DELETE FROM listens 
+            DELETE FROM listens
             WHERE id IN (
-                SELECT b.id 
-                FROM listens a 
-                JOIN listens b ON a.artist = b.artist 
-                              AND a.title = b.title 
-                              AND a.id < b.id 
+                SELECT b.id
+                FROM listens a
+                JOIN listens b ON LOWER(a.artist) = LOWER(b.artist)
+                              AND LOWER(a.title)  = LOWER(b.title)
+                              AND a.id < b.id
                               AND abs(a.unix_ts - b.unix_ts) <= 60
             )
         """
