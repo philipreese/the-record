@@ -1,9 +1,9 @@
-import type { components, paths } from './api-types';
+import type { components, paths, operations } from './api-types';
 
 type _TopArtistsQuery = NonNullable<paths['/api/top-artists']['get']['parameters']['query']>;
 export type TimeRange = NonNullable<_TopArtistsQuery['range']>;
 
-type _SyncQuery = NonNullable<paths['/api/sync']['post']['parameters']['query']>;
+type _SyncQuery = NonNullable<operations['start_sync_api_sync_post']['parameters']['query']>;
 export type SyncMode = NonNullable<_SyncQuery['mode']>;
 
 type _WrappedQuery = NonNullable<paths['/api/wrapped']['get']['parameters']['query']>;
@@ -162,10 +162,11 @@ export async function generateWrapped(
   return res.json();
 }
 
-export async function triggerSync(forceFull: boolean): Promise<SyncStartInfo> {
-  const url = forceFull ? '/api/sync?mode=full' : '/api/sync';
+export async function triggerSync(mode: SyncMode, days?: number): Promise<SyncStartInfo> {
+  const params = new URLSearchParams({ mode });
+  if (mode === 'reconcile' && days !== undefined) params.set('days', String(days));
   const token = localStorage.getItem('syncToken') ?? '';
-  const res = await apiFetch(url, {
+  const res = await apiFetch(`/api/sync?${params}`, {
     method: 'POST',
     headers: { 'X-Sync-Token': token },
   });

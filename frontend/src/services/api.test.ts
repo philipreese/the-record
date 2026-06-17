@@ -27,7 +27,7 @@ describe('triggerSync', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await triggerSync(false);
+    await triggerSync('normal');
 
     const [, options] = fetchMock.mock.calls[0];
     expect(options.method).toBe('POST');
@@ -43,7 +43,7 @@ describe('triggerSync', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await triggerSync(true);
+    await triggerSync('full');
 
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toContain('/api/sync?mode=full');
@@ -109,7 +109,7 @@ describe('apiFetch cold-start retry', () => {
     const fetchMock = vi.fn().mockRejectedValue(new TypeError('down'));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(triggerSync(false)).rejects.toThrow();
+    await expect(triggerSync('normal')).rejects.toThrow();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

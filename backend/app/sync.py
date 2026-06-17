@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Optional, Any
 
@@ -8,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 import httpx
 
-from sqlalchemy import func
-from app.db import get_session, Listen
+from sqlalchemy import func, text
+from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
@@ -21,6 +22,7 @@ class SyncState:
     mode: str = ""
     batches_fetched: int = 0
     synced_count: int = 0
+    deleted_count: int = 0
     lb_total: int = 0
     local_total: int = 0
     error: Optional[str] = None
@@ -347,6 +349,132 @@ async def _run_sync(mode: str) -> None:
     except Exception as e:
         logger.exception("Sync crashed")
         _sync_state.error = f"Sync crashed: {e}"
+    finally:
+        _sync_state.running = False
+        _sync_state.finished = True
+
+
+async def _run_reconcile(days: int) -> None:
+    """
+    Range-scoped reconcile: fetch all ListenBrainz listens within the last
+    `days` days, diff against local LB-sourced rows in the same window, and
+    delete any local rows that no longer exist on LB.
+
+    Only rows with source LIKE 'listenbrainz%' are considered — YouTube Music
+    and other imported listens are never deleted by reconcile.
+
+    Identity key: (unix_ts, artist.lower(), title.lower()) — consistent with
+    the in-flight dedup key used during normal/full syncs.
+    """
+    if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
+        _sync_state.error = "Credentials missing. Configure LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN."
+        _sync_state.running = False
+        _sync_state.finished = True
+        return
+
+    headers = {
+        "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
+        "User-Agent": "the-record-dashboard-sync/1.0",
+    }
+    _timeout = httpx.Timeout(60.0)
+    window_start = int(time.time()) - days * 86400
+
+    try:
+        # 1. Load local LB rows within the window
+        session = get_session()
+        try:
+            rows = (
+                session.query(Listen.id, Listen.unix_ts, Listen.artist, Listen.title)
+                .filter(Listen.source.like("listenbrainz%"))
+                .filter(Listen.unix_ts >= window_start)
+                .all()
+            )
+        finally:
+            session.close()
+
+        local_keys: dict[tuple[int, str, str], int] = {
+            (r.unix_ts, r.artist.lower(), r.title.lower()): r.id for r in rows
+        }
+        _sync_state.local_total = len(local_keys)
+        logger.info("Reconcile: %d local LB rows in the last %d-day window", len(local_keys), days)
+
+        # 2. Fetch all LB listens in the same window
+        lb_keys: set[tuple[int, str, str]] = set()
+        batch_size = 1000
+        current_max_ts: Optional[int] = None
+
+        async with httpx.AsyncClient(timeout=_timeout) as client:
+            while True:
+                url = (
+                    f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}"
+                    f"/listens?count={batch_size}"
+                )
+                if current_max_ts:
+                    url += f"&max_ts={current_max_ts}"
+
+                for attempt in range(5):
+                    try:
+                        response = await client.get(url, headers=headers)
+                        if response.status_code == 429:
+                            reset_in = response.headers.get("X-RateLimit-Reset-In", "5")
+                            _sync_state.error = f"Rate-limited by ListenBrainz. Retry in {reset_in}s."
+                            return
+                        response.raise_for_status()
+                        listens = response.json().get("payload", {}).get("listens", [])
+                        break
+                    except (httpx.RemoteProtocolError, httpx.ReadTimeout, httpx.ConnectError) as e:
+                        if attempt < 4:
+                            wait = [5, 15, 30, 60, 120][attempt]
+                            logger.warning("Transient error (%s), retrying in %ds", e, wait)
+                            await asyncio.sleep(wait)
+                        else:
+                            _sync_state.error = f"ListenBrainz API unreachable after 5 attempts: {e}"
+                            return
+                    except Exception as e:
+                        _sync_state.error = f"Unexpected error: {e}"
+                        return
+                else:
+                    return
+
+                _sync_state.batches_fetched += 1
+                reached_window_start = False
+
+                for listen in listens:
+                    ts = listen.get("listened_at")
+                    if ts is None:
+                        continue
+                    if ts < window_start:
+                        reached_window_start = True
+                        break
+                    meta = listen.get("track_metadata", {})
+                    artist = meta.get("artist_name")
+                    title = meta.get("track_name")
+                    if artist and title:
+                        lb_keys.add((ts, artist.lower(), title.lower()))
+
+                if reached_window_start or len(listens) < batch_size:
+                    break
+                current_max_ts = listens[-1].get("listened_at")
+                await asyncio.sleep(2)
+
+        logger.info("Reconcile: %d LB listens fetched for the window", len(lb_keys))
+
+        # 3. Diff and delete surplus local rows
+        surplus_ids = [row_id for key, row_id in local_keys.items() if key not in lb_keys]
+        if surplus_ids:
+            with get_engine().begin() as conn:
+                conn.execute(
+                    text("DELETE FROM listens WHERE id IN :ids"),
+                    {"ids": tuple(surplus_ids)},
+                )
+            _sync_state.deleted_count = len(surplus_ids)
+            logger.info("Reconcile: deleted %d surplus local row(s)", len(surplus_ids))
+        else:
+            logger.info("Reconcile: no surplus rows found — archive matches ListenBrainz")
+
+    except Exception as e:
+        logger.exception("Reconcile crashed")
+        _sync_state.error = f"Reconcile crashed: {e}"
     finally:
         _sync_state.running = False
         _sync_state.finished = True

@@ -237,7 +237,7 @@
           <button
             class="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded border border-theme-border-soft text-xs font-mono text-theme-muted hover:text-theme-accent hover:border-theme-accent transition-colors cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
             disabled={appCache.isSyncing}
-            onclick={() => appCache.runSync(false)}
+            onclick={() => appCache.runSync('normal', false)}
           >
             <Icon name="sync" size="w-3.5 h-3.5" class={appCache.isSyncing ? 'animate-spin' : ''} />
             {appCache.isSyncing ? 'syncing…' : 'sync now'}
