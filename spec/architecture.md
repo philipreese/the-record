@@ -95,9 +95,11 @@ The frontend stores the token in `localStorage` (`syncToken`) via `AppCache.setS
 
 ### Deduplication
 
-Duplicate key: `(unix_ts, artist.lower(), title.lower())`. Applied twice:
+Duplicate key: `(unix_ts, artist.lower(), title.lower())`. Applied twice in **normal** sync:
 1. **In-flight** — in-memory key set built before each pass; new entries are checked before inserting
-2. **Post-sync** — `deduplicate_listens()` in `repository.py` runs after every sync to catch cross-session duplicates (e.g. same scrobble from two apps); uses `LOWER()` in the JOIN so rows differing only in casing are correctly merged
+2. **Post-sync** — `deduplicate_listens()` in `repository.py` runs after normal sync (when rows were inserted) to catch cross-session duplicates (e.g. same scrobble from two apps); uses `LOWER()` in the JOIN so rows differing only in casing are correctly merged
+
+Mirror sync does **not** run `deduplicate_listens()` — LB is the authority on which listens are valid. Exact-key duplicates in the local DB are instead handled during the surplus-deletion pass: all IDs per key are tracked, the lowest id is kept, and extras are deleted.
 
 ### Retry / rate limiting
 
