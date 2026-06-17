@@ -162,9 +162,8 @@ export async function generateWrapped(
   return res.json();
 }
 
-export async function triggerSync(mode: SyncMode, days?: number): Promise<SyncStartInfo> {
+export async function triggerSync(mode: SyncMode): Promise<SyncStartInfo> {
   const params = new URLSearchParams({ mode });
-  if (mode === 'reconcile' && days !== undefined) params.set('days', String(days));
   const token = localStorage.getItem('syncToken') ?? '';
   const res = await apiFetch(`/api/sync?${params}`, {
     method: 'POST',
