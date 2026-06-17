@@ -410,6 +410,37 @@ def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
         )
     return [{"year": int(k), "listens": v} for k, v in groups.items()]
 
+def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
+    """Return all listen rows (or a time-filtered subset) sorted by unix_ts ascending."""
+    with get_engine().connect() as conn:
+        stmt = select(
+            Listen.id,
+            Listen.artist,
+            Listen.title,
+            Listen.album,
+            Listen.unix_ts,
+            Listen.source,
+            Listen.duration_secs,
+        ).order_by(Listen.unix_ts)
+        f = get_time_range_filter(range_days)
+        if f is not None:
+            stmt = stmt.where(f)
+        rows = conn.execute(stmt).all()
+    return [
+        {
+            "id": r.id,
+            "artist": r.artist,
+            "title": r.title,
+            "album": r.album,
+            "unix_ts": r.unix_ts,
+            "datetime_utc": datetime.fromtimestamp(r.unix_ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source": r.source,
+            "duration_secs": r.duration_secs,
+        }
+        for r in rows
+    ]
+
+
 def deduplicate_listens() -> int:
     """
     Remove duplicate listens where the same artist and title are scrobbled
