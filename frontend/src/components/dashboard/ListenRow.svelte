@@ -47,7 +47,7 @@
     onkeydown={handleKeydown}
   >
     <div
-      class="shrink-0 flex flex-col sm:flex-row sm:items-center sm:gap-1 ml-2"
+      class="shrink-0 sm:w-36 flex flex-col sm:flex-row sm:items-center sm:gap-1 ml-2"
       title={showAbsoluteTime ? absoluteTime(entry.unix_ts) : undefined}
     >
       <span

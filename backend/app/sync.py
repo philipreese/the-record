@@ -29,6 +29,23 @@ class SyncState:
 _sync_state = SyncState()
 _sync_lock = asyncio.Lock()
 
+def _parse_duration(additional_info: dict) -> Optional[int]:
+    """Return duration in whole seconds from LB additional_info.
+    LB sends either duration_ms (milliseconds) or duration (seconds)."""
+    raw_ms = additional_info.get("duration_ms")
+    if raw_ms is not None:
+        try:
+            return int(float(raw_ms) / 1000)
+        except (ValueError, TypeError):
+            pass
+    raw_s = additional_info.get("duration")
+    if raw_s is not None:
+        try:
+            return int(float(raw_s))
+        except (ValueError, TypeError):
+            pass
+    return None
+
 async def _run_sync(mode: str) -> None:
     """
     Long-running async sync task. Runs in the background so the HTTP response
@@ -176,13 +193,7 @@ async def _run_sync(mode: str) -> None:
                             key = (ts, artist.lower(), title.lower())
                             if key not in local_keys:
                                 additional_info = meta.get("additional_info") or {}
-                                duration_ms = additional_info.get("duration_ms")
-                                duration_secs = None
-                                if duration_ms is not None:
-                                    try:
-                                        duration_secs = int(float(duration_ms) / 1000)
-                                    except (ValueError, TypeError):
-                                        pass
+                                duration_secs = _parse_duration(additional_info)
                                 album = meta.get("release_name")
                                 if album and isinstance(album, str):
                                     album = album.strip()
@@ -232,13 +243,7 @@ async def _run_sync(mode: str) -> None:
                             key = (ts, artist.lower(), title.lower())
                             if key not in local_keys:
                                 additional_info = meta.get("additional_info") or {}
-                                duration_ms = additional_info.get("duration_ms")
-                                duration_secs = None
-                                if duration_ms is not None:
-                                    try:
-                                        duration_secs = int(float(duration_ms) / 1000)
-                                    except (ValueError, TypeError):
-                                        pass
+                                duration_secs = _parse_duration(additional_info)
                                 album = meta.get("release_name")
                                 if album and isinstance(album, str):
                                     album = album.strip()
@@ -296,13 +301,7 @@ async def _run_sync(mode: str) -> None:
                                 key = (ts, artist.lower(), title.lower())
                                 if key not in local_keys:
                                     additional_info = meta.get("additional_info") or {}
-                                    duration_ms = additional_info.get("duration_ms")
-                                    duration_secs = None
-                                    if duration_ms is not None:
-                                        try:
-                                            duration_secs = int(float(duration_ms) / 1000)
-                                        except (ValueError, TypeError):
-                                            pass
+                                    duration_secs = _parse_duration(additional_info)
                                     album = meta.get("release_name")
                                     if album and isinstance(album, str):
                                         album = album.strip()

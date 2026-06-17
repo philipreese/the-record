@@ -186,19 +186,26 @@ async def _search_cover_art_by_text(
             params={
                 "query": f'recording:"{title}" AND artistname:"{artist}"',
                 "fmt": "json",
-                "limit": "1",
+                "limit": "5",
             },
             headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(4.0),
+            timeout=httpx.Timeout(8.0),
         )
-        if r.status_code == 200:
-            recordings = r.json().get("recordings", [])
-            if recordings:
-                releases = recordings[0].get("releases", [])
-                if releases:
-                    return await _get_caa_direct_url(client, releases[0]["id"])
+        if r.status_code != 200:
+            logger.warning("MB text-search returned %d for %r / %r", r.status_code, artist, title)
+            return None
+        recordings = r.json().get("recordings", [])
+        if not recordings:
+            logger.warning("MB text-search found no recordings for %r / %r", artist, title)
+            return None
+        for recording in recordings:
+            for release in recording.get("releases", []):
+                url = await _get_caa_direct_url(client, release["id"])
+                if url:
+                    return url
+        logger.warning("MB text-search found recordings for %r / %r but no CAA art in any release", artist, title)
     except Exception:
-        logger.debug("MB text-search cover art lookup failed for %r / %r", artist, title, exc_info=True)
+        logger.warning("MB text-search cover art lookup failed for %r / %r", artist, title, exc_info=True)
     return None
 
 
@@ -219,10 +226,12 @@ async def _resolve_cover_art(
     cache_key = _art_key(artist, title)
     if cache_key in _cover_art_cache:
         return _cover_art_cache[cache_key]
-    if _cover_art_attempts.get(cache_key, 0) >= _MAX_ART_ATTEMPTS:
+    attempts = _cover_art_attempts.get(cache_key, 0)
+    if attempts >= _MAX_ART_ATTEMPTS:
+        logger.debug("Cover art suppressed for %r / %r after %d failed attempts", artist, title, attempts)
         return None
 
-    _cover_art_attempts[cache_key] = _cover_art_attempts.get(cache_key, 0) + 1
+    _cover_art_attempts[cache_key] = attempts + 1
 
     # Tier 1: release MBID (most specific)
     mbid = release_mbid
@@ -240,6 +249,11 @@ async def _resolve_cover_art(
 
     if url:
         _cover_art_cache[cache_key] = url
+    else:
+        logger.warning(
+            "Cover art resolution failed for %r / %r (attempt %d/%d); release_mbid=%s recording_mbid=%s",
+            artist, title, attempts + 1, _MAX_ART_ATTEMPTS, release_mbid, recording_mbid,
+        )
     return url
 
 
@@ -289,10 +303,10 @@ async def get_playing_now() -> Any:
                     if lp_res.status_code == 200:
                         lp_listens = lp_res.json().get("payload", {}).get("listens", [])
                         if lp_listens:
-                            ai = lp_listens[0].get("track_metadata", {}).get("additional_info", {})
-                            lp_release_mbid = ai.get("release_mbid")
-                            lp_recording_mbid = ai.get("recording_mbid")
-                            lp_release_group_mbid = ai.get("release_group_mbid")
+                            lp_mm = lp_listens[0].get("track_metadata", {}).get("mbid_mapping", {})
+                            lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
+                            lp_recording_mbid = lp_mm.get("recording_mbid")
+                            lp_release_group_mbid = lp_mm.get("release_group_mbid")
                 except Exception:
                     logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
                 art = await _resolve_cover_art(
@@ -310,10 +324,10 @@ async def get_playing_now() -> Any:
             artist = meta.get("artist_name")
             title = meta.get("track_name")
             release = meta.get("release_name")
-            additional_info = meta.get("additional_info", {})
-            release_mbid = additional_info.get("release_mbid")
-            recording_mbid = additional_info.get("recording_mbid")
-            release_group_mbid = additional_info.get("release_group_mbid")
+            mbid_mapping = meta.get("mbid_mapping", {})
+            release_mbid = mbid_mapping.get("caa_release_mbid") or mbid_mapping.get("release_mbid")
+            recording_mbid = mbid_mapping.get("recording_mbid")
+            release_group_mbid = mbid_mapping.get("release_group_mbid")
 
             # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction.
             cover_art_url: Optional[str] = None
@@ -329,8 +343,8 @@ async def get_playing_now() -> Any:
                 release=release,
                 cover_art_url=cover_art_url,
             )
-    except Exception:
-        logger.warning("LB playing-now request failed; falling back to last DB listen")
+    except Exception as e:
+        logger.warning("LB playing-now request failed (%s: %s); falling back to last DB listen", type(e).__name__, e)
         rows = repo.get_recent_listens(limit=1)
         if not rows:
             return PlayingNowResponse(is_playing=False)
