@@ -150,14 +150,14 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(play_count, 3)
         self.assertEqual(duration, 180)  # first non-null duration
 
-        # With album parameter matching Album A
+        # With album parameter: includes null-album rows (unknown album ≠ different song)
         play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album A")
-        self.assertEqual(play_count, 2)
+        self.assertEqual(play_count, 3)  # 2 Album A + 1 null-album
         self.assertEqual(duration, 180)
 
-        # With album parameter matching Album B
+        # Album B has no exact matches, but null-album row is still included
         play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album B")
-        self.assertEqual(play_count, 0)
+        self.assertEqual(play_count, 1)  # 0 Album B + 1 null-album
         self.assertIsNone(duration)
 
 if __name__ == "__main__":
