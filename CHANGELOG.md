@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/philipreese/the-record/compare/v0.8.1...v0.9.0) (2026-06-17)
+
+
+### Features
+
+* **backfill:** Add endpoint to backfill duration_secs and album for historical listens ([c4ad22e](https://github.com/philipreese/the-record/commit/c4ad22e87706680995f629d2967f36643b306e12))
+
+
+### Bug Fixes
+
+* **db:** Correct play count with case-insensitive matching and null-album inclusion ([5cd2370](https://github.com/philipreese/the-record/commit/5cd2370b361149712cdca891939bbec0b473430b))
+
+
+### Documentation
+
+* **spec:** Update data-models and architecture to reflect shipped album/duration fields ([97ee50f](https://github.com/philipreese/the-record/commit/97ee50faea4b063eb26a823a917a03675df93e96))
+
 ## [0.8.1](https://github.com/philipreese/the-record/compare/v0.8.0...v0.8.1) (2026-06-17)
 
 
