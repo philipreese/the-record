@@ -227,7 +227,9 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         self.assertEqual(deleted, 1)
 
         self.cursor.execute("SELECT COUNT(*) FROM listens")
-        self.assertEqual(self.cursor.fetchone()[0], 1)
+        row = self.cursor.fetchone()
+        assert row is not None
+        self.assertEqual(row[0], 1)
 
     def test_does_not_merge_rows_beyond_60s(self):
         self.cursor.executemany(
@@ -243,7 +245,9 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         self.assertEqual(deleted, 0)
 
         self.cursor.execute("SELECT COUNT(*) FROM listens")
-        self.assertEqual(self.cursor.fetchone()[0], 2)
+        row = self.cursor.fetchone()
+        assert row is not None
+        self.assertEqual(row[0], 2)
 
 
 class TestCasingNormalisationMigration(unittest.TestCase):
@@ -302,10 +306,14 @@ class TestCasingNormalisationMigration(unittest.TestCase):
         cursor = conn.cursor()
 
         cursor.execute("SELECT COUNT(*) FROM listens")
-        self.assertEqual(cursor.fetchone()[0], 3)
+        count_row = cursor.fetchone()
+        assert count_row is not None
+        self.assertEqual(count_row[0], 3)
 
         cursor.execute("SELECT title FROM listens WHERE unix_ts = 1000000")
-        self.assertEqual(cursor.fetchone()[0], "The Past is Dead")
+        title_row = cursor.fetchone()
+        assert title_row is not None
+        self.assertEqual(title_row[0], "The Past is Dead")
 
         conn.close()
 
