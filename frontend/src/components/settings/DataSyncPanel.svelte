@@ -1,8 +1,33 @@
 <script lang="ts">
   import { appCache } from '../../services/store.svelte';
   import Icon from '../layout/Icon.svelte';
+  import SelectDropdown from '../layout/SelectDropdown.svelte';
 
   let tokenInput = $state(appCache.syncToken);
+
+  let exportFormat = $state<'csv' | 'json'>('csv');
+  let exportRange = $state('all');
+
+  const formatOptions: { value: 'csv' | 'json'; label: string }[] = [
+    { value: 'csv', label: 'CSV' },
+    { value: 'json', label: 'JSON' },
+  ];
+
+  const rangeOptions: { value: string; label: string }[] = [
+    { value: 'all', label: 'All time' },
+    { value: '365', label: '1 year' },
+    { value: '90', label: '90 days' },
+    { value: '30', label: '30 days' },
+  ];
+
+  const apiBase = import.meta.env.VITE_API_BASE || '';
+
+  function triggerExport() {
+    const url = `${apiBase}/api/export?format=${exportFormat}&range=${exportRange}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.click();
+  }
 
   function saveToken() {
     appCache.setSyncToken(tokenInput);
@@ -243,5 +268,37 @@
         Save a sync token above to enable archive synchronization controls.
       </p>
     {/if}
+  </div>
+
+  <!-- Export Section -->
+  <div class="space-y-6">
+    <div>
+      <h3 class="editorial-text-h2 pb-2 border-b">Export Archive</h3>
+      <p class="text-base font-light text-theme-muted mt-2 leading-relaxed">
+        Download your full listening history as a CSV or JSON file for backup or offline analysis.
+      </p>
+    </div>
+
+    <div class="memory-surface-nested">
+      <div class="flex flex-wrap items-end gap-6">
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-mono uppercase tracking-widest text-theme-muted">Format</span>
+          <SelectDropdown bind:value={exportFormat} options={formatOptions} />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-mono uppercase tracking-widest text-theme-muted">Range</span>
+          <SelectDropdown bind:value={exportRange} options={rangeOptions} />
+        </div>
+
+        <button
+          class="btn btn-primary btn-md shadow-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
+          onclick={triggerExport}
+        >
+          <Icon name="download" size="w-4 h-4" />
+          Download {exportFormat.toUpperCase()}
+        </button>
+      </div>
+    </div>
   </div>
 </div>
