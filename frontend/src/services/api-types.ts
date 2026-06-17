@@ -325,6 +325,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Listens
+         * @description Export listening history as CSV or JSON download.
+         */
+        get: operations["export_listens_api_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -455,6 +475,8 @@ export interface components {
             batches_fetched: number;
             /** Synced Count */
             synced_count: number;
+            /** Deleted Count */
+            deleted_count: number;
             /** Lb Total */
             lb_total: number;
             /** Local Total */
@@ -891,8 +913,10 @@ export interface operations {
     start_sync_api_sync_post: {
         parameters: {
             query?: {
-                /** @description Sync mode: 'normal' or 'full' */
-                mode?: "normal" | "full";
+                /** @description Sync mode. 'normal': fast two-pass additive sync — pulls new scrobbles since last sync, then backfills any gaps. Safe to run daily. 'full': scans your entire ListenBrainz history from newest to oldest and inserts anything missing locally. Slow but thorough. 'reconcile': compares a date window against ListenBrainz and DELETES local LB-sourced rows that no longer exist there. Use 'reconcile' intentionally — it removes data. Non-LB imports (YouTube Music etc.) are never touched. */
+                mode?: "normal" | "full" | "reconcile";
+                /** @description Window size in days for 'reconcile' mode. Ignored for 'normal' and 'full'. */
+                days?: number;
             };
             header?: {
                 "x-sync-token"?: string | null;
@@ -958,6 +982,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OnThisDayGroup"][];
+                };
+            };
+        };
+    };
+    export_listens_api_export_get: {
+        parameters: {
+            query?: {
+                format?: "csv" | "json";
+                range?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

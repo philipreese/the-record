@@ -373,7 +373,22 @@ def get_last_played() -> Any:
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(
     background_tasks: BackgroundTasks,
-    mode: Literal["normal", "full"] = Query("normal", description="Sync mode: 'normal' or 'full'"),
+    mode: Literal["normal", "full", "reconcile"] = Query(
+        "normal",
+        description=(
+            "Sync mode. "
+            "'normal': fast two-pass additive sync — pulls new scrobbles since last sync, then backfills any gaps. Safe to run daily. "
+            "'full': scans your entire ListenBrainz history from newest to oldest and inserts anything missing locally. Slow but thorough. "
+            "'reconcile': compares a date window against ListenBrainz and DELETES local LB-sourced rows that no longer exist there. "
+            "Use 'reconcile' intentionally — it removes data. Non-LB imports (YouTube Music etc.) are never touched."
+        ),
+    ),
+    days: int = Query(
+        30,
+        ge=1,
+        le=365,
+        description="Window size in days for 'reconcile' mode. Ignored for 'normal' and 'full'.",
+    ),
     x_sync_token: Optional[str] = Header(None),
 ) -> Any:
     """
@@ -397,12 +412,16 @@ async def start_sync(
         s.mode = mode
         s.batches_fetched = 0
         s.synced_count = 0
+        s.deleted_count = 0
         s.lb_total = 0
         s.local_total = 0
         s.error = None
         s.finished = False
 
-    background_tasks.add_task(sync_worker._run_sync, mode)
+    if mode == "reconcile":
+        background_tasks.add_task(sync_worker._run_reconcile, days)
+    else:
+        background_tasks.add_task(sync_worker._run_sync, mode)
     return {"status": "started", "mode": mode}
 
 @router.get("/sync/status", response_model=SyncStatusResponse)
@@ -415,6 +434,7 @@ def get_sync_status() -> Any:
         "mode": s.mode,
         "batches_fetched": s.batches_fetched,
         "synced_count": s.synced_count,
+        "deleted_count": s.deleted_count,
         "lb_total": s.lb_total,
         "local_total": s.local_total,
         "error": s.error,

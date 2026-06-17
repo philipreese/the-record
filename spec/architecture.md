@@ -65,7 +65,7 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/trends/monthly` | — | `MonthlyTrendInfo[]` |
 | GET | `/api/trends/streak` | — | `StreakStatsResponse` |
 | GET | `/api/wrapped` | `year` (required), `quarter` (Q1–Q4, optional), `month` (M1–M12, optional) | `WrappedDataResponse` |
-| POST | `/api/sync` | `mode` (normal/full, default normal); requires `X-Sync-Token` header | `SyncStartResponse` |
+| POST | `/api/sync` | `mode` (normal/full/reconcile, default normal), `days` (1–365, default 30, reconcile only); requires `X-Sync-Token` header | `SyncStartResponse` |
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
 | GET | `/api/recent` | `limit` (default 50, max 100), `before_ts`, `before_id` (cursor pagination) | `ListenEntry[]` |
 | GET | `/api/track-stats` | `artist` (required), `title` (required), `album` (optional — includes null-album rows when provided) | `TrackStatsResponse` |
@@ -88,10 +88,11 @@ The frontend stores the token in `localStorage` (`syncToken`) via `AppCache.setS
 
 ### Modes
 
-| Mode | Behavior |
-|---|---|
-| `normal` | Two-pass: Pass A fetches new scrobbles since the local watermark (forward); Pass B backfills if LB total > local count (jumpsto oldest local timestamp and scans backward) |
-| `full` | Single pass scanning all LB pages newest→oldest, deduplicating against local DB in memory |
+| Mode | Behavior | When to use |
+|---|---|---|
+| `normal` | Two-pass additive sync: Pass A fetches new scrobbles since the local watermark; Pass B backfills if LB total > local count | Daily updates |
+| `full` | Single pass scanning all LB pages newest→oldest, deduplicating against local DB in memory. Always additive. | Recovery / fresh install |
+| `reconcile` | Range-scoped diff: loads local LB-sourced rows in a `days`-day window, fetches all LB listens in the same window, then **permanently deletes** any local rows absent from LB. Only touches `source LIKE 'listenbrainz%'` rows — never removes imported data (YouTube Music, Takeout). | On-demand, after deleting listens on LB |
 
 ### Deduplication
 

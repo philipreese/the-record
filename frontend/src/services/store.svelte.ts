@@ -6,6 +6,7 @@ import {
   fetchPlayingNow,
   fetchLastPlayed,
   registerWakingListener,
+  type SyncMode,
   type StatsInfo,
   type StreakInfo,
   type ArtistInfo,
@@ -113,7 +114,7 @@ class AppCache {
           !wasPlaying || result.artist !== prev?.artist || result.title !== prev?.title;
         this.playingNow = result;
         if (trackChanged) {
-          this.runSync(false, true);
+          this.runSync('normal', true);
         }
       } else if (wasPlaying) {
         // Grace period: hold the "now playing" state through brief LB API gaps.
@@ -191,10 +192,9 @@ class AppCache {
   }
 
   // Centralized sync task runner.
-  // soft=true: only refresh recentListens after completion (used by auto track-change syncs
-  // so the rest of the page doesn't flash through loading states).
+  // soft=true: only refresh recentListens after completion (auto track-change syncs).
   // soft=false (default): full cache wipe, used for user-triggered syncs.
-  async runSync(forceFull = false, soft = false) {
+  async runSync(mode: SyncMode = 'normal', soft = false, days?: number) {
     if (this.isSyncing) return;
     this.isSyncing = true;
     this.syncError = null;
@@ -206,7 +206,7 @@ class AppCache {
     }
 
     try {
-      await triggerSync(forceFull);
+      await triggerSync(mode, days);
 
       // Poll every 2 seconds
       this.pollInterval = setInterval(async () => {
