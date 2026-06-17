@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/philipreese/the-record/compare/v0.13.0...v0.14.0) (2026-06-17)
+
+
+### Features
+
+* **journal:** Date jump control to seek to a point in listening history ([1b1327e](https://github.com/philipreese/the-record/commit/1b1327e8caee27ca8dd2b1a517e1868af712986f))
+
 ## [0.13.0](https://github.com/philipreese/the-record/compare/v0.12.0...v0.13.0) (2026-06-17)
 
 
