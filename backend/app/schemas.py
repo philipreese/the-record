@@ -50,12 +50,19 @@ class WrappedPeakDay(BaseModel):
     date: str
     plays: int
 
+class OnRepeatPeak(BaseModel):
+    artist: str
+    title: str
+    date: str    # YYYY-MM-DD
+    count: int
+
 class WrappedDataResponse(BaseModel):
     total_plays: int
     top_artist: Optional[WrappedArtist] = None
     top_track: Optional[WrappedTrack] = None
     peak_day: Optional[WrappedPeakDay] = None
     minutes_listened: int
+    on_repeat_peak: Optional[OnRepeatPeak] = None
 
 class SyncStartResponse(BaseModel):
     status: str
