@@ -10,15 +10,24 @@ class StatsSummaryResponse(BaseModel):
     top_source: str
     db_type: Optional[str] = None
     first_year: Optional[int] = None
-
 class ArtistInfo(BaseModel):
     artist: str
     play_count: int
+    rank: Optional[int] = None
+
+class TopArtistsResponse(BaseModel):
+    items: List[ArtistInfo]
+    total_count: int
 
 class TrackInfo(BaseModel):
     artist: str
     title: str
     play_count: int
+    rank: Optional[int] = None
+
+class TopTracksResponse(BaseModel):
+    items: List[TrackInfo]
+    total_count: int
 
 class ListenEntry(BaseModel):
     id: int

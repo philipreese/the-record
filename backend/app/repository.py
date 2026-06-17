@@ -77,34 +77,103 @@ def get_time_range_filter(time_range_days: str):
         return Listen.unix_ts >= cutoff
     except ValueError:
         return None
-
-def get_top_artists(time_range: str = "all", limit: int = 10) -> list[dict[str, Any]]:
-    """Retrieve top artists for a given time range."""
+def get_top_artists(
+    time_range: str = "all",
+    limit: int = 15,
+    page: int = 1,
+    search: Optional[str] = None
+) -> dict[str, Any]:
+    """Retrieve top artists with absolute rank, search filtering, pagination, and total count."""
+    offset = (page - 1) * limit
     with get_engine().connect() as conn:
-        stmt = select(Listen.artist, func.count(Listen.id).label("play_count"))
+        # Step 1: Subquery to compute absolute rank for all artists in the chosen time range
+        agg_stmt = select(
+            Listen.artist,
+            func.count(Listen.id).label("play_count"),
+            func.rank().over(order_by=desc(func.count(Listen.id))).label("rank")
+        )
+        
         filter_cond = get_time_range_filter(time_range)
         if filter_cond is not None:
-            stmt = stmt.where(filter_cond)
-        stmt = stmt.group_by(Listen.artist)\
-            .order_by(desc("play_count"))\
-            .limit(limit)
+            agg_stmt = agg_stmt.where(filter_cond)
+            
+        agg_stmt = agg_stmt.group_by(Listen.artist)
+        subq = agg_stmt.subquery()
+        
+        # Step 2: Outer select with search filtering and pagination
+        stmt = select(subq.c.artist, subq.c.play_count, subq.c.rank)
+        if search:
+            stmt = stmt.where(subq.c.artist.ilike(f"%{search}%"))
+            
+        # Count total filtered items
+        count_stmt = select(func.count()).select_from(subq)
+        if search:
+            count_stmt = count_stmt.where(subq.c.artist.ilike(f"%{search}%"))
+        total_count = conn.execute(count_stmt).scalar() or 0
+
+        stmt = stmt.order_by(subq.c.rank, subq.c.artist).limit(limit).offset(offset)
         
         rows = conn.execute(stmt).all()
-        return [{"artist": r.artist, "play_count": r.play_count} for r in rows]
+        items = [
+            {"artist": r.artist, "play_count": r.play_count, "rank": r.rank}
+            for r in rows
+        ]
+        return {"items": items, "total_count": total_count}
 
-def get_top_tracks(time_range: str = "all", limit: int = 10) -> list[dict[str, Any]]:
-    """Retrieve top tracks for a given time range."""
+def get_top_tracks(
+    time_range: str = "all",
+    limit: int = 15,
+    page: int = 1,
+    search: Optional[str] = None
+) -> dict[str, Any]:
+    """Retrieve top tracks with absolute rank, search filtering, pagination, and total count."""
+    offset = (page - 1) * limit
     with get_engine().connect() as conn:
-        stmt = select(Listen.artist, Listen.title, func.count(Listen.id).label("play_count"))
+        # Step 1: Subquery to compute absolute rank for all tracks in the chosen time range
+        agg_stmt = select(
+            Listen.artist,
+            Listen.title,
+            func.count(Listen.id).label("play_count"),
+            func.rank().over(order_by=desc(func.count(Listen.id))).label("rank")
+        )
+        
         filter_cond = get_time_range_filter(time_range)
         if filter_cond is not None:
-            stmt = stmt.where(filter_cond)
-        stmt = stmt.group_by(Listen.artist, Listen.title)\
-            .order_by(desc("play_count"))\
-            .limit(limit)
+            agg_stmt = agg_stmt.where(filter_cond)
             
+        agg_stmt = agg_stmt.group_by(Listen.artist, Listen.title)
+        subq = agg_stmt.subquery()
+        
+        # Step 2: Outer select with search filtering and pagination
+        stmt = select(subq.c.artist, subq.c.title, subq.c.play_count, subq.c.rank)
+        if search:
+            stmt = stmt.where(
+                or_(
+                    subq.c.artist.ilike(f"%{search}%"),
+                    subq.c.title.ilike(f"%{search}%")
+                )
+            )
+            
+        # Count total filtered items
+        count_stmt = select(func.count()).select_from(subq)
+        if search:
+            count_stmt = count_stmt.where(
+                or_(
+                    subq.c.artist.ilike(f"%{search}%"),
+                    subq.c.title.ilike(f"%{search}%")
+                )
+            )
+        total_count = conn.execute(count_stmt).scalar() or 0
+
+        stmt = stmt.order_by(subq.c.rank, subq.c.artist, subq.c.title).limit(limit).offset(offset)
+        
         rows = conn.execute(stmt).all()
-        return [{"artist": r.artist, "title": r.title, "play_count": r.play_count} for r in rows]
+        items = [
+            {"artist": r.artist, "title": r.title, "play_count": r.play_count, "rank": r.rank}
+            for r in rows
+        ]
+        return {"items": items, "total_count": total_count}
+
 
 def get_heatmap_data(year: int | str | None = None) -> dict[str, int]:
     """Retrieve counts of scrobbles grouped by date (YYYY-MM-DD) for a given year."""

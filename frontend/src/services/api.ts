@@ -14,6 +14,8 @@ export type StatsInfo = components['schemas']['StatsSummaryResponse'];
 export type StreakInfo = components['schemas']['StreakStatsResponse'];
 export type ArtistInfo = components['schemas']['ArtistInfo'];
 export type TrackInfo = components['schemas']['TrackInfo'];
+export type TopArtistsResponse = components['schemas']['TopArtistsResponse'];
+export type TopTracksResponse = components['schemas']['TopTracksResponse'];
 export type MonthlyTrendInfo = components['schemas']['MonthlyTrendInfo'];
 export type SyncStatusInfo = components['schemas']['SyncStatusResponse'];
 export type WrappedDataInfo = components['schemas']['WrappedDataResponse'];
@@ -130,19 +132,31 @@ export async function fetchMonthlyTrends(): Promise<MonthlyTrendInfo[]> {
   if (!res.ok) throw new Error('Failed to fetch monthly trends');
   return res.json();
 }
-
-export async function fetchTopArtists(range: TimeRange, limit: number = 15): Promise<ArtistInfo[]> {
-  const res = await apiFetch(`/api/top-artists?range=${range}&limit=${limit}`);
+export async function fetchTopArtists(
+  range: TimeRange,
+  limit: number = 15,
+  page: number = 1,
+  search?: string,
+): Promise<TopArtistsResponse> {
+  const params = new URLSearchParams({ range, limit: String(limit), page: String(page) });
+  if (search) params.set('search', search);
+  const res = await apiFetch(`/api/top-artists?${params}`);
   if (!res.ok) throw new Error('Failed to fetch top artists');
   return res.json();
 }
 
-export async function fetchTopTracks(range: TimeRange, limit: number = 15): Promise<TrackInfo[]> {
-  const res = await apiFetch(`/api/top-tracks?range=${range}&limit=${limit}`);
+export async function fetchTopTracks(
+  range: TimeRange,
+  limit: number = 15,
+  page: number = 1,
+  search?: string,
+): Promise<TopTracksResponse> {
+  const params = new URLSearchParams({ range, limit: String(limit), page: String(page) });
+  if (search) params.set('search', search);
+  const res = await apiFetch(`/api/top-tracks?${params}`);
   if (!res.ok) throw new Error('Failed to fetch top tracks');
   return res.json();
 }
-
 export async function generateWrapped(
   period: 'year' | 'quarter' | 'month',
   year: number,

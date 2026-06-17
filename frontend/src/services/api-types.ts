@@ -355,6 +355,8 @@ export interface components {
             artist: string;
             /** Play Count */
             play_count: number;
+            /** Rank */
+            rank?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -484,6 +486,20 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** TopArtistsResponse */
+        TopArtistsResponse: {
+            /** Items */
+            items: components["schemas"]["ArtistInfo"][];
+            /** Total Count */
+            total_count: number;
+        };
+        /** TopTracksResponse */
+        TopTracksResponse: {
+            /** Items */
+            items: components["schemas"]["TrackInfo"][];
+            /** Total Count */
+            total_count: number;
+        };
         /** TrackInfo */
         TrackInfo: {
             /** Artist */
@@ -492,6 +508,8 @@ export interface components {
             title: string;
             /** Play Count */
             play_count: number;
+            /** Rank */
+            rank?: number | null;
         };
         /** TrackStatsResponse */
         TrackStatsResponse: {
@@ -583,6 +601,12 @@ export interface operations {
                 range?: "30" | "90" | "365" | "all";
                 /** @description Max results to return */
                 limit?: number;
+                /** @description Filter by artist name (case-insensitive substring) */
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Page size (overrides limit if set) */
+                page_size?: number | null;
             };
             header?: never;
             path?: never;
@@ -596,7 +620,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ArtistInfo"][];
+                    "application/json": components["schemas"]["TopArtistsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -617,6 +641,12 @@ export interface operations {
                 range?: "30" | "90" | "365" | "all";
                 /** @description Max results to return */
                 limit?: number;
+                /** @description Filter by track or artist name (case-insensitive substring) */
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Page size (overrides limit if set) */
+                page_size?: number | null;
             };
             header?: never;
             path?: never;
@@ -630,7 +660,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TrackInfo"][];
+                    "application/json": components["schemas"]["TopTracksResponse"];
                 };
             };
             /** @description Validation Error */

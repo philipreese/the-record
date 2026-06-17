@@ -32,7 +32,12 @@ class AppCache {
   statsLoaded = $state(false);
 
   // Top Charts Cache (keyed by range: '30' | '90' | '365' | 'all')
-  charts = $state<Record<string, { artists: ArtistInfo[]; tracks: TrackInfo[] }>>({});
+  charts = $state<
+    Record<
+      string,
+      { artists: ArtistInfo[]; totalArtists?: number; tracks: TrackInfo[]; totalTracks?: number }
+    >
+  >({});
 
   // Wrapped/Reviews Cache (keyed by period + parameters)
   wrapped = $state<Record<string, WrappedDataInfo>>({});
