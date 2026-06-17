@@ -49,11 +49,6 @@ A small widget on the Overview showing what was playing on this exact calendar d
 
 **Backend:** `GET /api/on-this-day` returning listens grouped by year for today's month-day.
 
-### Export / Download
-(Promoted from backlog — trivially cheap, disproportionately valuable for a self-hosted data tool.)
-
-One endpoint streaming the listening history as CSV or JSON, with a download button in Settings.
-
 ### Sync Deletions
 The current sync is additive-only — deletes on ListenBrainz are never reflected locally. Add reconciliation:
 - New sync mode `reconcile` on `POST /api/sync?mode=reconcile`
@@ -157,7 +152,7 @@ These came up in planning but aren't yet scoped into a phase.
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Listening Eras**                  | Auto-segment history into named chapters by detecting shifts in the dominant-artist distribution (e.g. month-over-month cosine distance on top-10 artist vectors). Rendered as labeled record sides: *"Side A: The Boards of Canada Winter (Nov 2023 – Feb 2024)."* The feature-sized version of the narrative engine. |
 | **Gap Archaeology**                 | The heatmap shows presence; silence is data too. Detect multi-day gaps, render them as labeled lacunae ("14 days of silence — June 2024"), let the user annotate them ("moved apartments"). First user-authored data in the system — previews the multi-tenant model. |
-| **On-Repeat Badges**                | Max same-track plays in a single day, all-time and per Wrapped period. "*Motion Sickness* — 19 plays on Oct 12, 2024." One `GROUP BY date, artist, title` query.                                  |
+| ~~**On-Repeat Badges**~~            | ~~Max same-track plays in a single day, all-time and per Wrapped period.~~ **Shipped in Phase 2 (#44).** |
 | **Wrapped Share Cards**             | Render the Wrapped summary to a downloadable PNG, client-side canvas — no backend, no social features (consistent with non-goals).                                                              |
 | **Listening Concentration Index**   | Gini coefficient over artist play counts: 0 = "you listen to everything equally", 1 = "one artist". Trend it over time; pairs with Sonic Silhouette as the "shape of your taste" axis.          |
 | **Vinyl Shelf**                     | Top albums as record spines on a shelf — width ∝ play count, spine art from Cover Art Archive. Needs Phase 3's MusicBrainz release data.                                                        |
