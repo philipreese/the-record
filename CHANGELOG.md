@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1](https://github.com/philipreese/the-record/compare/v0.11.0...v0.11.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* **tests:** Add None guards on fetchone() calls to satisfy pyrefly ([2c8dc84](https://github.com/philipreese/the-record/commit/2c8dc84b909cba8cfadbe5a8cb865ddbddca4f5b))
+
+
+### Documentation
+
+* **spec:** Update dedup notes to reflect case-insensitive SQL fix from [#105](https://github.com/philipreese/the-record/issues/105) ([6c985a2](https://github.com/philipreese/the-record/commit/6c985a2ff26d33b560aa21a5c4332a540aaa7e64))
+
+
+### Miscellaneous
+
+* **db:** Normalize artist/title casing across historical import data ([c913ba2](https://github.com/philipreese/the-record/commit/c913ba2ac14366064f7e91c8ee05e6400d470fe5))
+
 ## [0.11.0](https://github.com/philipreese/the-record/compare/v0.10.0...v0.11.0) (2026-06-17)
 
 
