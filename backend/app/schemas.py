@@ -94,10 +94,3 @@ class OnThisDayGroup(BaseModel):
     year: int
     listens: List[ListenEntry]
 
-class BackfillStatusResponse(BaseModel):
-    running: bool
-    finished: bool
-    batches_fetched: int
-    rows_updated: int
-    rows_to_update: int
-    error: Optional[str] = None

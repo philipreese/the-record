@@ -24,7 +24,6 @@ from app.schemas import (
     LastPlayedEntry,
     TrackStatsResponse,
     OnThisDayGroup,
-    BackfillStatusResponse,
 )
 
 router = APIRouter()
@@ -424,50 +423,3 @@ def read_on_this_day() -> Any:
     today = datetime.now()
     return repo.get_on_this_day(today.month, today.day)
 
-@router.post("/backfill", response_model=SyncStartResponse)
-async def start_backfill(
-    background_tasks: BackgroundTasks,
-    x_sync_token: Optional[str] = Header(None),
-) -> Any:
-    """
-    Backfill duration_secs and album for historical listens that have null values.
-    Pages through LB history and UPDATEs matching rows — never inserts duplicates.
-    """
-    import app.backfill as backfill_worker
-
-    sync_token = os.getenv("SYNC_TOKEN")
-    if not sync_token:
-        raise HTTPException(status_code=503, detail="Sync endpoint is not configured.")
-    if x_sync_token != sync_token:
-        raise HTTPException(status_code=401, detail="Invalid or missing X-Sync-Token.")
-
-    async with backfill_worker._backfill_lock:
-        if backfill_worker._backfill_state.running:
-            return {
-                "status": "already_running",
-                "message": "A backfill is already in progress. Poll /api/backfill/status for updates.",
-            }
-        s = backfill_worker._backfill_state
-        s.running = True
-        s.batches_fetched = 0
-        s.rows_updated = 0
-        s.rows_to_update = 0
-        s.error = None
-        s.finished = False
-
-    background_tasks.add_task(backfill_worker._run_backfill)
-    return {"status": "started"}
-
-@router.get("/backfill/status", response_model=BackfillStatusResponse)
-def get_backfill_status() -> Any:
-    """Return the current state of the background backfill job."""
-    import app.backfill as backfill_worker
-    s = backfill_worker._backfill_state
-    return {
-        "running": s.running,
-        "finished": s.finished,
-        "batches_fetched": s.batches_fetched,
-        "rows_updated": s.rows_updated,
-        "rows_to_update": s.rows_to_update,
-        "error": s.error,
-    }

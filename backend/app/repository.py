@@ -2,7 +2,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, List, Optional
 import os
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, func, desc, distinct, text, tuple_
+from sqlalchemy import select, func, desc, distinct, text, tuple_, or_
 from app.db import get_engine, Listen
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 
@@ -353,9 +353,9 @@ def get_recent_listens(
 def get_track_stats(artist: str, title: str, album: Optional[str] = None) -> tuple[int, Optional[int]]:
     """Get the all-time play count and first available non-null duration for a track."""
     with get_engine().connect() as conn:
-        filters = [Listen.artist == artist, Listen.title == title]
+        filters = [func.lower(Listen.artist) == artist.lower(), func.lower(Listen.title) == title.lower()]
         if album is not None:
-            filters.append(Listen.album == album)
+            filters.append(or_(Listen.album == album, Listen.album.is_(None)))
             
         play_count = conn.execute(
             select(func.count(Listen.id)).where(*filters)
