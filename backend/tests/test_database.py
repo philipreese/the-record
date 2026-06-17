@@ -126,7 +126,7 @@ class TestDatabaseQueries(unittest.TestCase):
     def test_wrapped_data(self):
         current_year = self.now.year
         wrapped = database.get_wrapped_data(year=current_year)
-        
+
         self.assertEqual(wrapped["total_plays"], 7)
         self.assertEqual(wrapped["top_artist"]["name"], "Artist A")
         self.assertEqual(wrapped["top_artist"]["plays"], 4)
@@ -143,6 +143,32 @@ class TestDatabaseQueries(unittest.TestCase):
         # Total = 180 + 210 + 240 + 210 + 200 + 210 + 300 = 1550 seconds
         # Minutes = round(1550 / 60) = 26
         self.assertEqual(wrapped["minutes_listened"], 26)
+        # On-repeat peak: Track 1 has 2 plays today (ts_now and ts_now-10)
+        self.assertIsNotNone(wrapped["on_repeat_peak"])
+        self.assertEqual(wrapped["on_repeat_peak"]["title"].lower(), "track 1")
+        self.assertEqual(wrapped["on_repeat_peak"]["count"], 2)
+
+    def test_on_repeat_peak_case_insensitive(self):
+        # Casing variants of the same track on the same day must be merged.
+        # Without func.lower() grouping, "artist a"/"ARTIST A" would be separate
+        # buckets and the max would stay at 2 instead of 4.
+        base_ts = self.ts_now - 3600  # same day as ts_now
+        extra_plays = [
+            ("artist a", "track 1", base_ts - 100, "youtube_music", None, None),
+            ("ARTIST A", "Track 1", base_ts - 200, "youtube_music", None, None),
+        ]
+        self.cursor.executemany(
+            "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album) VALUES (?, ?, ?, ?, ?, ?)",
+            extra_plays,
+        )
+        self.conn.commit()
+
+        current_year = self.now.year
+        wrapped = database.get_wrapped_data(year=current_year)
+        peak = wrapped["on_repeat_peak"]
+        self.assertIsNotNone(peak)
+        # 2 from setUp (ts_now, ts_now-10) + 2 casing variants, all on the same day
+        self.assertEqual(peak["count"], 4)
 
     def test_track_stats(self):
         # Without album parameter

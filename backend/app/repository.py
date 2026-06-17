@@ -307,15 +307,17 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         minutes_listened = round(total_seconds / 60)
 
         # F. On-Repeat Peak — max plays of one track on a single day
+        # Group by lowercased artist/title so casing variants (YT Music vs LB) are merged.
+        # func.min() picks a representative display value from the matching rows.
         stmt_on_repeat = (
             select(
                 date_expr.label("day"),
-                Listen.artist,
-                Listen.title,
+                func.min(Listen.artist).label("artist"),
+                func.min(Listen.title).label("title"),
                 func.count(Listen.id).label("cnt"),
             )
             .where(*filters)
-            .group_by(date_expr, Listen.artist, Listen.title)
+            .group_by(date_expr, func.lower(Listen.artist), func.lower(Listen.title))
             .order_by(desc("cnt"))
             .limit(1)
         )
