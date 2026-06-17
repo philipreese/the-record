@@ -282,80 +282,85 @@ async def get_playing_now() -> Any:
         "User-Agent": _UA,
     }
     try:
-        async with httpx.AsyncClient() as client:
-            res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(8.0))
-            res.raise_for_status()
 
-            listens = res.json().get("payload", {}).get("listens", [])
-            if not listens:
-                # Nothing playing — get the most recent DB listen, then fetch its MBIDs from
-                # LB's listens endpoint so we can do a proper CAA lookup instead of text search.
-                rows = repo.get_recent_listens(limit=1)
-                if not rows:
-                    return PlayingNowResponse(is_playing=False)
-                r = rows[0]
-                lp_release_mbid: Optional[str] = None
-                lp_recording_mbid: Optional[str] = None
-                lp_release_group_mbid: Optional[str] = None
-                try:
-                    lp_res = await client.get(
-                        f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
-                        params={"count": "1"},
-                        headers=lb_headers,
-                        timeout=httpx.Timeout(3.0),
-                    )
-                    if lp_res.status_code == 200:
-                        lp_listens = lp_res.json().get("payload", {}).get("listens", [])
-                        if lp_listens:
-                            lp_mm = lp_listens[0].get("track_metadata", {}).get("mbid_mapping", {})
-                            lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
-                            lp_recording_mbid = lp_mm.get("recording_mbid")
-                            lp_release_group_mbid = lp_mm.get("release_group_mbid")
-                except Exception:
-                    logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
-                art = await _resolve_cover_art(
-                    client, r["artist"], r["title"],
-                    lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
+        from app.lb_client import get_lb_client
+        client = get_lb_client()
+        res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(15.0))
+        res.raise_for_status()
+
+        listens = res.json().get("payload", {}).get("listens", [])
+        if not listens:
+            # Nothing playing — get the most recent DB listen, then fetch its MBIDs from
+            # LB's listens endpoint so we can do a proper CAA lookup instead of text search.
+            rows = repo.get_recent_listens(limit=1)
+            if not rows:
+                return PlayingNowResponse(is_playing=False)
+            r = rows[0]
+            lp_release_mbid: Optional[str] = None
+            lp_recording_mbid: Optional[str] = None
+            lp_release_group_mbid: Optional[str] = None
+            try:
+                lp_res = await client.get(
+                    f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
+                    params={"count": "1"},
+                    headers=lb_headers,
+                    timeout=httpx.Timeout(3.0),
                 )
-                return PlayingNowResponse(
-                    is_playing=False,
-                    last_played=LastPlayedEntry(
-                        artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=art
-                    ),
-                )
-
-            meta = listens[0].get("track_metadata", {})
-            artist = meta.get("artist_name")
-            title = meta.get("track_name")
-            release = meta.get("release_name")
-            mbid_mapping = meta.get("mbid_mapping", {})
-            release_mbid = mbid_mapping.get("caa_release_mbid") or mbid_mapping.get("release_mbid")
-            recording_mbid = mbid_mapping.get("recording_mbid")
-            release_group_mbid = mbid_mapping.get("release_group_mbid")
-
-            # Resolve a direct archive.org URL — CAA's redirect URL breaks canvas CORS extraction.
-            cover_art_url: Optional[str] = None
-            if artist and title:
-                cover_art_url = await _resolve_cover_art(
-                    client, artist, title, release_mbid, recording_mbid, release_group_mbid
-                )
-
-            return PlayingNowResponse(
-                is_playing=bool(artist and title),
-                artist=artist,
-                title=title,
-                release=release,
-                cover_art_url=cover_art_url,
+                if lp_res.status_code == 200:
+                    lp_listens = lp_res.json().get("payload", {}).get("listens", [])
+                    if lp_listens:
+                        lp_mm = lp_listens[0].get("track_metadata", {}).get("mbid_mapping", {})
+                        lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
+                        lp_recording_mbid = lp_mm.get("recording_mbid")
+                        lp_release_group_mbid = lp_mm.get("release_group_mbid")
+            except Exception:
+                logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
+            art = await _resolve_cover_art(
+                client, r["artist"], r["title"],
+                lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
             )
+            return PlayingNowResponse(
+                is_playing=False,
+                last_played=LastPlayedEntry(
+                    artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=art
+                ),
+            )
+
+        meta = listens[0].get("track_metadata", {})
+        artist = meta.get("artist_name")
+        title = meta.get("track_name")
+        release = meta.get("release_name")
+        mbid_mapping = meta.get("mbid_mapping", {})
+        release_mbid = mbid_mapping.get("caa_release_mbid") or mbid_mapping.get("release_mbid")
+        recording_mbid = mbid_mapping.get("recording_mbid")
+        release_group_mbid = mbid_mapping.get("release_group_mbid")
+
+        cover_art_url: Optional[str] = None
+        if artist and title:
+            cover_art_url = await _resolve_cover_art(
+                client, artist, title, release_mbid, recording_mbid, release_group_mbid
+            )
+
+        return PlayingNowResponse(
+            is_playing=bool(artist and title),
+            artist=artist,
+            title=title,
+            release=release,
+            cover_art_url=cover_art_url,
+        )
     except Exception as e:
         logger.warning("LB playing-now request failed (%s: %s); falling back to last DB listen", type(e).__name__, e)
         rows = repo.get_recent_listens(limit=1)
         if not rows:
             return PlayingNowResponse(is_playing=False)
         r = rows[0]
+        cached_art = _cover_art_cache.get(_art_key(r["artist"], r["title"]))
         return PlayingNowResponse(
             is_playing=False,
-            last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+            last_played=LastPlayedEntry(
+                artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"],
+                cover_art_url=cached_art,
+            ),
         )
 
 @router.get("/last-played", response_model=PlayingNowResponse)

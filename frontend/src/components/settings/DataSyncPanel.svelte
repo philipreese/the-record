@@ -173,7 +173,7 @@
                 Permanently removes records not on ListenBrainz. Cannot be undone.
               </p>
             </div>
-            <div>
+            <div class="flex flex-col gap-2">
               <button
                 class="btn btn-warning btn-md flex items-center gap-2.5 cursor-pointer focus:outline-none"
                 disabled={appCache.isSyncing}
@@ -187,6 +187,11 @@
                   Start Mirror Sync
                 {/if}
               </button>
+              {#if appCache.lastMirrorResult && !appCache.isSyncing}
+                <p class="text-xs font-mono text-success">
+                  Last mirror: +{appCache.lastMirrorResult.synced} / −{appCache.lastMirrorResult.deleted}
+                </p>
+              {/if}
             </div>
           </div>
         </div>
@@ -200,9 +205,7 @@
               <div class="flex justify-between text-xs font-mono">
                 <span class="text-warning font-semibold uppercase">Mirror Sync In Progress</span>
                 <span class="text-theme-muted">
-                  Page {Math.max(1, appCache.syncStatus.batches_fetched)} · {appCache.syncStatus
-                    .synced_count}
-                  added
+                  Page {Math.max(1, appCache.syncStatus.batches_fetched)} · {appCache.syncStatus.synced_count} added · {appCache.syncStatus.deleted_count} removed
                 </span>
               </div>
               <div class="w-full bg-base-300 h-1.5 rounded-full overflow-hidden">
@@ -219,9 +222,11 @@
                 ></div>
               </div>
               <div class="text-[10px] text-theme-muted font-mono flex justify-between">
-                <span
-                  >Fetching all {appCache.syncStatus.lb_total.toLocaleString()} ListenBrainz listens...</span
-                >
+                <span>
+                  {appCache.syncStatus.lb_total
+                    ? `Fetching all ${appCache.syncStatus.lb_total.toLocaleString()} ListenBrainz listens...`
+                    : 'Fetching ListenBrainz listens...'}
+                </span>
               </div>
             {:else}
               <div class="flex justify-between text-xs font-mono">
