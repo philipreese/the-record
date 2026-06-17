@@ -22,7 +22,8 @@ A self-hosted dashboard that gives you a complete, unified view of your music li
 - **Hourly heat clock** — play distribution across hours of the day (24-hour ring)
 - **Monthly bar chart** — chronological monthly play counts
 - **Listening streaks** — current and longest consecutive daily listening streaks
-- **Wrapped reviews** — Spotify Wrapped-style aggregation by year, quarter, or month: total plays, top artist, top track, peak day, minutes listened
+- **Wrapped reviews** — Spotify Wrapped-style aggregation by year, quarter, or month: total plays, top artist, top track, peak day, minutes listened, on-repeat peak (most replayed track in a single day)
+- **Export** — Download full listening history as CSV or JSON, with optional time-range filter, from the Settings page
 - **Background sync** — ListenBrainz sync runs in the background; the UI polls for progress without blocking
 
 ## Non-goals
