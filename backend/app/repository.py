@@ -270,7 +270,7 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         if total_plays == 0:
             return {
                 "total_plays": 0, "top_artist": None, "top_track": None,
-                "peak_day": None, "minutes_listened": 0
+                "peak_day": None, "minutes_listened": 0, "on_repeat_peak": None,
             }
             
         # B. Top Artist
@@ -305,13 +305,39 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         stmt_duration = select(func.sum(func.coalesce(Listen.duration_secs, 210))).where(*filters)
         total_seconds = conn.execute(stmt_duration).scalar() or 0
         minutes_listened = round(total_seconds / 60)
-        
+
+        # F. On-Repeat Peak — max plays of one track on a single day
+        stmt_on_repeat = (
+            select(
+                date_expr.label("day"),
+                Listen.artist,
+                Listen.title,
+                func.count(Listen.id).label("cnt"),
+            )
+            .where(*filters)
+            .group_by(date_expr, Listen.artist, Listen.title)
+            .order_by(desc("cnt"))
+            .limit(1)
+        )
+        on_repeat_row = conn.execute(stmt_on_repeat).first()
+        on_repeat_peak = (
+            {
+                "artist": on_repeat_row.artist,
+                "title": on_repeat_row.title,
+                "date": on_repeat_row.day,
+                "count": on_repeat_row.cnt,
+            }
+            if on_repeat_row
+            else None
+        )
+
         return {
             "total_plays": total_plays,
             "top_artist": top_artist,
             "top_track": top_track,
             "peak_day": peak_day,
-            "minutes_listened": minutes_listened
+            "minutes_listened": minutes_listened,
+            "on_repeat_peak": on_repeat_peak,
         }
 
 def get_recent_listens(

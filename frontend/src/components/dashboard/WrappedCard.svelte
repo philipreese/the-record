@@ -164,6 +164,20 @@
                     </div>
                   </div>
                 {/if}
+
+                {#if data.on_repeat_peak}
+                  <div class="col-span-2 pt-6 border-t border-theme-border-soft">
+                    <span class="text-caps text-xs text-theme-muted">On Repeat</span>
+                    <div class="flex justify-between items-baseline gap-2">
+                      <div class="text-base font-light truncate text-theme-text" use:tooltip>
+                        {data.on_repeat_peak.title}
+                      </div>
+                      <div class="text-base font-light text-theme-accent shrink-0">
+                        {data.on_repeat_peak.count}× in a day
+                      </div>
+                    </div>
+                  </div>
+                {/if}
               </div>
             </div>
           </div>
@@ -273,6 +287,46 @@
               <p class="text-sm opacity-50">No peak anomalies identified.</p>
             {/if}
           </div>
+        {:else if currentStep === 4}
+          <!-- Slide 4: On Repeat -->
+          <div class="text-center space-y-6 py-4">
+            <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
+              >05 / The Obsession</span
+            >
+
+            {#if data.on_repeat_peak}
+              <div class="space-y-2">
+                <div class="text-xs font-mono uppercase tracking-widest text-theme-muted">
+                  Most replayed in a single day
+                </div>
+                <h3 class="text-3xl lg:text-4xl font-serif italic text-theme-text">
+                  {data.on_repeat_peak.title}
+                </h3>
+                <div class="text-base font-light text-theme-secondary">
+                  by {data.on_repeat_peak.artist}
+                </div>
+              </div>
+              <div class="text-2xl font-light text-theme-accent">
+                {data.on_repeat_peak.count} plays
+                <span class="text-sm font-mono text-theme-muted">
+                  on {new Date(data.on_repeat_peak.date + 'T12:00:00').toLocaleDateString(
+                    undefined,
+                    {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    },
+                  )}
+                </span>
+              </div>
+              <p class="text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary">
+                The single track you returned to most obsessively — a sonic loop that defined its
+                day.
+              </p>
+            {:else}
+              <p class="text-sm opacity-50">No repeat data available.</p>
+            {/if}
+          </div>
         {/if}
       </div>
     {/key}
@@ -285,7 +339,7 @@
     </button>
 
     <div class="flex gap-2.5">
-      {#each Array.from({ length: 4 }) as _, idx}
+      {#each Array.from({ length: 5 }) as _, idx}
         <button
           class="w-2 h-2 rounded-full transition-all duration-300 cursor-pointer focus:outline-none border-none p-0"
           style="background-color: {currentStep === idx
@@ -297,7 +351,7 @@
       {/each}
     </div>
 
-    {#if currentStep < 3}
+    {#if currentStep < 4}
       <button class="btn-nav-text" style="color: var(--accent);" onclick={() => currentStep++}>
         Next &rarr;
       </button>

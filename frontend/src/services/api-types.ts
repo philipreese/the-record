@@ -376,6 +376,17 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** OnRepeatPeak */
+        OnRepeatPeak: {
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+            /** Date */
+            date: string;
+            /** Count */
+            count: number;
+        };
         /** OnThisDayGroup */
         OnThisDayGroup: {
             /** Year */
@@ -496,6 +507,7 @@ export interface components {
             peak_day?: components["schemas"]["WrappedPeakDay"] | null;
             /** Minutes Listened */
             minutes_listened: number;
+            on_repeat_peak?: components["schemas"]["OnRepeatPeak"] | null;
         };
         /** WrappedPeakDay */
         WrappedPeakDay: {
