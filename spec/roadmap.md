@@ -29,11 +29,17 @@ Physical zoom interactions throughout the dashboard using Svelte's `crossfade` o
 
 Once click becomes the primary chart interface, the suppressed a11y warnings on the SVG charts become functional bugs — drill-down targets must be keyboard-reachable.
 
-### Top Charts Search & Pagination
+### Top Charts Search & Pagination ✅ Shipped (#30)
 Add search, pagination, and rank lookup to the existing top charts:
 - `search`, `page`, `page_size` query params on `/api/top-artists` and `/api/top-tracks` (enum/bounds-validated per the pattern from the Phase 1 hardening issues)
 - Rank lookup via SQL window function: `RANK() OVER (ORDER BY COUNT(*) DESC)`
 - Frontend: search bar + paginator in `ChartsView.svelte`, showing absolute rank of any searched artist or track
+
+### Date Jump Control ✅ Shipped (#94)
+A month/year selector on the journal page that seeds the cursor at a specific point in history, so the user can jump directly to e.g. "March 2023" without infinite-scrolling back.
+- Populated from the years/months the user actually has data for.
+- Grouped grid popover layout that disables months with zero listens.
+- Clicking a month jumps the journal timeline to the end of that month, and allows normal older infinite scrolling from that point forward.
 
 ### Track Durations
 `minutes_listened` is currently `total_plays × 3.5` — an estimate presented as a stat. ListenBrainz's `track_metadata.additional_info` frequently carries `duration_ms`.

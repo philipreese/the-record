@@ -415,6 +415,7 @@ def get_recent_listens(
     limit: int = 50,
     before_ts: int | None = None,
     before_id: int | None = None,
+    anchor_date: Optional[str] = None,
 ) -> list[dict[str, Any]]:
     """Retrieve recent listens in reverse-chronological order using cursor-based keyset pagination.
 
@@ -432,6 +433,23 @@ def get_recent_listens(
         )
         if before_ts is not None and before_id is not None:
             stmt = stmt.where(tuple_(Listen.unix_ts, Listen.id) < (before_ts, before_id))
+        elif anchor_date is not None:
+            try:
+                dt = datetime.strptime(anchor_date, "%Y-%m-%d")
+                dt_end = datetime.combine(dt.date(), datetime.max.time())
+                tz_name = os.environ.get("TZ")
+                if tz_name:
+                    try:
+                        from zoneinfo import ZoneInfo
+                        dt_end = dt_end.replace(tzinfo=ZoneInfo(tz_name))
+                    except Exception:
+                        dt_end = dt_end.astimezone()
+                else:
+                    dt_end = dt_end.astimezone()
+                anchor_ts = int(dt_end.timestamp())
+                stmt = stmt.where(Listen.unix_ts <= anchor_ts)
+            except ValueError:
+                pass
         stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
         rows = conn.execute(stmt).all()
         return [

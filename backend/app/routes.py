@@ -113,9 +113,10 @@ def read_recent(
     limit: int = Query(50, ge=1, le=100, description="Max results per page (1–100)"),
     before_ts: Optional[int] = Query(None, description="Cursor: unix_ts of the last item from the previous page"),
     before_id: Optional[int] = Query(None, description="Cursor: id of the last item from the previous page"),
+    anchor_date: Optional[str] = Query(None, description="Anchor date: seek to first listen on or before YYYY-MM-DD"),
 ) -> Any:
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
-    return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id)
+    return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id, anchor_date=anchor_date)
 
 @router.get("/track-stats", response_model=TrackStatsResponse)
 def read_track_stats(
