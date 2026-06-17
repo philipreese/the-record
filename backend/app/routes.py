@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 import app.repository as repo
 import app.sync as sync_worker
 import httpx
-
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
@@ -28,6 +27,8 @@ from app.schemas import (
     LastPlayedEntry,
     TrackStatsResponse,
     OnThisDayGroup,
+    TopArtistsResponse,
+    TopTracksResponse,
 )
 
 router = APIRouter()
@@ -36,22 +37,35 @@ router = APIRouter()
 def read_stats() -> Any:
     """Retrieve high-level listening history metrics."""
     return repo.get_stats_summary()
-
-@router.get("/top-artists", response_model=List[ArtistInfo])
+@router.get("/top-artists", response_model=TopArtistsResponse)
 def read_top_artists(
     range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
     limit: int = Query(15, ge=1, le=100, description="Max results to return"),
+    search: Optional[str] = Query(None, description="Filter by artist name (case-insensitive substring)"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: Optional[int] = Query(None, ge=1, le=100, description="Page size (overrides limit if set)"),
 ) -> Any:
     """Retrieve top artists for a specified time range."""
-    return repo.get_top_artists(time_range=range_param, limit=limit)
+    actual_limit = page_size if page_size is not None else limit
+    clean_search = search.strip() if search else None
+    if clean_search == "":
+        clean_search = None
+    return repo.get_top_artists(time_range=range_param, limit=actual_limit, page=page, search=clean_search)
 
-@router.get("/top-tracks", response_model=List[TrackInfo])
+@router.get("/top-tracks", response_model=TopTracksResponse)
 def read_top_tracks(
     range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range", description="Time range in days: 30, 90, 365, or 'all'"),
     limit: int = Query(15, ge=1, le=100, description="Max results to return"),
+    search: Optional[str] = Query(None, description="Filter by track or artist name (case-insensitive substring)"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: Optional[int] = Query(None, ge=1, le=100, description="Page size (overrides limit if set)"),
 ) -> Any:
     """Retrieve top tracks for a specified time range."""
-    return repo.get_top_tracks(time_range=range_param, limit=limit)
+    actual_limit = page_size if page_size is not None else limit
+    clean_search = search.strip() if search else None
+    if clean_search == "":
+        clean_search = None
+    return repo.get_top_tracks(time_range=range_param, limit=actual_limit, page=page, search=clean_search)
 
 @router.get("/heatmap", response_model=Dict[str, int])
 def read_heatmap(

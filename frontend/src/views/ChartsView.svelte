@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Layout refresh trigger
   import { untrack } from 'svelte';
   import { inView } from '../utils/inView';
   import {
@@ -13,7 +12,7 @@
   import { themeManager, stringToColor } from '../services/theme.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
-  import LoadingSpinner from '../components/layout/LoadingSpinner.svelte';
+  import Icon from '../components/layout/Icon.svelte';
 
   let topRange = $state<TimeRange>('all');
 
@@ -23,48 +22,30 @@
     ['365', '1 Year'],
     ['all', 'All Time'],
   ];
-  let loadingCharts = $state(false);
 
-  // Automatically fetch when the selected range changes. Reading the cache entry here
-  // keeps the effect reactive to invalidation: a sync clears appCache.charts and this refetches.
-  $effect(() => {
-    const range = topRange;
-    if (appCache.charts[range]) {
-      loadingCharts = false;
-      return;
-    }
-    untrack(() => {
-      fetchTopCharts(range);
-    });
-  });
+  const PAGE_SIZE = 15;
 
-  // Tracks pending fetches per range so rapid switching (A->B->A) reuses the
-  // in-flight request for A instead of firing a second, racing one.
-  const inFlight = new Map<TimeRange, Promise<{ artists: ArtistInfo[]; tracks: TrackInfo[] }>>();
+  let artistPage = $state(1);
+  let trackPage = $state(1);
 
-  async function fetchTopCharts(range: TimeRange) {
-    loadingCharts = true;
-    try {
-      let request = inFlight.get(range);
-      if (!request) {
-        request = Promise.all([fetchTopArtists(range, 15), fetchTopTracks(range, 15)])
-          .then(([artists, tracks]) => ({ artists, tracks }))
-          .finally(() => {
-            inFlight.delete(range);
-          });
-        inFlight.set(range, request);
-      }
-      appCache.charts[range] = await request;
-    } catch (e) {
-      console.error('Failed to fetch top charts:', e);
-    } finally {
-      // Only clear the spinner if this resolution is for the range still selected.
-      if (range === topRange) loadingCharts = false;
-    }
-  }
+  let searchQuery = $state('');
+  let debouncedSearch = $state('');
+  let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  let currentArtists = $derived(appCache.charts[topRange]?.artists || []);
-  let currentTracks = $derived(appCache.charts[topRange]?.tracks || []);
+  let loadingArtists = $state(false);
+  let loadingTracks = $state(false);
+
+  let artists = $state<ArtistInfo[]>([]);
+  let tracks = $state<TrackInfo[]>([]);
+
+  let totalArtists = $state(0);
+  let totalTracks = $state(0);
+
+  let totalArtistPages = $derived(Math.ceil(totalArtists / PAGE_SIZE));
+  let totalTrackPages = $derived(Math.ceil(totalTracks / PAGE_SIZE));
+
+  let hasMoreArtists = $derived(artistPage < totalArtistPages);
+  let hasMoreTracks = $derived(trackPage < totalTrackPages);
 
   let focusedArtist = $state<string | null>(null);
   let focusedTrack = $state<string | null>(null);
@@ -78,6 +59,108 @@
   // from overwriting the album-art color in localStorage.
   const preChartsAmbientColor = themeManager.ambientColor;
 
+  // Debounce search query
+  $effect(() => {
+    const q = searchQuery;
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      debouncedSearch = q.trim();
+    }, 300);
+  });
+
+  // Reset pagination when range or search query changes
+  $effect(() => {
+    const _range = topRange;
+    const _search = debouncedSearch;
+    untrack(() => {
+      artistPage = 1;
+      trackPage = 1;
+    });
+  });
+
+  // Fetch artists when range, page, search changes, or store cache is invalidated
+  $effect(() => {
+    const range = topRange;
+    const search = debouncedSearch;
+    const page = artistPage;
+
+    // Read this from the store cache to be reactive to invalidation (e.g. store.invalidate clears charts)
+    const cached = appCache.charts[range];
+
+    loadingArtists = true;
+
+    // If first page and no search, use cache if available
+    if (page === 1 && !search && cached?.artists?.length) {
+      artists = cached.artists;
+      totalArtists = cached.totalArtists ?? cached.artists.length;
+      loadingArtists = false;
+      return;
+    }
+
+    untrack(() => {
+      fetchTopArtists(range, PAGE_SIZE, page, search)
+        .then((data) => {
+          artists = data.items;
+          totalArtists = data.total_count;
+          // Pre-populate cache if it was empty, page 1, and no search
+          if (page === 1 && !search) {
+            if (!appCache.charts[range]) {
+              appCache.charts[range] = { artists: [], tracks: [] };
+            }
+            appCache.charts[range].artists = artists;
+            appCache.charts[range].totalArtists = totalArtists;
+          }
+        })
+        .catch((e) => {
+          console.error('Failed to fetch top artists:', e);
+        })
+        .finally(() => {
+          loadingArtists = false;
+        });
+    });
+  });
+
+  // Fetch tracks when range, page, search changes, or store cache is invalidated
+  $effect(() => {
+    const range = topRange;
+    const search = debouncedSearch;
+    const page = trackPage;
+
+    const cached = appCache.charts[range];
+
+    loadingTracks = true;
+
+    // If first page and no search, use cache if available
+    if (page === 1 && !search && cached?.tracks?.length) {
+      tracks = cached.tracks;
+      totalTracks = cached.totalTracks ?? cached.tracks.length;
+      loadingTracks = false;
+      return;
+    }
+
+    untrack(() => {
+      fetchTopTracks(range, PAGE_SIZE, page, search)
+        .then((data) => {
+          tracks = data.items;
+          totalTracks = data.total_count;
+          // Pre-populate cache if it was empty, page 1, and no search
+          if (page === 1 && !search) {
+            if (!appCache.charts[range]) {
+              appCache.charts[range] = { artists: [], tracks: [] };
+            }
+            appCache.charts[range].tracks = tracks;
+            appCache.charts[range].totalTracks = totalTracks;
+          }
+        })
+        .catch((e) => {
+          console.error('Failed to fetch top tracks:', e);
+        })
+        .finally(() => {
+          loadingTracks = false;
+        });
+    });
+  });
+
   $effect(() => {
     // Restore the pre-Charts ambient color when unmounting (navigating away).
     return () => {
@@ -85,12 +168,28 @@
     };
   });
 
-  // Clear focus when range selection changes — restore instead of resetting to null.
+  // Clear focus when range selection or search changes
   $effect(() => {
     const _range = topRange;
+    const _search = debouncedSearch;
     focusedArtist = null;
     focusedTrack = null;
     hoveredArtist = null;
+    hoveredTrack = null;
+    themeManager.setAmbientColor(preChartsAmbientColor, false);
+  });
+
+  // Clear focus when pagination page changes
+  $effect(() => {
+    const _artistPage = artistPage;
+    focusedArtist = null;
+    hoveredArtist = null;
+    themeManager.setAmbientColor(preChartsAmbientColor, false);
+  });
+
+  $effect(() => {
+    const _trackPage = trackPage;
+    focusedTrack = null;
     hoveredTrack = null;
     themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
@@ -141,9 +240,9 @@
   {/snippet}
 </PageHeader>
 
-<!-- Mobile Sticky Range Selector -->
-<div class="sticky-sub-header lg:hidden">
-  <div class="nav-selector w-full justify-between gap-1">
+<!-- Mobile Sticky Sub-Header: Stuck range selector and search input on mobile -->
+<div class="sticky-sub-header lg:hidden flex flex-col gap-3">
+  <div class="nav-selector w-full justify-between gap-1 border-b border-theme-border-soft pb-2.5">
     {#each rangeOptions as [val, label]}
       <button
         class="nav-selector-item flex-1 text-center justify-center py-1 text-xs"
@@ -154,19 +253,74 @@
       </button>
     {/each}
   </div>
+  <div class="relative w-full">
+    <input
+      type="text"
+      placeholder="Search creators or tracks..."
+      class="input input-sm pl-8 pr-8 w-full bg-base-200 border border-base-content/10 rounded-md focus:border-theme-accent focus:outline-none transition-colors text-sm"
+      bind:value={searchQuery}
+    />
+    <span
+      class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none opacity-40 z-10"
+    >
+      <Icon name="search" size="w-4 h-4" class="text-base-content" />
+    </span>
+    {#if searchQuery}
+      <button
+        class="absolute inset-y-0 right-0 flex items-center pr-3 opacity-40 hover:opacity-100 transition-opacity z-10"
+        aria-label="Clear search"
+        onclick={() => (searchQuery = '')}
+      >
+        <Icon name="close" size="w-4 h-4" />
+      </button>
+    {/if}
+  </div>
 </div>
 
-<div class="flex flex-col gap-12 text-base-content">
-  {#if loadingCharts}
-    <LoadingSpinner />
-  {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
-      <!-- Top Artists List -->
+<div class="flex flex-col sm:gap-8 gap-12 text-base-content">
+  <!-- Desktop Search Bar Row (hidden on mobile) -->
+  <div
+    class="hidden lg:flex flex-row items-center justify-between gap-4 border-b border-theme-border-soft pb-4 mt-6"
+  >
+    <div class="relative max-w-md w-full">
+      <input
+        type="text"
+        placeholder="Search creators or tracks..."
+        class="input input-sm pl-8 pr-8 w-full bg-base-200 border border-base-content/10 rounded-md focus:border-theme-accent focus:outline-none transition-colors text-sm"
+        bind:value={searchQuery}
+      />
+      <span
+        class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none opacity-40 z-10"
+      >
+        <Icon name="search" size="w-4 h-4" class="text-base-content" />
+      </span>
+      {#if searchQuery}
+        <button
+          class="absolute inset-y-0 right-0 flex items-center pr-3 opacity-40 hover:opacity-100 transition-opacity z-10"
+          aria-label="Clear search"
+          onclick={() => (searchQuery = '')}
+        >
+          <Icon name="close" size="w-4 h-4" />
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 sm:mt-0">
+    <!-- Top Creators List -->
+    <div class="flex flex-col justify-between h-full min-h-[500px]">
       <div class="space-y-6">
-        <h2 class="editorial-text-h2 pb-2 border-b border-theme-border-soft">Top Creators</h2>
+        <h2
+          class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
+        >
+          <span>Top Creators</span>
+          {#if loadingArtists}
+            <span class="loading loading-spinner loading-xs text-theme-accent"></span>
+          {/if}
+        </h2>
 
         <div use:inView={{ once: true }} class="flex flex-col gap-3 reveal-list-container">
-          {#each currentArtists as artist, idx}
+          {#each artists as artist, idx}
             <div
               role="button"
               tabindex="0"
@@ -191,7 +345,7 @@
               <div
                 class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
               >
-                {String(idx + 1).padStart(2, '0')}
+                {String(artist.rank ?? (artistPage - 1) * PAGE_SIZE + idx + 1).padStart(2, '0')}
               </div>
               <div class="grow">
                 <div class="text-base md:text-lg font-light tracking-wide text-theme-text">
@@ -215,12 +369,44 @@
         </div>
       </div>
 
-      <!-- Top Tracks List -->
+      <!-- Artists Paginator -->
+      <div
+        class="flex items-center justify-between mt-8 pt-4 border-t border-theme-border-soft font-mono text-xs"
+      >
+        <button
+          class="btn-nav-text"
+          disabled={artistPage === 1 || loadingArtists}
+          onclick={() => artistPage--}
+        >
+          ← Prev
+        </button>
+        <span class="text-xs uppercase tracking-widest text-theme-muted/50 font-mono"
+          >Page {artistPage} of {totalArtistPages || 1}</span
+        >
+        <button
+          class="btn-nav-text"
+          disabled={!hasMoreArtists || loadingArtists}
+          onclick={() => artistPage++}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Tracks List -->
+    <div class="flex flex-col justify-between h-full min-h-[500px]">
       <div class="space-y-6">
-        <h2 class="editorial-text-h2 pb-2 border-b border-theme-border-soft">Top Tracks</h2>
+        <h2
+          class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
+        >
+          <span>Top Tracks</span>
+          {#if loadingTracks}
+            <span class="loading loading-spinner loading-xs text-theme-accent"></span>
+          {/if}
+        </h2>
 
         <div use:inView={{ once: true }} class="flex flex-col gap-3 reveal-list-container">
-          {#each currentTracks as track, idx}
+          {#each tracks as track, idx}
             <div
               role="button"
               tabindex="0"
@@ -245,7 +431,7 @@
               <div
                 class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
               >
-                {String(idx + 1).padStart(2, '0')}
+                {String(track.rank ?? (trackPage - 1) * PAGE_SIZE + idx + 1).padStart(2, '0')}
               </div>
               <div class="grow min-w-0">
                 <div
@@ -277,6 +463,29 @@
           {/each}
         </div>
       </div>
+
+      <!-- Tracks Paginator -->
+      <div
+        class="flex items-center justify-between mt-8 pt-4 border-t border-theme-border-soft font-mono text-xs"
+      >
+        <button
+          class="btn-nav-text"
+          disabled={trackPage === 1 || loadingTracks}
+          onclick={() => trackPage--}
+        >
+          ← Prev
+        </button>
+        <span class="text-xs uppercase tracking-widest text-theme-muted/50 font-mono"
+          >Page {trackPage} of {totalTrackPages || 1}</span
+        >
+        <button
+          class="btn-nav-text"
+          disabled={!hasMoreTracks || loadingTracks}
+          onclick={() => trackPage++}
+        >
+          Next →
+        </button>
+      </div>
     </div>
-  {/if}
+  </div>
 </div>

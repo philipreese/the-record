@@ -71,27 +71,81 @@ class TestDatabaseQueries(unittest.TestCase):
 
     def test_top_artists(self):
         # All time
-        top = database.get_top_artists(time_range="all", limit=5)
+        top_data = database.get_top_artists(time_range="all", limit=5)
+        top = top_data["items"]
+        self.assertEqual(top_data["total_count"], 3)
         self.assertEqual(len(top), 3)
         self.assertEqual(top[0]["artist"], "Artist A")
         self.assertEqual(top[0]["play_count"], 4)
+        self.assertEqual(top[0]["rank"], 1)
         self.assertEqual(top[1]["artist"], "Artist B")
         self.assertEqual(top[1]["play_count"], 2)
+        self.assertEqual(top[1]["rank"], 2)
         
         # Last 30 days (should exclude the play 100 days ago)
         # Plays remaining: now (2), yesterday (2), 2 days ago (1), 10 days ago (1). Total = 6 plays.
         # Artist A has 3 plays within 30 days. Artist B has 2. Artist C has 1.
-        top_30d = database.get_top_artists(time_range="30", limit=5)
+        top_30d_data = database.get_top_artists(time_range="30", limit=5)
+        top_30d = top_30d_data["items"]
+        self.assertEqual(top_30d_data["total_count"], 3)
         self.assertEqual(len(top_30d), 3)
         self.assertEqual(top_30d[0]["artist"], "Artist A")
         self.assertEqual(top_30d[0]["play_count"], 3)
+        self.assertEqual(top_30d[0]["rank"], 1)
+
+        # Test Search
+        top_search_data = database.get_top_artists(time_range="all", limit=5, search="Artist B")
+        top_search = top_search_data["items"]
+        self.assertEqual(top_search_data["total_count"], 1)
+        self.assertEqual(len(top_search), 1)
+        self.assertEqual(top_search[0]["artist"], "Artist B")
+        self.assertEqual(top_search[0]["rank"], 2)  # true absolute rank is 2 overall
+
+        # Test Pagination (Page 2, limit 1)
+        top_page_2_data = database.get_top_artists(time_range="all", limit=1, page=2)
+        top_page_2 = top_page_2_data["items"]
+        self.assertEqual(top_page_2_data["total_count"], 3)
+        self.assertEqual(len(top_page_2), 1)
+        self.assertEqual(top_page_2[0]["artist"], "Artist B")
+        self.assertEqual(top_page_2[0]["rank"], 2)
 
     def test_top_tracks(self):
-        top = database.get_top_tracks(time_range="all", limit=5)
+        top_data = database.get_top_tracks(time_range="all", limit=5)
+        top = top_data["items"]
+        self.assertEqual(top_data["total_count"], 5)
         self.assertEqual(len(top), 5)
         # Track 1 has 3 plays
         self.assertEqual(top[0]["title"], "Track 1")
         self.assertEqual(top[0]["play_count"], 3)
+        self.assertEqual(top[0]["rank"], 1)
+
+        # Test Search by artist or title
+        top_search_title_data = database.get_top_tracks(time_range="all", limit=5, search="Track 3")
+        top_search_title = top_search_title_data["items"]
+        self.assertEqual(top_search_title_data["total_count"], 1)
+        self.assertEqual(len(top_search_title), 1)
+        self.assertEqual(top_search_title[0]["title"], "Track 3")
+        self.assertEqual(top_search_title[0]["rank"], 2)  # Tied at rank 2
+
+        top_search_artist_data = database.get_top_tracks(time_range="all", limit=5, search="Artist C")
+        top_search_artist = top_search_artist_data["items"]
+        self.assertEqual(top_search_artist_data["total_count"], 1)
+        self.assertEqual(len(top_search_artist), 1)
+        self.assertEqual(top_search_artist[0]["title"], "Track 5")
+        self.assertEqual(top_search_artist[0]["rank"], 2)
+
+        # Test Pagination (Page 2, limit 2)
+        top_page_2_data = database.get_top_tracks(time_range="all", limit=2, page=2)
+        top_page_2 = top_page_2_data["items"]
+        self.assertEqual(top_page_2_data["total_count"], 5)
+        self.assertEqual(len(top_page_2), 2)
+        # Verify pagination ordering:
+        # Rank 1: Artist A Track 1
+        # Rank 2: Artist A Track 2, Artist B Track 3, Artist B Track 4, Artist C Track 5 (sorted by artist, title)
+        # Page 1 (limit 2): Artist A Track 1, Artist A Track 2
+        # Page 2 (limit 2): Artist B Track 3, Artist B Track 4
+        self.assertEqual(top_page_2[0]["title"], "Track 3")
+        self.assertEqual(top_page_2[1]["title"], "Track 4")
 
     def test_heatmap_data(self):
         current_year = self.now.year
