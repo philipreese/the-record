@@ -194,7 +194,7 @@ class AppCache {
   // Centralized sync task runner.
   // soft=true: only refresh recentListens after completion (auto track-change syncs).
   // soft=false (default): full cache wipe, used for user-triggered syncs.
-  async runSync(mode: SyncMode = 'normal', soft = false, days?: number) {
+  async runSync(mode: SyncMode = 'normal', soft = false) {
     if (this.isSyncing) return;
     this.isSyncing = true;
     this.syncError = null;
@@ -206,7 +206,7 @@ class AppCache {
     }
 
     try {
-      await triggerSync(mode, days);
+      await triggerSync(mode);
 
       // Poll every 2 seconds
       this.pollInterval = setInterval(async () => {

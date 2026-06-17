@@ -43,10 +43,10 @@ describe('triggerSync', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await triggerSync('full');
+    await triggerSync('mirror');
 
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toContain('/api/sync?mode=full');
+    expect(url).toContain('/api/sync?mode=mirror');
     expect(options.headers['X-Sync-Token']).toBe('');
   });
 });

@@ -373,21 +373,14 @@ def get_last_played() -> Any:
 @router.post("/sync", response_model=SyncStartResponse)
 async def start_sync(
     background_tasks: BackgroundTasks,
-    mode: Literal["normal", "full", "reconcile"] = Query(
+    mode: Literal["normal", "mirror"] = Query(
         "normal",
         description=(
             "Sync mode. "
             "'normal': fast two-pass additive sync — pulls new scrobbles since last sync, then backfills any gaps. Safe to run daily. "
-            "'full': scans your entire ListenBrainz history from newest to oldest and inserts anything missing locally. Slow but thorough. "
-            "'reconcile': compares a date window against ListenBrainz and DELETES local LB-sourced rows that no longer exist there. "
-            "Use 'reconcile' intentionally — it removes data. Non-LB imports (YouTube Music etc.) are never touched."
+            "'mirror': fetches your complete ListenBrainz history, inserts any missing rows, and deletes any local rows not on LB. "
+            "Treats LB as the authoritative source of truth. Takes ~15 minutes for large histories."
         ),
-    ),
-    days: int = Query(
-        30,
-        ge=1,
-        le=365,
-        description="Window size in days for 'reconcile' mode. Ignored for 'normal' and 'full'.",
     ),
     x_sync_token: Optional[str] = Header(None),
 ) -> Any:
@@ -418,8 +411,8 @@ async def start_sync(
         s.error = None
         s.finished = False
 
-    if mode == "reconcile":
-        background_tasks.add_task(sync_worker._run_reconcile, days)
+    if mode == "mirror":
+        background_tasks.add_task(sync_worker._run_mirror)
     else:
         background_tasks.add_task(sync_worker._run_sync, mode)
     return {"status": "started", "mode": mode}

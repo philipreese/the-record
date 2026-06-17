@@ -913,10 +913,8 @@ export interface operations {
     start_sync_api_sync_post: {
         parameters: {
             query?: {
-                /** @description Sync mode. 'normal': fast two-pass additive sync — pulls new scrobbles since last sync, then backfills any gaps. Safe to run daily. 'full': scans your entire ListenBrainz history from newest to oldest and inserts anything missing locally. Slow but thorough. 'reconcile': compares a date window against ListenBrainz and DELETES local LB-sourced rows that no longer exist there. Use 'reconcile' intentionally — it removes data. Non-LB imports (YouTube Music etc.) are never touched. */
-                mode?: "normal" | "full" | "reconcile";
-                /** @description Window size in days for 'reconcile' mode. Ignored for 'normal' and 'full'. */
-                days?: number;
+                /** @description Sync mode. 'normal': fast two-pass additive sync — pulls new scrobbles since last sync, then backfills any gaps. Safe to run daily. 'mirror': fetches your complete ListenBrainz history, inserts any missing rows, and deletes any local rows not on LB. Treats LB as the authoritative source of truth. Takes ~15 minutes for large histories. */
+                mode?: "normal" | "mirror";
             };
             header?: {
                 "x-sync-token"?: string | null;
