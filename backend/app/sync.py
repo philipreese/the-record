@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 import httpx
 
-from sqlalchemy import func, text
+from sqlalchemy import func, text, bindparam
 from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens
 
@@ -97,7 +97,7 @@ async def _run_sync(mode: str) -> None:
                 finally:
                     session.close()
 
-            local_count, latest_ts, oldest_ts, local_keys = load_local_state()
+            local_count, latest_ts, oldest_ts, local_keys = await asyncio.to_thread(load_local_state)
             _sync_state.local_total = local_count
 
             batch_size = 1000
@@ -217,10 +217,10 @@ async def _run_sync(mode: str) -> None:
 
             # Persist Pass 1 results before checking Pass 2
             if new_listens:
-                persist_listens(new_listens)
+                await asyncio.to_thread(persist_listens, new_listens)
                 _sync_state.synced_count += len(new_listens)
                 new_listens.clear()
-                local_count, latest_ts, oldest_ts, local_keys = load_local_state()
+                local_count, latest_ts, oldest_ts, local_keys = await asyncio.to_thread(load_local_state)
                 _sync_state.local_total = local_count
 
             # Pass 2: Backfill (if LB total > local count, scan from oldest_ts downward)
@@ -278,13 +278,16 @@ async def _run_sync(mode: str) -> None:
 
             # 5. Persist any remaining new entries
             if new_listens:
-                persist_listens(new_listens)
+                await asyncio.to_thread(persist_listens, new_listens)
                 _sync_state.synced_count += len(new_listens)
 
-            # 6. Post-sync cleanup for duplicate plays (e.g. from multiple scrobbler apps)
-            deleted_dupes = deduplicate_listens()
-            if deleted_dupes > 0:
-                logger.info("Post-sync cleanup: removed %d duplicate play(s)", deleted_dupes)
+            # 6. Post-sync cleanup: only needed when new rows were inserted, since
+            # duplicates can only arise from fresh inserts (two scrobbler apps
+            # submitting the same listen with slightly different timestamps).
+            if _sync_state.synced_count > 0:
+                deleted_dupes = await asyncio.to_thread(deduplicate_listens)
+                if deleted_dupes > 0:
+                    logger.info("Post-sync cleanup: removed %d duplicate play(s)", deleted_dupes)
 
             logger.info(
                 "Done — fetched %d batch(es), inserted %d new play(s)",
@@ -303,12 +306,11 @@ async def _run_sync(mode: str) -> None:
 async def _run_mirror() -> None:
     """
     Full mirror sync: make the local DB an exact copy of ListenBrainz.
-    Fetches all LB pages (newest to oldest), inserts any rows missing locally,
-    then deletes any local rows not found on LB.
+    Fetches all LB pages (newest to oldest), inserts missing rows incrementally,
+    backfills missing duration/album metadata, then deletes any local rows not
+    found on LB (including exact-key duplicates, keeping the lowest id).
 
-    No source restriction — all local rows across all sources are compared
-    against LB, since LB is treated as the single source of truth.
-
+    No source restriction — all local rows are compared against LB.
     Identity key: (unix_ts, artist.lower(), title.lower())
     """
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
@@ -325,35 +327,75 @@ async def _run_mirror() -> None:
 
     try:
         async with httpx.AsyncClient(timeout=_timeout) as client:
-            # 1. Fetch total count for progress display
-            try:
-                count_res = await client.get(
-                    f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listen-count",
-                    headers=headers,
-                )
-                count_res.raise_for_status()
-                _sync_state.lb_total = count_res.json().get("payload", {}).get("count", 0)
-            except Exception:
-                logger.exception("LB listen-count fetch failed")
+            # 1. Fetch total count for progress display (retry on transient failures)
+            count_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listen-count"
+            for _attempt in range(3):
+                try:
+                    count_res = await client.get(count_url, headers=headers)
+                    count_res.raise_for_status()
+                    _sync_state.lb_total = count_res.json().get("payload", {}).get("count", 0)
+                    break
+                except Exception as e:
+                    if _attempt < 2:
+                        logger.warning("LB listen-count fetch failed (%s), retrying...", e)
+                        await asyncio.sleep(5)
+                    else:
+                        logger.exception("LB listen-count fetch failed after 3 attempts")
 
-            # 2. Load all local rows: key -> id (all sources)
-            session = get_session()
-            try:
-                rows = session.query(Listen.id, Listen.unix_ts, Listen.artist, Listen.title).all()
-            finally:
-                session.close()
+            # 2. Load all local rows: key -> list of (id, duration_secs, album).
+            # A list per key handles exact duplicates (same ts/artist/title) correctly —
+            # a plain dict silently drops all but one id for duplicate keys.
+            def _load_local() -> dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str]]]]:
+                session = get_session()
+                try:
+                    rows = session.query(
+                        Listen.id, Listen.unix_ts, Listen.artist, Listen.title,
+                        Listen.duration_secs, Listen.album,
+                    ).all()
+                    result: dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str]]]] = {}
+                    for r in rows:
+                        key = (r.unix_ts, r.artist.lower(), r.title.lower())
+                        result.setdefault(key, []).append((r.id, r.duration_secs, r.album))
+                    return result
+                finally:
+                    session.close()
 
-            local_key_to_id: dict[tuple[int, str, str], int] = {
-                (r.unix_ts, r.artist.lower(), r.title.lower()): r.id for r in rows
-            }
-            local_keys: set[tuple[int, str, str]] = set(local_key_to_id.keys())
-            _sync_state.local_total = len(local_key_to_id)
+            local_key_to_entries = await asyncio.to_thread(_load_local)
+            local_key_set: set[tuple[int, str, str]] = set(local_key_to_entries.keys())
+            _sync_state.local_total = sum(len(v) for v in local_key_to_entries.values())
 
-            # 3. Fetch all LB pages and collect rows to insert
+            # 3. Fetch all LB pages; insert missing rows after each page so the
+            # synced_count counter updates live rather than only at the end.
             lb_keys: set[tuple[int, str, str]] = set()
-            new_listens: list[dict[str, Any]] = []
+            lb_metadata: dict[tuple[int, str, str], tuple[Optional[int], Optional[str]]] = {}
+            seen_new_keys: set[tuple[int, str, str]] = set()
             batch_size = 1000
             current_max_ts: Optional[int] = None
+
+            def _insert_batch(rows: list[dict[str, Any]]) -> None:
+                rows.sort(key=lambda x: x["unix_ts"])
+                session = get_session()
+                try:
+                    for i in range(0, len(rows), 5000):
+                        chunk = rows[i:i + 5000]
+                        session.bulk_save_objects([
+                            Listen(
+                                artist=item["artist"],
+                                title=item["title"],
+                                unix_ts=item["unix_ts"],
+                                source=item["source"],
+                                duration_secs=item.get("duration_secs"),
+                                album=item.get("album"),
+                            )
+                            for item in chunk
+                        ])
+                        session.flush()
+                    session.commit()
+                except Exception:
+                    session.rollback()
+                    raise
+                finally:
+                    session.close()
 
             while True:
                 url = (
@@ -390,6 +432,8 @@ async def _run_mirror() -> None:
                     break
 
                 _sync_state.batches_fetched += 1
+                page_new: list[dict[str, Any]] = []
+
                 for listen in listens:
                     ts = listen.get("listened_at")
                     if ts is None:
@@ -399,17 +443,21 @@ async def _run_mirror() -> None:
                     title = meta.get("track_name", "")
                     if not artist or not title:
                         continue
+
+                    additional_info = meta.get("additional_info") or {}
+                    duration_secs = _parse_duration(additional_info)
+                    album = meta.get("release_name")
+                    if album and isinstance(album, str):
+                        album = album.strip() or None
+                    else:
+                        album = None
+
                     key: tuple[int, str, str] = (ts, artist.lower(), title.lower())
                     lb_keys.add(key)
-                    if key not in local_keys:
-                        additional_info = meta.get("additional_info") or {}
-                        duration_secs = _parse_duration(additional_info)
-                        album = meta.get("release_name")
-                        if album and isinstance(album, str):
-                            album = album.strip() or None
-                        else:
-                            album = None
-                        new_listens.append({
+                    lb_metadata[key] = (duration_secs, album)
+
+                    if key not in local_key_set and key not in seen_new_keys:
+                        page_new.append({
                             "artist": artist,
                             "title": title,
                             "unix_ts": ts,
@@ -417,51 +465,72 @@ async def _run_mirror() -> None:
                             "duration_secs": duration_secs,
                             "album": album,
                         })
-                        local_keys.add(key)
+                        seen_new_keys.add(key)
+
+                if page_new:
+                    await asyncio.to_thread(_insert_batch, page_new)
+                    _sync_state.synced_count += len(page_new)
 
                 if len(listens) < batch_size:
                     break
                 current_max_ts = listens[-1].get("listened_at")
                 await asyncio.sleep(2)
 
-        # 4. Insert missing rows
-        if new_listens:
-            new_listens.sort(key=lambda x: x["unix_ts"])
-            session = get_session()
-            try:
-                session.bulk_save_objects([
-                    Listen(
-                        artist=item["artist"],
-                        title=item["title"],
-                        unix_ts=item["unix_ts"],
-                        source=item["source"],
-                        duration_secs=item.get("duration_secs"),
-                        album=item.get("album"),
-                    )
-                    for item in new_listens
-                ])
-                session.commit()
-            except Exception:
-                session.rollback()
-                raise
-            finally:
-                session.close()
-            _sync_state.synced_count = len(new_listens)
-            logger.info("Mirror: inserted %d missing row(s)", len(new_listens))
+        # 4. Compute surplus IDs and metadata updates now that lb_keys is complete.
+        surplus_ids: list[int] = []
+        update_rows: list[tuple[int, Optional[int], Optional[str]]] = []
 
-        # 5. Dedup
-        deleted_dupes = deduplicate_listens()
-        if deleted_dupes > 0:
-            logger.info("Mirror: post-sync dedup removed %d duplicate(s)", deleted_dupes)
+        for key, entries in local_key_to_entries.items():
+            entries_sorted = sorted(entries, key=lambda e: e[0])  # lowest id = canonical
 
-        # 6. Delete surplus local rows (not on LB)
-        surplus_ids = [row_id for key, row_id in local_key_to_id.items() if key not in lb_keys]
+            if key in lb_keys:
+                # Keep the canonical row; any extras are exact duplicates → delete.
+                surplus_ids.extend(e[0] for e in entries_sorted[1:])
+
+                # Backfill duration/album on the canonical row if LB has them and we don't.
+                canonical_id, local_dur, local_alb = entries_sorted[0]
+                lb_dur, lb_alb = lb_metadata.get(key, (None, None))
+                new_dur = lb_dur if local_dur is None and lb_dur is not None else local_dur
+                new_alb = lb_alb if local_alb is None and lb_alb is not None else local_alb
+                if new_dur != local_dur or new_alb != local_alb:
+                    update_rows.append((canonical_id, new_dur, new_alb))
+            else:
+                # Key not on LB → delete all local copies regardless of count.
+                surplus_ids.extend(e[0] for e in entries_sorted)
+
+        # 5. Execute metadata updates
+        if update_rows:
+            def _update(rows: list[tuple[int, Optional[int], Optional[str]]]) -> None:
+                session = get_session()
+                try:
+                    for row_id, duration, album in rows:
+                        session.query(Listen).filter(Listen.id == row_id).update(
+                            {"duration_secs": duration, "album": album}
+                        )
+                    session.commit()
+                except Exception:
+                    session.rollback()
+                    raise
+                finally:
+                    session.close()
+
+            await asyncio.to_thread(_update, update_rows)
+            logger.info("Mirror: backfilled metadata for %d row(s)", len(update_rows))
+
+        # 6. Delete surplus rows in chunks to avoid SQLite's bound-variable limit (~999).
         if surplus_ids:
-            with get_engine().begin() as conn:
-                conn.execute(
-                    text("DELETE FROM listens WHERE id IN :ids"),
-                    {"ids": tuple(surplus_ids)},
-                )
+            def _delete(ids: list[int]) -> None:
+                with get_engine().begin() as conn:
+                    for i in range(0, len(ids), 900):
+                        chunk = ids[i:i + 900]
+                        conn.execute(
+                            text("DELETE FROM listens WHERE id IN :ids").bindparams(
+                                bindparam("ids", expanding=True)
+                            ),
+                            {"ids": chunk},
+                        )
+
+            await asyncio.to_thread(_delete, surplus_ids)
             _sync_state.deleted_count = len(surplus_ids)
             logger.info("Mirror: deleted %d surplus local row(s)", len(surplus_ids))
         else:

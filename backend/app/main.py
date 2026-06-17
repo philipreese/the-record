@@ -24,6 +24,7 @@ _app_logger.propagate = False  # Alembic's fileConfig sets root to WARN; bypass 
 sys.path.append(PROJECT_ROOT)
 
 from app.db import bootstrap_db_from_json
+from app.lb_client import close_lb_client
 from app.routes import router
 
 @asynccontextmanager
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Ensure database schema exists and bootstrap initial data on startup."""
     bootstrap_db_from_json()
     yield
+    await close_lb_client()
 
 app = FastAPI(title="The Record API", version="1.0.0", lifespan=lifespan)
 
