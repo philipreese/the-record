@@ -194,10 +194,12 @@ export async function fetchRecentListens(
   limit: number = 50,
   before_ts?: number,
   before_id?: number,
+  anchor_date?: string,
 ): Promise<ListenEntry[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (before_ts !== undefined) params.set('before_ts', String(before_ts));
   if (before_id !== undefined) params.set('before_id', String(before_id));
+  if (anchor_date !== undefined) params.set('anchor_date', anchor_date);
   const res = await apiFetch(`/api/recent?${params}`);
   if (!res.ok) throw new Error('Failed to fetch recent listens');
   return res.json();

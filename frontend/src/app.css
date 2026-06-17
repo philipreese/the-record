@@ -657,6 +657,73 @@ body {
   color: var(--accent);
 }
 
+@utility popover-premium {
+  background-color: color-mix(in srgb, var(--bg-base) 96%, transparent);
+  border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  opacity: 0.98;
+  z-index: 50;
+}
+
+.datepicker-popover {
+  @apply popover-premium;
+  border-style: solid;
+  border-width: 1px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  border-radius: 1rem;
+  padding: 1rem;
+  width: 20rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 1024px) {
+  .datepicker-popover {
+    max-height: 80vh;
+  }
+}
+
+.datepicker-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.25rem;
+  cursor: pointer;
+  transition: all var(--t-immediate) var(--ease-fluid);
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.datepicker-btn:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
+}
+
+.datepicker-btn.active {
+  background-color: var(--accent);
+  color: var(--bg-base);
+  border-color: var(--accent);
+}
+
+.datepicker-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+.datepicker-day-btn {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+  padding: 0;
+}
+
 .editorial-subtitle {
   font-family: var(--font-mono);
   font-size: 0.85rem;

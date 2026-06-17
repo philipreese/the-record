@@ -241,6 +241,15 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(play_count, 1)  # 0 Album B + 1 null-album
         self.assertIsNone(duration)
 
+    def test_recent_listens_with_anchor_date(self):
+        yesterday_date_str = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
+        listens = database.get_recent_listens(limit=10, anchor_date=yesterday_date_str)
+        self.assertEqual(len(listens), 5)
+        # Verify no items are from today (which are self.ts_now and self.ts_now - 10)
+        for item in listens:
+            self.assertNotEqual(item["unix_ts"], self.ts_now)
+            self.assertNotEqual(item["unix_ts"], self.ts_now - 10)
+
 class TestDeduplicateCaseInsensitive(unittest.TestCase):
     """Verify that deduplicate_listens() merges rows differing only in casing."""
 

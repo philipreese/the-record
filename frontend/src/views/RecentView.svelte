@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import {
     fetchRecentListens,
     fetchTrackStats,
+    fetchMonthlyTrends,
     type ListenEntry,
     type TrackStatsInfo,
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import ListenRow from '../components/dashboard/ListenRow.svelte';
+  import DatePicker from '../components/layout/DatePicker.svelte';
 
   const PAGE_SIZE = 50;
 
@@ -19,6 +21,10 @@
 
   let expandedId: number | null = $state(null);
   let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
+
+  // Date jump states
+  let selectedDate = $state('');
+  let currentDate = $state('');
 
   function trackKey(entry: ListenEntry): string {
     return `${entry.artist}||${entry.title}||${entry.album || ''}`;
@@ -63,12 +69,26 @@
     return result;
   });
 
+  function getAnchorDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 2) {
+      // YYYY-MM -> last day of month
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      const lastDay = new Date(year, month, 0).getDate();
+      return `${parts[0]}-${parts[1]}-${String(lastDay).padStart(2, '0')}`;
+    }
+    return dateStr;
+  }
+
   async function loadMore() {
     if (loading || appCache.recentExhausted) return;
     loading = true;
     try {
       const last = appCache.recentListens[appCache.recentListens.length - 1];
-      const page = await fetchRecentListens(PAGE_SIZE, last?.unix_ts, last?.id);
+      const anchor = !last && selectedDate ? getAnchorDate(selectedDate) : undefined;
+      const page = await fetchRecentListens(PAGE_SIZE, last?.unix_ts, last?.id, anchor);
       appCache.recentListens = [...appCache.recentListens, ...page];
       if (page.length < PAGE_SIZE) appCache.recentExhausted = true;
     } catch (e) {
@@ -88,6 +108,15 @@
 
   onMount(async () => {
     window.addEventListener('scroll', onScroll, { passive: true });
+
+    if (appCache.monthlyTrends.length === 0) {
+      try {
+        appCache.monthlyTrends = await fetchMonthlyTrends();
+      } catch (e) {
+        console.error('Failed to load monthly trends:', e);
+      }
+    }
+
     if (appCache.recentListens.length === 0) {
       await loadMore();
     } else {
@@ -95,6 +124,7 @@
         window.scrollTo({ top: appCache.recentScrollOffset, behavior: 'instant' });
       });
     }
+
     observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
@@ -114,17 +144,78 @@
     if (sentinel && observer) observer.observe(sentinel);
   });
 
+  // Trigger reload when selectedDate changes
+  $effect(() => {
+    const date = selectedDate;
+    if (date !== currentDate) {
+      currentDate = date;
+      untrack(() => {
+        appCache.recentListens = [];
+        appCache.recentExhausted = false;
+        appCache.recentScrollOffset = 0;
+        expandedId = null;
+        loadMore();
+      });
+    }
+  });
+
   // Re-fetch when a sync invalidates the cache while this view is mounted
   $effect(() => {
     if (appCache.recentListens.length === 0 && !loading && !appCache.recentExhausted) {
       window.scrollTo({ top: 0, behavior: 'instant' });
+      if (appCache.monthlyTrends.length === 0) {
+        fetchMonthlyTrends()
+          .then((t) => (appCache.monthlyTrends = t))
+          .catch(() => {});
+      }
       loadMore();
     }
   });
 </script>
 
 <div class="w-full pb-28">
-  <PageHeader title="journal" subtitle="your complete listening history" />
+  <PageHeader title="journal" subtitle="your complete listening history">
+    {#snippet actions(_isShrunk)}
+      <div class="hidden lg:block">
+        <div class="flex items-center gap-3">
+          {#if selectedDate}
+            <button
+              type="button"
+              class="btn-nav-text text-xs uppercase tracking-widest font-mono text-theme-accent hover:text-theme-accent/80 transition-colors"
+              onclick={() => (selectedDate = '')}
+            >
+              back to today ↑
+            </button>
+          {/if}
+
+          <DatePicker
+            bind:value={selectedDate}
+            monthlyTrends={appCache.monthlyTrends}
+            class="w-[200px]"
+          />
+        </div>
+      </div>
+    {/snippet}
+  </PageHeader>
+
+  <!-- Mobile Sticky Sub-Header: Stuck month selector on mobile -->
+  <div class="sticky-sub-header lg:hidden flex items-center justify-between gap-3 py-2">
+    <DatePicker
+      bind:value={selectedDate}
+      monthlyTrends={appCache.monthlyTrends}
+      class="w-[190px]"
+    />
+
+    {#if selectedDate}
+      <button
+        type="button"
+        class="btn-nav-text text-xs uppercase tracking-widest font-mono text-theme-accent hover:text-theme-accent/80 transition-colors shrink-0"
+        onclick={() => (selectedDate = '')}
+      >
+        back to today ↑
+      </button>
+    {/if}
+  </div>
 
   {#if appCache.recentListens.length === 0 && loading}
     <div class="space-y-1 mt-6">
