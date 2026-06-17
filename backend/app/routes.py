@@ -1,7 +1,11 @@
+import csv
+import io
+import json
 import logging
 import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from typing import Any, List, Literal, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -422,4 +426,34 @@ def read_on_this_day() -> Any:
     from datetime import datetime
     today = datetime.now()
     return repo.get_on_this_day(today.month, today.day)
+
+
+@router.get("/export")
+def export_listens(
+    format: Literal["csv", "json"] = Query("csv"),
+    range: str = Query("all"),
+) -> StreamingResponse:
+    """Export listening history as CSV or JSON download."""
+    rows = repo.get_export_data(range_days=range)
+
+    if format == "json":
+        content = json.dumps(rows, ensure_ascii=False, indent=2)
+        filename = f"listening-history-{range}.json"
+        return StreamingResponse(
+            iter([content]),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    buf = io.StringIO()
+    if rows:
+        writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    filename = f"listening-history-{range}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
