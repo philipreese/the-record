@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/philipreese/the-record/compare/v0.11.1...v0.12.0) (2026-06-17)
+
+
+### Features
+
+* **sync:** Add reconcile mode to diff and remove deleted ListenBrainz plays ([b7a7484](https://github.com/philipreese/the-record/commit/b7a74849bf7f7f2d33f2433c98cff25b87c5622a))
+* **sync:** Implement mirror mode with full parity and performance fixes ([48f4bee](https://github.com/philipreese/the-record/commit/48f4bee3ec30f43c0e0489036c6dab7bf85136ba))
+
+
+### Code Refactoring
+
+* **sync:** Replace full+reconcile modes with unified mirror mode ([9935b6e](https://github.com/philipreese/the-record/commit/9935b6e498fd12c5df1090c8d983b733b562fd6f))
+
+
+### Documentation
+
+* **spec:** Update sync dedup and mirror mode notes for [#33](https://github.com/philipreese/the-record/issues/33) ([87f55b9](https://github.com/philipreese/the-record/commit/87f55b9ee5853ea14ebf4853703e00ec3129cc2b))
+
+
+### Miscellaneous
+
+* **lint:** Fixed front-end linting ([61118a2](https://github.com/philipreese/the-record/commit/61118a2cc2c0d6d72f3a76d0f227aea7b06bcb78))
+
 ## [0.11.1](https://github.com/philipreese/the-record/compare/v0.11.0...v0.11.1) (2026-06-17)
 
 
