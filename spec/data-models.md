@@ -13,8 +13,8 @@ interface Listen {
   title: string;
   unix_ts: number;      // Unix timestamp, indexed
   source: string;       // "listenbrainz" | "listenbrainz_sync" | "youtube" | "google_takeout" | "unknown"
-  duration_secs?: number | null;  // planned: #31 — populated from LB track_metadata.additional_info.duration_ms
-  album?: string | null;          // planned: #31 — populated from LB track_metadata.release_name
+  duration_secs?: number | null;  // populated from LB track_metadata.additional_info.duration_ms; null for pre-LB imports
+  album?: string | null;          // populated from LB track_metadata.release_name; null for pre-LB imports (e.g. YT Music)
 }
 ```
 
@@ -83,7 +83,7 @@ interface WrappedDataResponse {
 
 interface TrackStatsResponse {
   play_count: number;
-  duration_secs?: number | null;   // null until #31 (duration_secs migration) lands
+  duration_secs?: number | null;   // null for rows where LB did not provide duration
 }
 
 interface SyncStartResponse {
