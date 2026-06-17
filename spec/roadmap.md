@@ -49,16 +49,8 @@ A small widget on the Overview showing what was playing on this exact calendar d
 
 **Backend:** `GET /api/on-this-day` returning listens grouped by year for today's month-day.
 
-### Sync Deletions
-The current sync is additive-only — deletes on ListenBrainz are never reflected locally. Add reconciliation:
-- New sync mode `reconcile` on `POST /api/sync?mode=reconcile`
-- Range-scoped by default (last 30/90/365 days) to avoid full scans
-- Backend fetches all LB listens for the range, diffs against local DB, deletes the surplus
-- Settings UI: "Sync Deletions" button alongside the existing sync controls
-
-**Constraints (must be in the issue when created):**
-- The diff must use the same canonical listen identity as the dedup logic — `(unix_ts, artist.lower(), title.lower())` — or reconcile will mass-delete rows that differ only in casing. (The post-sync dedup SQL and data casing were unified in #105 / migration 005, so this prerequisite is satisfied.)
-- Reconcile must scope to `source LIKE 'listenbrainz%'` rows — imported YouTube/Takeout listens don't exist on LB and would otherwise be deleted wholesale.
+### Sync Deletions ✅ Shipped (#33)
+Implemented as `mirror` mode on `POST /api/sync?mode=mirror`. Fetches the complete LB history, inserts any missing rows, backfills missing `duration_secs`/`album` metadata, and deletes any local rows whose identity key `(unix_ts, artist.lower(), title.lower())` is not present in the fetched LB data. Exact-key local duplicates are also pruned (lowest id kept). No source restriction — LB is treated as the single source of truth for all rows. Takes ~15–20 minutes for large histories.
 
 ### Dynamic Narrative Engine
 Replace the hardcoded hero narrative text on the Overview and Wrapped cards:
