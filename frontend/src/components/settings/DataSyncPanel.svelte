@@ -189,7 +189,8 @@
               </button>
               {#if appCache.lastMirrorResult && !appCache.isSyncing}
                 <p class="text-xs font-mono text-success">
-                  Last mirror: +{appCache.lastMirrorResult.synced} / −{appCache.lastMirrorResult.deleted}
+                  Last mirror: +{appCache.lastMirrorResult.synced} / −{appCache.lastMirrorResult
+                    .deleted}
                 </p>
               {/if}
             </div>
@@ -205,7 +206,8 @@
               <div class="flex justify-between text-xs font-mono">
                 <span class="text-warning font-semibold uppercase">Mirror Sync In Progress</span>
                 <span class="text-theme-muted">
-                  Page {Math.max(1, appCache.syncStatus.batches_fetched)} · {appCache.syncStatus.synced_count} added · {appCache.syncStatus.deleted_count} removed
+                  Page {Math.max(1, appCache.syncStatus.batches_fetched)} · {appCache.syncStatus
+                    .synced_count} added · {appCache.syncStatus.deleted_count} removed
                 </span>
               </div>
               <div class="w-full bg-base-300 h-1.5 rounded-full overflow-hidden">
