@@ -24,7 +24,7 @@
   id="telemetry-volumes"
 >
   <h2 class="editorial-text-h2">
-    {sectionNumber} / {@html appCache.narrative['overview.insight.telemetry_volumes_header'] ||
+    {sectionNumber} / {appCache.narrative['overview.insight.telemetry_volumes_header'] ||
       'Telemetry & Volumes'}
   </h2>
   <div class="mt-8 reveal-content" transition:slide={{ duration: 250 }}>

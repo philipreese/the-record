@@ -4,6 +4,7 @@
   import { inView } from '../utils/inView';
   import AnimatedCounter from '../components/dashboard/AnimatedCounter.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
+  import NarrativeText from '../components/layout/NarrativeText.svelte';
   import NowPlaying from '../components/NowPlaying.svelte';
   import ScrollNavButton from '../components/layout/ScrollNavButton.svelte';
   import HeatmapSection from '../components/overview/HeatmapSection.svelte';
@@ -261,15 +262,10 @@
           <p
             class="text-2xl md:text-3xl xl:text-4xl font-serif font-light leading-relaxed italic text-theme-secondary"
           >
-            {@html appCache.narrative['overview.hero'] ||
-              `A period of active musical recollection. You have integrated music into &nbsp;<span
-              class="font-sans font-normal text-theme-accent">${currentStats.days_active} days</span>&nbsp; of your journey, averaging &nbsp;<span
-              class="font-sans font-normal text-theme-accent"
-              >${currentStats.avg_per_day} tracks</span>&nbsp; daily. Your primary sonic gateway is &nbsp;<span
-              class="font-sans font-normal capitalize text-theme-accent"
-              >${currentStats.top_source.replace('_', ' ')}</span>,&nbsp; sustaining a continuous streak of &nbsp;<span
-              class="font-sans font-normal text-theme-accent"
-              >${currentStreak.current_streak} days</span>&nbsp; of conscious listening.`}
+            <NarrativeText
+              text={appCache.narrative['overview.hero'] || 'A continuous stream of sounds.'}
+              accentClass="font-sans font-normal text-theme-accent"
+            />
           </p>
         </div>
       {/if}
@@ -302,8 +298,7 @@
   >
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h2 class="editorial-text-h2">
-        03 / {@html appCache.narrative['overview.insight.streak_header'] ||
-          'Recollection Continuous'}
+        03 / {appCache.narrative['overview.insight.streak_header'] || 'Recollection Continuous'}
       </h2>
     </div>
     <div class="reveal-content">

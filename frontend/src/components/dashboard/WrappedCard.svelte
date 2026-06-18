@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
+  import NarrativeText from '../layout/NarrativeText.svelte';
   import type { WrappedDataInfo, WrappedQuarter, WrappedMonth } from '../../services/api';
   import AnimatedCounter from './AnimatedCounter.svelte';
   import { tooltip } from '../../utils/tooltip';
@@ -80,24 +81,29 @@
           <div class="grid grid-cols-1 xl:grid-cols-5 gap-8 xl:gap-12 items-center py-4">
             <div class="xl:col-span-2 space-y-5 text-center xl:text-left">
               <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
-                >{@html appCache.narrative['wrapped.slide0.section'] || '01 / The Archeology'}</span
+                >{appCache.narrative['wrapped.slide0.section'] || '01 / The Archeology'}</span
               >
               <h2 class="editorial-text-h1 lowercase text-4xl lg:text-5xl">
-                {@html appCache.narrative['wrapped.slide0.title'] ||
-                  'reviewing the <span class="italic text-theme-accent">resonance</span>'}
+                <NarrativeText
+                  text={appCache.narrative['wrapped.slide0.title'] || 'reviewing the *resonance*'}
+                  accentClass="italic text-theme-accent"
+                />
               </h2>
               <p class="text-base font-light leading-relaxed text-theme-secondary">
-                {@html (
-                  appCache.narrative['wrapped.period_summary'] ||
-                  'Unfolding the musical residue of your archive for <span class="text-theme-accent font-normal">{period_str}</span>.'
-                ).replace('{period_str}', periodStr)}
+                <NarrativeText
+                  text={(
+                    appCache.narrative['wrapped.period_summary'] ||
+                    'Unfolding the musical residue of your archive for *{period_str}*.'
+                  ).replace('{period_str}', periodStr)}
+                  accentClass="text-theme-accent font-normal"
+                />
               </p>
               <div class="pt-2">
                 <button
                   class="btn btn-md btn-outline rounded-full font-mono text-xs tracking-widest uppercase cursor-pointer px-6 text-theme-accent border-theme-accent/30"
                   onclick={() => currentStep++}
                 >
-                  {@html appCache.narrative['wrapped.slide0.button'] || 'Begin Deep Dive &rarr;'}
+                  {appCache.narrative['wrapped.slide0.button'] || 'Begin Deep Dive &rarr;'}
                 </button>
               </div>
             </div>
@@ -108,7 +114,7 @@
               <div class="grid grid-cols-2 gap-6">
                 <div class="space-y-1">
                   <span class="text-caps text-xs text-theme-muted"
-                    >{@html appCache.narrative['wrapped.slide0.stat1'] || 'Total Plays'}</span
+                    >{appCache.narrative['wrapped.slide0.stat1'] || 'Total Plays'}</span
                   >
                   <div class="text-2xl font-light font-sans tracking-tight text-theme-text">
                     <AnimatedCounter value={data.total_plays} />
@@ -117,7 +123,7 @@
 
                 <div class="space-y-1">
                   <span class="text-caps text-xs text-theme-muted"
-                    >{@html appCache.narrative['wrapped.slide0.stat2'] || 'Minutes Listened'}</span
+                    >{appCache.narrative['wrapped.slide0.stat2'] || 'Minutes Listened'}</span
                   >
                   <div class="text-2xl font-light font-sans tracking-tight text-theme-text">
                     <AnimatedCounter value={data.minutes_listened} />
@@ -126,7 +132,7 @@
 
                 <div class="space-y-1">
                   <span class="text-caps text-xs text-theme-muted"
-                    >{@html appCache.narrative['wrapped.slide0.stat3'] || 'Top Creator'}</span
+                    >{appCache.narrative['wrapped.slide0.stat3'] || 'Top Creator'}</span
                   >
                   {#if data.top_artist}
                     <div class="text-lg font-light truncate text-theme-text" use:tooltip>
@@ -142,7 +148,7 @@
 
                 <div class="space-y-1">
                   <span class="text-caps text-xs text-theme-muted"
-                    >{@html appCache.narrative['wrapped.slide0.stat4'] || 'Top Track'}</span
+                    >{appCache.narrative['wrapped.slide0.stat4'] || 'Top Track'}</span
                   >
                   {#if data.top_track}
                     <div class="text-lg font-light truncate text-theme-text" use:tooltip>
@@ -162,7 +168,7 @@
                 {#if data.peak_day}
                   <div class="col-span-2 pt-6 border-t border-theme-border-soft">
                     <span class="text-caps text-xs text-theme-muted"
-                      >{@html appCache.narrative['wrapped.slide0.stat5'] || 'Peak Intensity'}</span
+                      >{appCache.narrative['wrapped.slide0.stat5'] || 'Peak Intensity'}</span
                     >
                     <div class="flex justify-between items-baseline">
                       <div class="text-base font-light truncate text-theme-text" use:tooltip>
@@ -182,7 +188,7 @@
                 {#if data.on_repeat_peak}
                   <div class="col-span-2 pt-6 border-t border-theme-border-soft">
                     <span class="text-caps text-xs text-theme-muted"
-                      >{@html appCache.narrative['wrapped.slide0.stat6'] || 'On Repeat'}</span
+                      >{appCache.narrative['wrapped.slide0.stat6'] || 'On Repeat'}</span
                     >
                     <div class="flex justify-between items-baseline gap-2">
                       <div class="text-base font-light truncate text-theme-text" use:tooltip>
@@ -201,23 +207,26 @@
           <!-- Slide 1: Volume / Duration -->
           <div class="text-center space-y-4 py-4">
             <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
-              >{@html appCache.narrative['wrapped.slide1.section'] || '02 / Duration & Echo'}</span
+              >{appCache.narrative['wrapped.slide1.section'] || '02 / Duration & Echo'}</span
             >
             <div class="space-y-1">
               <div class="text-display-large text-theme-accent">
                 <AnimatedCounter value={data.total_plays} />
               </div>
               <div class="text-caps text-xs text-theme-muted">
-                {@html appCache.narrative['wrapped.slide1.label'] || 'Total Plays Logged'}
+                {appCache.narrative['wrapped.slide1.label'] || 'Total Plays Logged'}
               </div>
             </div>
             <div
               class="pt-4 text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary"
             >
-              {@html (
-                appCache.narrative['wrapped.slide1.desc'] ||
-                'This volume amounts to approximately <span class="font-normal font-mono text-base text-theme-accent">{minutes_listened}</span> minutes of active listening, a steady acoustic flow in your memory space.'
-              ).replace('{minutes_listened}', data.minutes_listened.toLocaleString())}
+              <NarrativeText
+                text={(
+                  appCache.narrative['wrapped.slide1.desc'] ||
+                  'This volume amounts to approximately *{minutes_listened}* minutes of active listening, a steady acoustic flow in your memory space.'
+                ).replace('{minutes_listened}', data.minutes_listened.toLocaleString())}
+                accentClass="font-normal font-mono text-base text-theme-accent"
+              />
             </div>
           </div>
         {:else if currentStep === 2}
@@ -225,7 +234,7 @@
           <div class="space-y-8 py-2">
             <div class="text-center">
               <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
-                >{@html appCache.narrative['wrapped.slide2.section'] || '03 / Key Companions'}</span
+                >{appCache.narrative['wrapped.slide2.section'] || '03 / Key Companions'}</span
               >
             </div>
 
@@ -234,7 +243,7 @@
                 class="p-8 rounded-2xl border text-center space-y-3 border-theme-border-soft bg-theme-neutral-soft"
               >
                 <div class="text-xs font-mono tracking-widest text-theme-muted uppercase">
-                  {@html appCache.narrative['wrapped.slide2.label1'] || 'Top Creator'}
+                  {appCache.narrative['wrapped.slide2.label1'] || 'Top Creator'}
                 </div>
                 {#if data.top_artist}
                   <div class="text-xl md:text-2xl font-light truncate text-theme-text" use:tooltip>
@@ -252,7 +261,7 @@
                 class="p-8 rounded-2xl border text-center space-y-3 border-theme-border-soft bg-theme-neutral-soft"
               >
                 <div class="text-xs font-mono tracking-widest text-theme-muted uppercase">
-                  {@html appCache.narrative['wrapped.slide2.label2'] || 'Top Track'}
+                  {appCache.narrative['wrapped.slide2.label2'] || 'Top Track'}
                 </div>
                 {#if data.top_track}
                   <div class="text-xl md:text-2xl font-light truncate text-theme-text" use:tooltip>
@@ -277,13 +286,13 @@
           <!-- Slide 3: Peak Day -->
           <div class="text-center space-y-6 py-4">
             <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
-              >{@html appCache.narrative['wrapped.slide3.section'] || '04 / Peak Intensity'}</span
+              >{appCache.narrative['wrapped.slide3.section'] || '04 / Peak Intensity'}</span
             >
 
             {#if data.peak_day}
               <div class="space-y-2">
                 <div class="text-xs font-mono uppercase tracking-widest text-theme-muted">
-                  {@html appCache.narrative['wrapped.slide3.label'] || 'Peak listening day'}
+                  {appCache.narrative['wrapped.slide3.label'] || 'Peak listening day'}
                 </div>
                 <h3 class="text-4xl lg:text-5xl font-serif italic text-theme-text">
                   {new Date(data.peak_day.date + 'T12:00:00').toLocaleDateString(undefined, {
@@ -298,7 +307,7 @@
                 <span class="text-sm font-mono text-theme-muted">in 24 hours</span>
               </div>
               <p class="text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary">
-                {@html appCache.narrative['wrapped.slide3.desc'] ||
+                {appCache.narrative['wrapped.slide3.desc'] ||
                   'A day of intense musical immersion, leaving a distinct marker in your temporal archive.'}
               </p>
             {:else}
@@ -309,14 +318,13 @@
           <!-- Slide 4: On Repeat -->
           <div class="text-center space-y-6 py-4">
             <span class="text-xs font-mono tracking-widest text-theme-muted uppercase"
-              >{@html appCache.narrative['wrapped.slide4.section'] || '05 / The Obsession'}</span
+              >{appCache.narrative['wrapped.slide4.section'] || '05 / The Obsession'}</span
             >
 
             {#if data.on_repeat_peak}
               <div class="space-y-2">
                 <div class="text-xs font-mono uppercase tracking-widest text-theme-muted">
-                  {@html appCache.narrative['wrapped.slide4.label'] ||
-                    'Most replayed in a single day'}
+                  {appCache.narrative['wrapped.slide4.label'] || 'Most replayed in a single day'}
                 </div>
                 <h3 class="text-3xl lg:text-4xl font-serif italic text-theme-text">
                   {data.on_repeat_peak.title}
@@ -339,7 +347,7 @@
                 </span>
               </div>
               <p class="text-base font-light max-w-lg mx-auto leading-relaxed text-theme-secondary">
-                {@html appCache.narrative['wrapped.slide4.desc'] ||
+                {appCache.narrative['wrapped.slide4.desc'] ||
                   'The single track you returned to most obsessively &mdash; a sonic loop that defined its day.'}
               </p>
             {:else}

@@ -48,7 +48,7 @@ def generate_narrative(stats, streak, seed=None):
     vars_dict = {
         "days_active": stats.get("days_active", 0),
         "avg_per_day": stats.get("avg_per_day", 0),
-        "top_source": stats.get("top_source", "").replace("_", " "),
+        "top_source": stats.get("top_source", "").replace("_", " ").title(),
         "current_streak": streak.get("current_streak", 0),
         "total_listens": stats.get("total_listens", 0)
     }

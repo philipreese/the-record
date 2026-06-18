@@ -341,7 +341,7 @@
     class="flex items-center justify-end gap-2 mt-4 px-2 text-xs font-mono"
     style="color: var(--text-muted);"
   >
-    <span>{@html appCache.narrative['heatmap.legend_quiet'] || 'Quiet'}</span>
+    <span>{appCache.narrative['heatmap.legend_quiet'] || 'Quiet'}</span>
     <button
       type="button"
       class="w-3 h-3 rounded-sm bg-base-300 opacity-10 cursor-pointer block p-0 border-none outline-none focus:scale-110"
@@ -401,7 +401,7 @@
       }}
       aria-label="Level 4 plays legend"
     ></button>
-    <span>{@html appCache.narrative['heatmap.legend_resonant'] || 'Resonant'}</span>
+    <span>{appCache.narrative['heatmap.legend_resonant'] || 'Resonant'}</span>
   </div>
 
   <!-- Custom Floating HTML Popover -->
@@ -424,22 +424,22 @@
       {#if hoveredDay.count > 0}
         <div class="text-micro opacity-75 mt-0.5" style="color: var(--text-secondary);">
           {#if hoveredDay.weight === 1}
-            {@html appCache.narrative['heatmap.tooltip.weight1'] || 'Quiet, observed resonance'}
+            {appCache.narrative['heatmap.tooltip.weight1'] || 'Quiet, observed resonance'}
           {:else if hoveredDay.weight === 2}
-            {@html appCache.narrative['heatmap.tooltip.weight2'] || 'Active connection'}
+            {appCache.narrative['heatmap.tooltip.weight2'] || 'Active connection'}
           {:else if hoveredDay.weight === 3}
-            {@html appCache.narrative['heatmap.tooltip.weight3'] || 'Deep musical immersion'}
+            {appCache.narrative['heatmap.tooltip.weight3'] || 'Deep musical immersion'}
           {:else}
-            {@html appCache.narrative['heatmap.tooltip.weight4'] || 'Intense emotional archaeology'}
+            {appCache.narrative['heatmap.tooltip.weight4'] || 'Intense emotional archaeology'}
           {/if}
         </div>
       {:else if hoveredDay.isFuture}
         <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
-          {@html appCache.narrative['heatmap.tooltip.unwritten'] || 'Unwritten moment'}
+          {appCache.narrative['heatmap.tooltip.unwritten'] || 'Unwritten moment'}
         </div>
       {:else}
         <div class="text-micro opacity-50 mt-0.5" style="color: var(--text-muted);">
-          {@html appCache.narrative['heatmap.tooltip.silence'] || 'Silence and space'}
+          {appCache.narrative['heatmap.tooltip.silence'] || 'Silence and space'}
         </div>
       {/if}
     </div>

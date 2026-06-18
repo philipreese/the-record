@@ -116,23 +116,23 @@
   "sidebar.archived_plays": [
     {
       "condition": "always_true",
-      "text": "Archived <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> plays"
+      "text": "Archived *{total_listens}* plays"
     },
     {
       "condition": "always_true",
-      "text": "Cataloged <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> tracks"
+      "text": "Cataloged *{total_listens}* tracks"
     },
     {
       "condition": "always_true",
-      "text": "Stored <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> memories"
+      "text": "Stored *{total_listens}* memories"
     },
     {
       "condition": "always_true",
-      "text": "Recorded <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> listens"
+      "text": "Recorded *{total_listens}* listens"
     },
     {
       "condition": "always_true",
-      "text": "Secured <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> moments"
+      "text": "Secured *{total_listens}* moments"
     }
   ],
   "sidebar.nav.dashboard": [
@@ -270,43 +270,43 @@
   "overview.hero": [
     {
       "condition": "streak_over_30",
-      "text": "An unbroken chain of <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> of musical immersion. You have logged <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> total, averaging <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily via <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+      "text": "An unbroken chain of *{current_streak} days* of musical immersion. You have logged *{days_active} days* total, averaging *{avg_per_day} tracks* daily via *{top_source}*."
     },
     {
       "condition": "streak_over_30",
-      "text": "A relentless acoustic journey. For <span class=\"font-sans font-normal text-theme-accent\">{current_streak} consecutive days</span>, music has been a constant companion. Over <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span>, your <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> pipeline has delivered <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day."
+      "text": "A relentless acoustic journey. For *{current_streak} consecutive days*, music has been a constant companion. Over *{days_active} days*, your *{top_source}* pipeline has delivered *{avg_per_day} tracks* per day."
     },
     {
       "condition": "high_avg_per_day",
-      "text": "A period of intense musical recollection. You average a staggering <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily through <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>. In total, <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your journey have been scored, currently riding a <span class=\"font-sans font-normal text-theme-accent\">{current_streak} day</span> streak."
+      "text": "A period of intense musical recollection. You average a staggering *{avg_per_day} tracks* daily through *{top_source}*. In total, *{days_active} days* of your journey have been scored, currently riding a *{current_streak} day* streak."
     },
     {
       "condition": "always_true",
-      "text": "A period of active musical recollection. You have integrated music into <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your journey, averaging <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily. Your primary sonic gateway is <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, sustaining a continuous streak of <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> of conscious listening."
+      "text": "A period of active musical recollection. You have integrated music into *{days_active} days* of your journey, averaging *{avg_per_day} tracks* daily. Your primary sonic gateway is *{top_source}*, sustaining a continuous streak of *{current_streak} days* of conscious listening."
     },
     {
       "condition": "always_true",
-      "text": "Your sonic footprint is growing. Across <span class=\"font-sans font-normal text-theme-accent\">{days_active} active days</span>, you've maintained an average of <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> a day. Currently on a <span class=\"font-sans font-normal text-theme-accent\">{current_streak} day</span> streak, with <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> acting as the primary vessel."
+      "text": "Your sonic footprint is growing. Across *{days_active} active days*, you've maintained an average of *{avg_per_day} tracks* a day. Currently on a *{current_streak} day* streak, with *{top_source}* acting as the primary vessel."
     },
     {
       "condition": "always_true",
-      "text": "Documenting the soundtrack of your life. <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> recorded, flowing at <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day. The streak stands at <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>, primarily fueled by <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+      "text": "Documenting the soundtrack of your life. *{days_active} days* recorded, flowing at *{avg_per_day} tracks* per day. The streak stands at *{current_streak} days*, primarily fueled by *{top_source}*."
     },
     {
       "condition": "always_true",
-      "text": "The archive deepens. Music has touched <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your timeline. You're absorbing <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily, primarily through <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, keeping a streak alive for <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+      "text": "The archive deepens. Music has touched *{days_active} days* of your timeline. You're absorbing *{avg_per_day} tracks* daily, primarily through *{top_source}*, keeping a streak alive for *{current_streak} days*."
     },
     {
       "condition": "always_true",
-      "text": "A steady acoustic flow. <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> pass through your ears on an average day. This habit has spanned <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span>, driven by <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, and is currently unbroken for <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+      "text": "A steady acoustic flow. *{avg_per_day} tracks* pass through your ears on an average day. This habit has spanned *{days_active} days*, driven by *{top_source}*, and is currently unbroken for *{current_streak} days*."
     },
     {
       "condition": "always_true",
-      "text": "Music as a daily ritual. <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of history reveal a pace of <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day. You are <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> into your current run, utilizing <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+      "text": "Music as a daily ritual. *{days_active} days* of history reveal a pace of *{avg_per_day} tracks* per day. You are *{current_streak} days* into your current run, utilizing *{top_source}*."
     },
     {
       "condition": "always_true",
-      "text": "The rhythm of your days. You average <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> over <span class=\"font-sans font-normal text-theme-accent\">{days_active} active days</span>. <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> delivers the sound, keeping your current streak at <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+      "text": "The rhythm of your days. You average *{avg_per_day} tracks* over *{days_active} active days*. *{top_source}* delivers the sound, keeping your current streak at *{current_streak} days*."
     }
   ],
   "overview.section_streak": [
@@ -1390,65 +1390,65 @@
   "wrapped.slide0.title": [
     {
       "condition": "always_true",
-      "text": "reviewing the <span class=\"italic text-theme-accent\">resonance</span>"
+      "text": "reviewing the *resonance*"
     },
     {
       "condition": "always_true",
-      "text": "uncovering the <span class=\"italic text-theme-accent\">archive</span>"
+      "text": "uncovering the *archive*"
     },
     {
       "condition": "always_true",
-      "text": "analyzing the <span class=\"italic text-theme-accent\">signal</span>"
+      "text": "analyzing the *signal*"
     },
     {
       "condition": "always_true",
-      "text": "exploring the <span class=\"italic text-theme-accent\">echoes</span>"
+      "text": "exploring the *echoes*"
     },
     {
       "condition": "always_true",
-      "text": "surveying the <span class=\"italic text-theme-accent\">volume</span>"
+      "text": "surveying the *volume*"
     }
   ],
   "wrapped.period_summary": [
     {
       "condition": "always_true",
-      "text": "Unfolding the musical residue of your archive for <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "Unfolding the musical residue of your archive for *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "A retrospective of the sounds that defined <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "A retrospective of the sounds that defined *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "Digging into the audio footprint you left behind in <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "Digging into the audio footprint you left behind in *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "An examination of your listening habits during <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "An examination of your listening habits during *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "The aggregated story of your musical choices in <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "The aggregated story of your musical choices in *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "Reviewing the tracks, artists, and moments that shaped <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "Reviewing the tracks, artists, and moments that shaped *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "Bringing the quiet statistics of <span class=\"text-theme-accent font-normal\">{period_str}</span> to light."
+      "text": "Bringing the quiet statistics of *{period_str}* to light."
     },
     {
       "condition": "always_true",
-      "text": "Tracing your acoustic steps throughout <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "Tracing your acoustic steps throughout *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "A data-driven look back at your <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "A data-driven look back at your *{period_str}*."
     },
     {
       "condition": "always_true",
-      "text": "Reflecting on the continuous stream of music from <span class=\"text-theme-accent font-normal\">{period_str}</span>."
+      "text": "Reflecting on the continuous stream of music from *{period_str}*."
     }
   ],
   "wrapped.slide0.button": [
@@ -1652,23 +1652,23 @@
   "wrapped.slide1.desc": [
     {
       "condition": "always_true",
-      "text": "This volume amounts to approximately <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of active listening, a steady acoustic flow in your memory space."
+      "text": "This volume amounts to approximately *{minutes_listened}* minutes of active listening, a steady acoustic flow in your memory space."
     },
     {
       "condition": "always_true",
-      "text": "You spent <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes immersed in sound, building a vast architecture of echoes."
+      "text": "You spent *{minutes_listened}* minutes immersed in sound, building a vast architecture of echoes."
     },
     {
       "condition": "always_true",
-      "text": "Translating to <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of playtime, your dedication to the stream is undeniable."
+      "text": "Translating to *{minutes_listened}* minutes of playtime, your dedication to the stream is undeniable."
     },
     {
       "condition": "always_true",
-      "text": "That's roughly <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of music shaping your days and filling the silence."
+      "text": "That's roughly *{minutes_listened}* minutes of music shaping your days and filling the silence."
     },
     {
       "condition": "always_true",
-      "text": "A total of <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes were claimed by these tracks, leaving a profound mark on your timeline."
+      "text": "A total of *{minutes_listened}* minutes were claimed by these tracks, leaving a profound mark on your timeline."
     }
   ],
   "wrapped.slide2.section": [
