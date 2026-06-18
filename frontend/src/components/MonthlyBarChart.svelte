@@ -38,7 +38,7 @@
 
 <!-- Using first-class memory-surface class with heatmap-matching padding !p-6 -->
 <div
-  class="memory-surface heatmap-container flex flex-col justify-between h-full min-h-55 p-6! relative overflow-visible"
+  class="memory-surface heatmap-container flex flex-col justify-between h-full min-h-55 p-4! relative overflow-visible"
 >
   <div class="flex justify-between items-center mb-4">
     <span class="text-caps text-[10px] text-theme-muted tracking-widest uppercase"
@@ -50,7 +50,7 @@
   <div class="grow flex items-end gap-1.5 h-52 px-1 relative">
     {#each monthsData as month}
       <div
-        class="grow h-full flex flex-col justify-end items-center group relative"
+        class="grow h-full flex flex-col justify-end items-center group relative cursor-pointer"
         role="button"
         tabindex="0"
         aria-label="{month.label} {year}: {month.count} plays"
