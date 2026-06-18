@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0](https://github.com/philipreese/the-record/compare/v0.16.0...v0.17.0) (2026-06-18)
+
+
+### Features
+
+* **charts:** Add temporal streamgraph showing top artist trends ([9c63a8b](https://github.com/philipreese/the-record/commit/9c63a8b672cd037eb8ce91efa50b1b1f9ec0d68e))
+* **charts:** Fix mobile streamgraph zoom and make filters sticky ([e26a0a9](https://github.com/philipreese/the-record/commit/e26a0a920f62bd31a655314e3e6b5b862f66d238))
+* **charts:** Relocate top lists range filters below streamgraph ([f7e5f55](https://github.com/philipreese/the-record/commit/f7e5f5541081de7f7f8c5f3104709e6cded17adc))
+* **charts:** Style year selector dropdown using SelectDropdown ([9d89f17](https://github.com/philipreese/the-record/commit/9d89f177b79d2f6f55c8507ef7451a108d81ee2e))
+
+
+### Bug Fixes
+
+* **charts:** Restrict streamgraph double-tap zoom gesture to mobile viewports ([689aaeb](https://github.com/philipreese/the-record/commit/689aaeb133303495b5a194ce894cbd046d526693))
+
+
+### Documentation
+
+* **spec:** Document temporal streamgraph feature and new API routes ([7e8d066](https://github.com/philipreese/the-record/commit/7e8d066591e09bae3fee8a8621001175d1c00cc7))
+
 ## [0.16.0](https://github.com/philipreese/the-record/compare/v0.15.2...v0.16.0) (2026-06-18)
 
 
