@@ -32,6 +32,8 @@ from app.schemas import (
     TrackBatchRequestItem,
     TrackBatchResponseItem,
     WeeklyBreakdownItem,
+    TopArtistTrendsResponse,
+    ArtistTrendResponse,
 )
 
 router = APIRouter()
@@ -559,4 +561,27 @@ def read_monthly_weekly_breakdown(
 ) -> Any:
     """Retrieve play counts grouped by week-of-month for a given year and month."""
     return repo.get_weekly_breakdown(year, month)
+
+
+@router.get("/top-artist-trends", response_model=TopArtistTrendsResponse)
+def read_top_artist_trends(
+    year: int = Query(..., ge=2000, le=2100, description="The calendar year to display"),
+    limit: int = Query(5, ge=1, le=20, description="Max artists to return"),
+) -> Any:
+    """Retrieve top N artists with their monthly breakdowns for a specified year."""
+    return repo.get_top_artist_trends(year=year, limit=limit)
+
+
+@router.get("/artist-trend", response_model=ArtistTrendResponse)
+def read_artist_trend(
+    artist: str = Query(..., description="Artist name"),
+    year: int = Query(..., ge=2000, le=2100, description="The calendar year to display"),
+    limit: int = Query(5, ge=1, le=20, description="Max tracks to return"),
+) -> Any:
+    """Retrieve top N tracks of an artist with their monthly breakdowns for a specified year."""
+    clean_artist = artist.strip()
+    if not clean_artist:
+        raise HTTPException(status_code=400, detail="Artist name cannot be empty.")
+    return repo.get_artist_track_trends(artist=clean_artist, year=year, limit=limit)
+
 

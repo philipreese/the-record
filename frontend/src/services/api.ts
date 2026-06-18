@@ -31,6 +31,8 @@ export type OnThisDayGroup = components['schemas']['OnThisDayGroup'];
 export type TrackBatchRequestItem = components['schemas']['TrackBatchRequestItem'];
 export type TrackBatchResponseItem = components['schemas']['TrackBatchResponseItem'];
 export type WeeklyBreakdownItem = components['schemas']['WeeklyBreakdownItem'];
+export type TopArtistTrendsResponse = components['schemas']['TopArtistTrendsResponse'];
+export type ArtistTrendResponse = components['schemas']['ArtistTrendResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -284,5 +286,28 @@ export async function fetchWeeklyBreakdown(
     params: { path: { year, month } },
   });
   if (error) throw new Error('Failed to fetch weekly breakdown');
+  return data;
+}
+
+export async function fetchTopArtistTrends(
+  year: number,
+  limit?: number,
+): Promise<TopArtistTrendsResponse> {
+  const { data, error } = await client.GET('/api/top-artist-trends', {
+    params: { query: { year, ...(limit !== undefined ? { limit } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch top artist trends');
+  return data;
+}
+
+export async function fetchArtistTrackTrends(
+  artist: string,
+  year: number,
+  limit?: number,
+): Promise<ArtistTrendResponse> {
+  const { data, error } = await client.GET('/api/artist-trend', {
+    params: { query: { artist, year, ...(limit !== undefined ? { limit } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch artist track trends');
   return data;
 }

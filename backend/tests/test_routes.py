@@ -148,6 +148,71 @@ class TestTrackStatsRoute(unittest.TestCase):
         ])
 
 
+class TestTrendRoutes(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_top_artist_trends")
+    def test_top_artist_trends_route(self, mock_get_trends) -> None:
+        mock_get_trends.return_value = {
+            "year": 2026,
+            "trends": [
+                {
+                    "artist": "Radiohead",
+                    "play_count": 10,
+                    "monthly_counts": [{"month": "2026-01", "count": 10}]
+                }
+            ]
+        }
+
+        res = self.client.get("/api/top-artist-trends", params={"year": 2026, "limit": 5})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {
+            "year": 2026,
+            "trends": [
+                {
+                    "artist": "Radiohead",
+                    "play_count": 10,
+                    "monthly_counts": [{"month": "2026-01", "count": 10}]
+                }
+            ]
+        })
+        mock_get_trends.assert_called_once_with(year=2026, limit=5)
+
+    @mock.patch("app.routes.repo.get_artist_track_trends")
+    def test_artist_track_trends_route(self, mock_get_trends) -> None:
+        mock_get_trends.return_value = {
+            "artist": "Radiohead",
+            "year": 2026,
+            "trends": [
+                {
+                    "track": "Creep",
+                    "play_count": 10,
+                    "monthly_counts": [{"month": "2026-01", "count": 10}]
+                }
+            ]
+        }
+
+        res = self.client.get("/api/artist-trend", params={"artist": "Radiohead", "year": 2026, "limit": 5})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {
+            "artist": "Radiohead",
+            "year": 2026,
+            "trends": [
+                {
+                    "track": "Creep",
+                    "play_count": 10,
+                    "monthly_counts": [{"month": "2026-01", "count": 10}]
+                }
+            ]
+        })
+        mock_get_trends.assert_called_once_with(artist="Radiohead", year=2026, limit=5)
+
+    def test_artist_trend_empty_artist(self) -> None:
+        res = self.client.get("/api/artist-trend", params={"artist": "  ", "year": 2026})
+        self.assertEqual(res.status_code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
+
