@@ -1,13 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { inView } from '../../utils/inView';
-  import {
-    fetchTrackStats,
-    fetchTrackStatsBatch,
-    type OnThisDayGroup,
-    type ListenEntry,
-    type TrackStatsInfo,
-  } from '../../services/api';
+  import { fetchTrackStats, type OnThisDayGroup, type ListenEntry } from '../../services/api';
+  import { appCache } from '../../services/store.svelte';
   import ListenRow from '../dashboard/ListenRow.svelte';
 
   let {
@@ -37,64 +32,13 @@
   }
 
   let expandedId = $state<number | null>(null);
-  let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
-  const inFlightKeys = new Set<string>();
-
-  function trackKey(entry: ListenEntry): string {
-    return `${entry.artist}||${entry.title}||${entry.album || ''}`;
-  }
-
-  async function fetchStatsForPage(page: ListenEntry[]) {
-    const uniqueTracksToFetch: { artist: string; title: string; key: string }[] = [];
-
-    for (const entry of page) {
-      const statsKey = trackKey(entry);
-      if (!(statsKey in trackStatsCache) && !inFlightKeys.has(statsKey)) {
-        inFlightKeys.add(statsKey);
-        uniqueTracksToFetch.push({
-          artist: entry.artist,
-          title: entry.title,
-          key: statsKey,
-        });
-      }
-    }
-
-    if (uniqueTracksToFetch.length === 0) return;
-
-    try {
-      const batchRes = await fetchTrackStatsBatch(
-        uniqueTracksToFetch.map((t) => ({ artist: t.artist, title: t.title })),
-      );
-
-      for (let i = 0; i < uniqueTracksToFetch.length; i++) {
-        const statsKey = uniqueTracksToFetch[i].key;
-        const resItem = batchRes[i];
-        if (resItem) {
-          trackStatsCache[statsKey] = {
-            play_count: resItem.play_count,
-            duration_secs: resItem.duration_secs ?? null,
-          };
-        } else {
-          trackStatsCache[statsKey] = { play_count: 0, duration_secs: null };
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch batch track stats:', err);
-      for (const t of uniqueTracksToFetch) {
-        inFlightKeys.delete(t.key);
-      }
-    }
-  }
 
   $effect(() => {
     const listens = groups.flatMap((g) => g.listens);
     if (listens.length > 0) {
-      const missing = listens.filter((entry) => !(trackKey(entry) in trackStatsCache));
-      if (missing.length > 0) {
-        untrack(() => {
-          fetchStatsForPage(missing);
-        });
-      }
+      untrack(() => {
+        appCache.fetchTrackStatsForListens(listens);
+      });
     }
   });
 
@@ -104,12 +48,12 @@
       return;
     }
     expandedId = entry.id;
-    const key = trackKey(entry);
-    if (!(key in trackStatsCache)) {
+    const key = appCache.trackKey(entry);
+    if (!(key in appCache.trackStats)) {
       try {
-        trackStatsCache[key] = await fetchTrackStats(entry.artist, entry.title, entry.album);
+        appCache.trackStats[key] = await fetchTrackStats(entry.artist, entry.title, entry.album);
       } catch {
-        trackStatsCache[key] = null;
+        appCache.trackStats[key] = null;
       }
     }
   }
@@ -157,7 +101,7 @@
                 showAbsoluteTime={true}
                 showRelativeTime={false}
                 expanded={expandedId === entry.id}
-                stats={trackStatsCache[trackKey(entry)]}
+                stats={appCache.trackStats[appCache.trackKey(entry)]}
                 onToggle={() => handleToggle(entry)}
               />
             {/each}
