@@ -149,6 +149,7 @@ class AppCache {
   // Now Playing
   playingNow = $state<PlayingNowInfo | null>(null);
   private _playingPollInterval: ReturnType<typeof setInterval> | null = null;
+  private _pollingInFlight = false;
   // How many consecutive empty polls while we were showing "now playing".
   // LB's playing-now endpoint has brief keep-alive gaps; don't flip to "last played"
   // on a single miss — wait for 2 consecutive empty responses (~40s) before switching.
@@ -159,6 +160,8 @@ class AppCache {
 
   private _poll = async () => {
     if (document.visibilityState === 'hidden') return;
+    if (this._pollingInFlight) return;
+    this._pollingInFlight = true;
     try {
       const result = await fetchPlayingNow();
       const prev = this.playingNow;
@@ -224,6 +227,8 @@ class AppCache {
       }
     } catch {
       // silently skip failed polls
+    } finally {
+      this._pollingInFlight = false;
     }
   };
 

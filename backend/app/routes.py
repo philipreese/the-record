@@ -156,7 +156,7 @@ async def _get_caa_direct_url(client: httpx.AsyncClient, release_mbid: str) -> O
         r = await client.get(
             f"https://coverartarchive.org/release/{release_mbid}",
             headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(4.0),
+            timeout=httpx.Timeout(2.0),
             follow_redirects=True,
         )
         if r.status_code == 200:
@@ -175,7 +175,7 @@ async def _get_caa_release_group_url(client: httpx.AsyncClient, release_group_mb
         r = await client.get(
             f"https://coverartarchive.org/release-group/{release_group_mbid}",
             headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(4.0),
+            timeout=httpx.Timeout(2.0),
             follow_redirects=True,
         )
         if r.status_code == 200:
@@ -195,7 +195,7 @@ async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: 
             f"https://musicbrainz.org/ws/2/recording/{recording_mbid}",
             params={"inc": "releases", "fmt": "json"},
             headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(3.0),
+            timeout=httpx.Timeout(2.0),
         )
         if r.status_code == 200:
             releases = r.json().get("releases", [])
@@ -219,7 +219,7 @@ async def _search_cover_art_by_text(
                 "limit": "5",
             },
             headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(8.0),
+            timeout=httpx.Timeout(4.0),
         )
         if r.status_code != 200:
             logger.warning("MB text-search returned %d for %r / %r", r.status_code, artist, title)
@@ -228,11 +228,30 @@ async def _search_cover_art_by_text(
         if not recordings:
             logger.warning("MB text-search found no recordings for %r / %r", artist, title)
             return None
-        for recording in recordings:
+
+        # Check at most the top 2 recordings, and for each at most 1 release (preferring release group lookup first, then direct URL)
+        checked_count = 0
+        for recording in recordings[:2]:
             for release in recording.get("releases", []):
+                # Try release group of this release if available (it has wider coverage and we can fetch it)
+                rg = release.get("release-group", {})
+                rg_id = rg.get("id")
+                if rg_id:
+                    url = await _get_caa_release_group_url(client, rg_id)
+                    if url:
+                        return url
+                
+                # Otherwise try the direct release URL
                 url = await _get_caa_direct_url(client, release["id"])
                 if url:
                     return url
+                
+                checked_count += 1
+                if checked_count >= 2:
+                    break
+            if checked_count >= 2:
+                break
+
         logger.warning("MB text-search found recordings for %r / %r but no CAA art in any release", artist, title)
     except Exception:
         logger.warning("MB text-search cover art lookup failed for %r / %r", artist, title, exc_info=True)
