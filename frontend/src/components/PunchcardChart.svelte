@@ -1,5 +1,6 @@
 <script lang="ts">
   import { inView } from '../utils/inView';
+  import { getLegendText } from '../utils/listens';
 
   let { data = {} }: { data?: Record<string, number> } = $props();
 
@@ -44,6 +45,30 @@
   let popoverX = $state(0);
   let popoverY = $state(0);
   let containerEl = $state<HTMLDivElement | null>(null);
+
+  let hoveredLegendText = $state<string | null>(null);
+
+  function showLegendTooltip(level: number, event: MouseEvent) {
+    if (!containerEl) return;
+    const rect = containerEl.getBoundingClientRect();
+    popoverX = event.clientX - rect.left - 40;
+    popoverY = event.clientY - rect.top - 45;
+    hoveredLegendText = getLegendText(level, maxCount);
+  }
+
+  function hideLegendTooltip() {
+    hoveredLegendText = null;
+  }
+
+  $effect(() => {
+    const handleDocumentClick = () => {
+      hoveredLegendText = null;
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  });
 
   function showTooltip(row: number, hour: number, event: MouseEvent) {
     if (!containerEl) return;
@@ -130,14 +155,66 @@
     style="color: var(--text-muted);"
   >
     <span>Quiet</span>
-    <div
-      class="w-3 h-3 rounded-sm"
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
       style="background-color: var(--text-primary); opacity: 0.07;"
-    ></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.22;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.50;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.75;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 1.00;"></div>
+      onmouseenter={(e) => showLegendTooltip(0, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(0, e);
+      }}
+      aria-label="0 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.22;"
+      onmouseenter={(e) => showLegendTooltip(1, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(1, e);
+      }}
+      aria-label="Level 1 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.50;"
+      onmouseenter={(e) => showLegendTooltip(2, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(2, e);
+      }}
+      aria-label="Level 2 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.75;"
+      onmouseenter={(e) => showLegendTooltip(3, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(3, e);
+      }}
+      aria-label="Level 3 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 1.00;"
+      onmouseenter={(e) => showLegendTooltip(4, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(4, e);
+      }}
+      aria-label="Level 4 plays legend"
+    ></button>
     <span>Resonant</span>
   </div>
 
@@ -158,6 +235,21 @@
       <div class="font-semibold mt-1">
         {hoveredCell.count} play{hoveredCell.count === 1 ? '' : 's'}
       </div>
+    </div>
+  {/if}
+
+  <!-- Legend Popover -->
+  {#if hoveredLegendText}
+    <div
+      class="absolute z-50 pointer-events-none p-2 rounded-lg text-xs font-mono leading-normal shadow-xl border border-theme-border-heavy backdrop-blur-md text-theme-text"
+      style="
+          left: {popoverX}px; 
+          top: {popoverY}px;
+          background-color: var(--bg-base);
+          opacity: 0.96;
+        "
+    >
+      {hoveredLegendText}
     </div>
   {/if}
 </div>

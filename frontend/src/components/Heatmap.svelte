@@ -1,6 +1,7 @@
 <script lang="ts">
   import { inView } from '../utils/inView';
   import DayDetailOverlay from './DayDetailOverlay.svelte';
+  import { getLegendText } from '../utils/listens';
 
   interface DayInfo {
     date: Date;
@@ -65,6 +66,15 @@
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
+    // Compute max count for the active year first
+    let maxVal = 1;
+    const yearPrefix = `${y}-`;
+    for (const [dateStr, count] of Object.entries(data)) {
+      if (dateStr.startsWith(yearPrefix)) {
+        if (count > maxVal) maxVal = count;
+      }
+    }
+
     // Fill leading empty days of the first week
     const firstDayOfWeek = startDate.getDay(); // 0 = Sunday, 6 = Saturday
     for (let i = 0; i < firstDayOfWeek; i++) {
@@ -78,11 +88,12 @@
       const isFuture = currentDate > today;
 
       let weight = 0;
-      if (!isFuture) {
-        if (count > 0 && count <= 2) weight = 1;
-        else if (count > 2 && count <= 5) weight = 2;
-        else if (count > 5 && count <= 10) weight = 3;
-        else if (count > 10) weight = 4;
+      if (!isFuture && count > 0) {
+        const ratio = count / maxVal;
+        if (ratio <= 0.25) weight = 1;
+        else if (ratio <= 0.5) weight = 2;
+        else if (ratio <= 0.75) weight = 3;
+        else weight = 4;
       }
 
       days.push({
@@ -150,6 +161,41 @@
 
     return headers;
   }
+
+  let hoveredLegendText = $state<string | null>(null);
+
+  let maxCountOfYear = $derived.by(() => {
+    let maxVal = 1;
+    const yearPrefix = `${year}-`;
+    for (const [dateStr, count] of Object.entries(data)) {
+      if (dateStr.startsWith(yearPrefix)) {
+        if (count > maxVal) maxVal = count;
+      }
+    }
+    return maxVal;
+  });
+
+  function showLegendTooltip(level: number, event: MouseEvent) {
+    if (!containerElement) return;
+    const rect = containerElement.getBoundingClientRect();
+    popoverX = event.clientX - rect.left - 40;
+    popoverY = event.clientY - rect.top - 45;
+    hoveredLegendText = getLegendText(level, maxCountOfYear);
+  }
+
+  function hideLegendTooltip() {
+    hoveredLegendText = null;
+  }
+
+  $effect(() => {
+    const handleDocumentClick = () => {
+      hoveredLegendText = null;
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  });
 
   function formatDate(d: Date | null | undefined): string {
     if (!d) return '';
@@ -295,11 +341,65 @@
     style="color: var(--text-muted);"
   >
     <span>Quiet</span>
-    <div class="w-3 h-3 rounded-sm bg-base-300 opacity-10"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.22;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.50;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 0.75;"></div>
-    <div class="w-3 h-3 rounded-sm" style="background-color: var(--accent); opacity: 1.00;"></div>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm bg-base-300 opacity-10 cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      onmouseenter={(e) => showLegendTooltip(0, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(0, e);
+      }}
+      aria-label="0 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.22;"
+      onmouseenter={(e) => showLegendTooltip(1, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(1, e);
+      }}
+      aria-label="Level 1 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.50;"
+      onmouseenter={(e) => showLegendTooltip(2, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(2, e);
+      }}
+      aria-label="Level 2 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 0.75;"
+      onmouseenter={(e) => showLegendTooltip(3, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(3, e);
+      }}
+      aria-label="Level 3 plays legend"
+    ></button>
+    <button
+      type="button"
+      class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
+      style="background-color: var(--accent); opacity: 1.00;"
+      onmouseenter={(e) => showLegendTooltip(4, e)}
+      onmouseleave={hideLegendTooltip}
+      onclick={(e) => {
+        e.stopPropagation();
+        showLegendTooltip(4, e);
+      }}
+      aria-label="Level 4 plays legend"
+    ></button>
     <span>Resonant</span>
   </div>
 
@@ -341,6 +441,21 @@
           Silence and space
         </div>
       {/if}
+    </div>
+  {/if}
+
+  <!-- Legend Popover -->
+  {#if hoveredLegendText}
+    <div
+      class="absolute z-50 pointer-events-none p-2 rounded-lg text-xs font-mono leading-normal shadow-xl border border-theme-border-heavy backdrop-blur-md text-theme-text"
+      style="
+          left: {popoverX}px; 
+          top: {popoverY}px;
+          background-color: var(--bg-base);
+          opacity: 0.96;
+        "
+    >
+      {hoveredLegendText}
     </div>
   {/if}
 </div>

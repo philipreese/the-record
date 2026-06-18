@@ -51,3 +51,36 @@ export function absoluteTime(unix_ts: number): string {
     minute: '2-digit',
   });
 }
+
+/** Computes dynamic play count range text for legend tooltips relative to the maximum count of the dataset. */
+export function getLegendText(level: number, maxCount: number): string {
+  if (level === 0) return '0 plays';
+  if (maxCount <= 1) {
+    return level === 1 ? '1 play' : '0 plays';
+  }
+  const low = Math.round(maxCount * 0.25);
+  const med = Math.round(maxCount * 0.5);
+  const high = Math.round(maxCount * 0.75);
+
+  if (level === 1) {
+    const to = Math.max(1, low);
+    return to === 1 ? '1 play' : `1–${to} plays`;
+  }
+  if (level === 2) {
+    const from = Math.max(1, low) + 1;
+    const to = Math.max(from, med);
+    return from === to ? `${from} play${from === 1 ? '' : 's'}` : `${from}–${to} plays`;
+  }
+  if (level === 3) {
+    const from = Math.max(2, med) + 1;
+    const to = Math.max(from, high);
+    return from === to ? `${from} play${from === 1 ? '' : 's'}` : `${from}–${to} plays`;
+  }
+  if (level === 4) {
+    const from = Math.max(3, high) + 1;
+    const to = maxCount;
+    if (from >= to) return `${to} play${to === 1 ? '' : 's'}`;
+    return `${from}–${to} plays`;
+  }
+  return '';
+}

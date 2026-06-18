@@ -198,7 +198,7 @@
           <DatePicker
             bind:value={selectedDate}
             monthlyTrends={appCache.monthlyTrends}
-            class="w-[200px]"
+            class="w-50"
           />
         </div>
       </div>
@@ -207,11 +207,7 @@
 
   <!-- Mobile Sticky Sub-Header: Stuck month selector on mobile -->
   <div class="sticky-sub-header lg:hidden flex items-center justify-between gap-3 py-2">
-    <DatePicker
-      bind:value={selectedDate}
-      monthlyTrends={appCache.monthlyTrends}
-      class="w-[190px]"
-    />
+    <DatePicker bind:value={selectedDate} monthlyTrends={appCache.monthlyTrends} class="w-47.5" />
 
     {#if selectedDate}
       <button
