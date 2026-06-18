@@ -6,6 +6,7 @@ import {
   fetchPlayingNow,
   fetchLastPlayed,
   registerWakingListener,
+  fetchTrackStatsBatch,
   type SyncMode,
   type StatsInfo,
   type StreakInfo,
@@ -16,12 +17,17 @@ import {
   type SyncStatusInfo,
   type ListenEntry,
   type PlayingNowInfo,
+  type TrackStatsInfo,
 } from './api';
 import type { OnThisDayGroup } from './api';
 import { getDominantColor } from '../utils/dominantColor';
 import { themeManager } from './theme.svelte';
 
 class AppCache {
+  // Track Stats Cache (unified across all views)
+  trackStats = $state<Record<string, TrackStatsInfo | null>>({});
+  private inFlightStatsKeys = new Set<string>();
+
   // Dashboard / Stats Cache
   stats = $state<StatsInfo | null>(null);
   streak = $state<StreakInfo | null>(null);
@@ -91,7 +97,53 @@ class AppCache {
     this.recentListens = [];
     this.recentScrollOffset = 0;
     this.recentExhausted = false;
+    this.trackStats = {};
     console.log('[cache] Store cache cleared.');
+  }
+
+  trackKey(entry: { artist: string; title: string; album?: string | null }): string {
+    return `${entry.artist}||${entry.title}||${entry.album || ''}`;
+  }
+
+  async fetchTrackStatsForListens(listens: ListenEntry[]) {
+    const uniqueTracksToFetch: { artist: string; title: string; key: string }[] = [];
+    for (const entry of listens) {
+      const statsKey = this.trackKey(entry);
+      if (!(statsKey in this.trackStats) && !this.inFlightStatsKeys.has(statsKey)) {
+        this.inFlightStatsKeys.add(statsKey);
+        uniqueTracksToFetch.push({
+          artist: entry.artist,
+          title: entry.title,
+          key: statsKey,
+        });
+      }
+    }
+
+    if (uniqueTracksToFetch.length === 0) return;
+
+    try {
+      const batchRes = await fetchTrackStatsBatch(
+        uniqueTracksToFetch.map((t) => ({ artist: t.artist, title: t.title })),
+      );
+
+      for (let i = 0; i < uniqueTracksToFetch.length; i++) {
+        const statsKey = uniqueTracksToFetch[i].key;
+        const resItem = batchRes[i];
+        if (resItem) {
+          this.trackStats[statsKey] = {
+            play_count: resItem.play_count,
+            duration_secs: resItem.duration_secs ?? null,
+          };
+        } else {
+          this.trackStats[statsKey] = { play_count: 0, duration_secs: null };
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch batch track stats:', err);
+      for (const t of uniqueTracksToFetch) {
+        this.inFlightStatsKeys.delete(t.key);
+      }
+    }
   }
 
   // Now Playing
