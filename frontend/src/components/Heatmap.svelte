@@ -1,5 +1,6 @@
 <script lang="ts">
   import { inView } from '../utils/inView';
+  import DayDetailOverlay from './DayDetailOverlay.svelte';
 
   interface DayInfo {
     date: Date;
@@ -16,6 +17,8 @@
 
   let daysOfYear = $derived(getDaysOfYear(year));
   let weeks = $derived(chunkIntoWeeks(daysOfYear));
+
+  let selectedDate = $state<string | null>(null);
 
   // Custom HTML Popover State
   let hoveredDay = $state<DayInfo | null>(null);
@@ -263,8 +266,16 @@
                     onmouseleave={hidePopover}
                     onfocus={(e) => showPopoverFromFocus(day, e)}
                     onblur={hidePopover}
+                    onclick={() => {
+                      selectedDate = day.dateStr;
+                      hidePopover();
+                    }}
                     onkeydown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectedDate = day.dateStr;
+                        hidePopover();
+                      }
                     }}
                   />
                 {/if}
@@ -333,3 +344,5 @@
     </div>
   {/if}
 </div>
+
+<DayDetailOverlay bind:date={selectedDate} />
