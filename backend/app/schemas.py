@@ -121,4 +121,8 @@ class TrackBatchResponseItem(BaseModel):
     play_count: int
     duration_secs: Optional[int] = None
 
+class WeeklyBreakdownItem(BaseModel):
+    week: int
+    count: int
+
 

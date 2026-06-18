@@ -606,6 +606,61 @@ def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
     ]
 
 
+def get_listens_by_day(date_str: str) -> list[dict[str, Any]]:
+    """Return all listens for a local-timezone calendar date (YYYY-MM-DD) in chronological order."""
+    date_expr = get_date_expr(Listen.unix_ts)
+    with get_engine().connect() as conn:
+        stmt = (
+            select(
+                Listen.id,
+                Listen.artist,
+                Listen.title,
+                Listen.unix_ts,
+                Listen.source,
+                Listen.duration_secs,
+                Listen.album,
+            )
+            .where(date_expr == date_str)
+            .order_by(Listen.unix_ts.asc(), Listen.id.asc())
+        )
+        rows = conn.execute(stmt).all()
+        return [
+            {
+                "id": r.id,
+                "artist": r.artist,
+                "title": r.title,
+                "unix_ts": r.unix_ts,
+                "source": r.source,
+                "duration_secs": r.duration_secs,
+                "album": r.album,
+            }
+            for r in rows
+        ]
+
+
+def get_weekly_breakdown(year: int, month: int) -> list[dict[str, int]]:
+    """Return play counts grouped by week-of-month (1–5) for a given year and month."""
+    month_str = f"{year}-{month:02d}"
+    month_expr = get_month_expr(Listen.unix_ts)
+    day_num_expr = get_day_num_expr(Listen.unix_ts)
+
+    with get_engine().connect() as conn:
+        stmt = (
+            select(day_num_expr.label("day_num"), func.count(Listen.id).label("cnt"))
+            .where(month_expr == month_str)
+            .group_by(day_num_expr)
+            .order_by(day_num_expr)
+        )
+        rows = conn.execute(stmt).all()
+
+    weeks: dict[int, int] = {}
+    for r in rows:
+        week_num = (int(r.day_num) - 1) // 7 + 1
+        weeks[week_num] = weeks.get(week_num, 0) + r.cnt
+
+    return [{"week": w, "count": weeks[w]} for w in sorted(weeks.keys())]
+
+
 def deduplicate_listens() -> int:
     """
     Remove duplicate listens where the same artist and title are scrobbled
