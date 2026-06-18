@@ -365,6 +365,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/day/{date_str}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Day Listens
+         * @description Retrieve all listens for a specific calendar date, in chronological order.
+         */
+        get: operations["read_day_listens_api_day__date_str__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/trends/monthly/{year}/{month}/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Monthly Weekly Breakdown
+         * @description Retrieve play counts grouped by week-of-month for a given year and month.
+         */
+        get: operations["read_monthly_weekly_breakdown_api_trends_monthly__year___month__weekly_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -568,6 +608,13 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WeeklyBreakdownItem */
+        WeeklyBreakdownItem: {
+            /** Week */
+            week: number;
+            /** Count */
+            count: number;
         };
         /** WrappedArtist */
         WrappedArtist: {
@@ -1106,6 +1153,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_day_listens_api_day__date_str__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar date (YYYY-MM-DD) in local timezone */
+                date_str: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_monthly_weekly_breakdown_api_trends_monthly__year___month__weekly_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyBreakdownItem"][];
                 };
             };
             /** @description Validation Error */
