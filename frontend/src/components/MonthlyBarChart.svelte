@@ -1,8 +1,11 @@
 <script lang="ts">
   import type { MonthlyTrendInfo } from '../services/api';
+  import WeeklyBreakdownOverlay from './WeeklyBreakdownOverlay.svelte';
 
   // Svelte 5 props definition
   let { monthlyTrends = [], year }: { monthlyTrends: MonthlyTrendInfo[]; year: number } = $props();
+
+  let selectedMonth = $state<string | null>(null);
 
   // Compute 12 months of data for the selected year
   let monthsData = $derived.by(() => {
@@ -46,7 +49,19 @@
   <!-- Chart Area -->
   <div class="grow flex items-end gap-1.5 h-52 px-1 relative">
     {#each monthsData as month}
-      <div class="grow h-full flex flex-col justify-end items-center group relative">
+      <div
+        class="grow h-full flex flex-col justify-end items-center group relative"
+        role="button"
+        tabindex="0"
+        aria-label="{month.label} {year}: {month.count} plays"
+        onclick={() => (selectedMonth = month.key)}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectedMonth = month.key;
+          }
+        }}
+      >
         <!-- Custom styled tooltip (matching heatmap hover states) -->
         <div
           class="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none"
@@ -87,3 +102,5 @@
     {/each}
   </div>
 </div>
+
+<WeeklyBreakdownOverlay bind:monthKey={selectedMonth} />
