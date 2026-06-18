@@ -252,6 +252,10 @@ class AppCache {
     this._poll();
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
+
+    // Trigger an initial soft background sync on page load to fetch new scrobbles
+    // since the last session even if no music is actively playing right now.
+    this.runSync('normal', true);
   }
 
   // Centralized sync task runner.
