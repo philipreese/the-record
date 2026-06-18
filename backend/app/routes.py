@@ -141,11 +141,11 @@ def read_track_stats_batch(
 
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
-# Only successful lookups are stored; failed attempts are counted separately so transient
-# failures (MB timeouts, rate limits) don't permanently suppress art for the session.
-_cover_art_cache: dict[tuple[str, str], str] = {}
+# Both successful and failed lookups (after _MAX_ART_ATTEMPTS) are stored to prevent
+# hitting rate limits and causing slow HTTP cascades on consecutive polls.
+_cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
 _cover_art_attempts: dict[tuple[str, str], int] = {}
-_MAX_ART_ATTEMPTS = 3
+_MAX_ART_ATTEMPTS = 1
 
 _UA = "the-record-dashboard/1.0 (https://github.com/philipreese/the-record)"
 
@@ -271,7 +271,7 @@ async def _resolve_cover_art(
     recording_mbid: Optional[str],
     release_group_mbid: Optional[str] = None,
 ) -> Optional[str]:
-    """Resolve cover art URL with caching. Only caches successes; retries failures up to _MAX_ART_ATTEMPTS."""
+    """Resolve cover art URL with caching. Both successes and failures are cached to avoid HTTP cascades."""
     cache_key = _art_key(artist, title)
     if cache_key in _cover_art_cache:
         return _cover_art_cache[cache_key]
@@ -303,6 +303,8 @@ async def _resolve_cover_art(
             "Cover art resolution failed for %r / %r (attempt %d/%d); release_mbid=%s recording_mbid=%s",
             artist, title, attempts + 1, _MAX_ART_ATTEMPTS, release_mbid, recording_mbid,
         )
+        if attempts + 1 >= _MAX_ART_ATTEMPTS:
+            _cover_art_cache[cache_key] = None
     return url
 
 
