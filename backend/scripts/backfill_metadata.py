@@ -1,6 +1,5 @@
 import sys
 import os
-import time
 import logging
 import asyncio
 import httpx
@@ -19,10 +18,14 @@ logger = logging.getLogger("backfill")
 # MusicBrainz User-Agent compliance guidelines
 _UA = "the-record-backfill/1.0 (https://github.com/philipreese/the-record)"
 
+def _lucene_escape(s: str) -> str:
+    return s.replace('"', '\\"')
+
+
 async def query_musicbrainz(client: httpx.AsyncClient, artist: str, title: str):
     url = "https://musicbrainz.org/ws/2/recording"
     params = {
-        "query": f'recording:"{title}" AND artist:"{artist}"',
+        "query": f'recording:"{_lucene_escape(title)}" AND artist:"{_lucene_escape(artist)}"',
         "fmt": "json",
         "limit": "1",
     }
@@ -70,17 +73,17 @@ async def main():
                 
                 duration, album = await query_musicbrainz(client, artist, title)
                 
-                if duration or album:
-                    # Update all listens matching this track
-                    stmt_update = (
+                values: dict = {}
+                if duration is not None:
+                    values["duration_secs"] = duration
+                if album is not None:
+                    values["album"] = album
+                if values:
+                    session.execute(
                         update(Listen)
                         .where(and_(Listen.artist == artist, Listen.title == title))
-                        .values(
-                            duration_secs=Listen.duration_secs if duration is None else duration,
-                            album=Listen.album if album is None else album
-                        )
+                        .values(**values)
                     )
-                    session.execute(stmt_update)
                     session.commit()
                     logger.info("--> Backfilled: duration=%s, album=%r", duration, album)
                 else:
