@@ -29,9 +29,9 @@ describe('triggerSync', () => {
 
     await triggerSync('normal');
 
-    const [, options] = fetchMock.mock.calls[0];
-    expect(options.method).toBe('POST');
-    expect(options.headers['X-Sync-Token']).toBe('my-secret');
+    const [req] = fetchMock.mock.calls[0] as [Request];
+    expect(req.method).toBe('POST');
+    expect(req.headers.get('X-Sync-Token')).toBe('my-secret');
   });
 
   it('sends an empty header when no token is stored', async () => {
@@ -45,9 +45,9 @@ describe('triggerSync', () => {
 
     await triggerSync('mirror');
 
-    const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toContain('/api/sync?mode=mirror');
-    expect(options.headers['X-Sync-Token']).toBe('');
+    const [req] = fetchMock.mock.calls[0] as [Request];
+    expect(req.url).toContain('/api/sync?mode=mirror');
+    expect(req.headers.get('X-Sync-Token')).toBe('');
   });
 });
 
