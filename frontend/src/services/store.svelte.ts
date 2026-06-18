@@ -5,6 +5,7 @@ import {
   fetchRecentListens,
   fetchPlayingNow,
   fetchLastPlayed,
+  fetchNarrative,
   registerWakingListener,
   fetchTrackStatsBatch,
   type SyncMode,
@@ -36,6 +37,10 @@ class AppCache {
   punchcardData = $state<Record<string, number>>({});
   monthlyTrends = $state<MonthlyTrendInfo[]>([]);
   statsLoaded = $state(false);
+
+  // Narrative Engine Cache
+  narrative = $state<Record<string, string>>({});
+  narrativeSeed = $state<string | undefined>(undefined);
 
   // Top Charts Cache (keyed by range: '30' | '90' | '365' | 'all')
   charts = $state<
@@ -91,6 +96,7 @@ class AppCache {
     this.punchcardData = {};
     this.monthlyTrends = [];
     this.statsLoaded = false;
+    this.narrative = {};
     this.charts = {};
     this.wrapped = {};
     this.onThisDay = [];
@@ -99,6 +105,15 @@ class AppCache {
     this.recentExhausted = false;
     this.trackStats = {};
     console.log('[cache] Store cache cleared.');
+  }
+
+  async refreshNarrative() {
+    this.narrativeSeed = Math.random().toString(36).substring(7);
+    try {
+      this.narrative = await fetchNarrative(this.narrativeSeed);
+    } catch {
+      // ignore
+    }
   }
 
   trackKey(entry: { artist: string; title: string; album?: string | null }): string {
@@ -191,9 +206,10 @@ class AppCache {
       // _poll already runs every 20s, so within one cycle of the backend coming back
       // the page will populate without a manual refresh.
       if (!this.statsLoaded) {
-        fetchStats()
-          .then((s) => {
+        Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)])
+          .then(([s, n]) => {
             this.stats = s;
+            this.narrative = n;
             this.statsLoaded = true;
           })
           .catch(() => {});
@@ -310,14 +326,24 @@ class AppCache {
                 // Non-fatal
               }
               try {
-                this.stats = await fetchStats();
+                const [s, n] = await Promise.all([
+                  fetchStats(),
+                  fetchNarrative(this.narrativeSeed),
+                ]);
+                this.stats = s;
+                this.narrative = n;
               } catch {
                 // Non-fatal
               }
             } else {
               this.invalidate();
               try {
-                this.stats = await fetchStats();
+                const [s, n] = await Promise.all([
+                  fetchStats(),
+                  fetchNarrative(this.narrativeSeed),
+                ]);
+                this.stats = s;
+                this.narrative = n;
                 this.statsLoaded = true;
               } catch {
                 // Non-fatal — sidebar shows "Connecting…" until OverviewView mounts.

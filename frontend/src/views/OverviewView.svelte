@@ -37,10 +37,17 @@
 
   let currentTarget = $derived.by(() => {
     void scrollY;
-    if (typeof document === 'undefined') return { id: 'heatmap-section', label: 'insights' };
+    if (typeof document === 'undefined')
+      return {
+        id: 'heatmap-section',
+        label: appCache.narrative['overview.nav.insights'] || 'insights',
+      };
 
     if (scrollY < 10) {
-      return { id: 'heatmap-section', label: 'insights' };
+      return {
+        id: 'heatmap-section',
+        label: appCache.narrative['overview.nav.insights'] || 'insights',
+      };
     }
 
     const isAtBottom =
@@ -51,12 +58,15 @@
     }
 
     const sections = [
-      { id: 'heatmap-section', label: 'insights' },
-      { id: 'diurnal-patterns', label: 'patterns' },
-      { id: 'streak-tracker', label: 'streak' },
-      { id: 'on-this-day', label: 'on this day' },
-      { id: 'recent-scrobbles', label: 'recent' },
-      { id: 'telemetry-volumes', label: 'volumes' },
+      { id: 'heatmap-section', label: appCache.narrative['overview.nav.insights'] || 'insights' },
+      { id: 'diurnal-patterns', label: appCache.narrative['overview.nav.patterns'] || 'patterns' },
+      { id: 'streak-tracker', label: appCache.narrative['overview.nav.streak'] || 'streak' },
+      { id: 'on-this-day', label: appCache.narrative['overview.nav.on_this_day'] || 'on this day' },
+      { id: 'recent-scrobbles', label: appCache.narrative['overview.nav.recent'] || 'recent' },
+      {
+        id: 'telemetry-volumes',
+        label: appCache.narrative['overview.nav.telemetry'] || 'telemetry',
+      },
     ];
 
     for (const sec of sections) {
@@ -251,18 +261,15 @@
           <p
             class="text-2xl md:text-3xl xl:text-4xl font-serif font-light leading-relaxed italic text-theme-secondary"
           >
-            A period of active musical recollection. You have integrated music into &nbsp;<span
-              class="font-sans font-normal text-theme-accent">{currentStats.days_active} days</span
-            >&nbsp; of your journey, averaging &nbsp;<span
+            {@html appCache.narrative['overview.hero'] ||
+              `A period of active musical recollection. You have integrated music into &nbsp;<span
+              class="font-sans font-normal text-theme-accent">${currentStats.days_active} days</span>&nbsp; of your journey, averaging &nbsp;<span
               class="font-sans font-normal text-theme-accent"
-              >{currentStats.avg_per_day} tracks</span
-            >&nbsp; daily. Your primary sonic gateway is &nbsp;<span
+              >${currentStats.avg_per_day} tracks</span>&nbsp; daily. Your primary sonic gateway is &nbsp;<span
               class="font-sans font-normal capitalize text-theme-accent"
-              >{currentStats.top_source.replace('_', ' ')}</span
-            >,&nbsp; sustaining a continuous streak of &nbsp;<span
+              >${currentStats.top_source.replace('_', ' ')}</span>,&nbsp; sustaining a continuous streak of &nbsp;<span
               class="font-sans font-normal text-theme-accent"
-              >{currentStreak.current_streak} days</span
-            >&nbsp; of conscious listening.
+              >${currentStreak.current_streak} days</span>&nbsp; of conscious listening.`}
           </p>
         </div>
       {/if}
@@ -294,7 +301,10 @@
     id="streak-tracker"
   >
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
-      <h2 class="editorial-text-h2">03 / Recollection Continuous</h2>
+      <h2 class="editorial-text-h2">
+        03 / {@html appCache.narrative['overview.insight.streak_header'] ||
+          'Recollection Continuous'}
+      </h2>
     </div>
     <div class="reveal-content">
       <StreakTracker streakData={currentStreak} />

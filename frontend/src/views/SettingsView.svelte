@@ -54,6 +54,22 @@
 
   {#if activeSettingsTab === 'interface'}
     <ThemeSelector />
+
+    <div class="mt-8 border-t border-theme-border-soft pt-8">
+      <h3 class="text-sm font-mono tracking-wider uppercase text-theme-muted mb-4">
+        Narrative Engine
+      </h3>
+      <p class="text-sm text-theme-secondary mb-4">
+        The system automatically cycles poetic descriptions daily. You can manually generate a new
+        random seed to rotate all narrative text immediately.
+      </p>
+      <button
+        class="btn btn-outline border-theme-border-soft hover:bg-theme-accent/10 hover:border-theme-accent hover:text-theme-accent transition-colors"
+        onclick={() => appCache.refreshNarrative()}
+      >
+        Refresh Narrative
+      </button>
+    </div>
   {:else if activeSettingsTab === 'data'}
     <DataSyncPanel />
   {/if}
