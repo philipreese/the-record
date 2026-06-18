@@ -34,7 +34,7 @@ migrations/        — Alembic env + versioned migration scripts
 ## Frontend layer map
 
 ```
-api.ts             — Fetch wrapper, typed against api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
+api.ts             — openapi-fetch typed client over api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
     ↓
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
                      and 20s visibility-locked playing-now polling (with baseline data recovery on reconnect)
@@ -109,7 +109,7 @@ Mirror sync does **not** run `deduplicate_listens()` — LB is the authority on 
 
 ### API polling
 
-The frontend posts to `POST /api/sync`, then polls `GET /api/sync/status` every 2 seconds via `AppCache.runSync()`. On `finished: true`, cache is invalidated so all views refetch fresh data.
+A soft background sync fires automatically on page load. Users can also trigger syncs manually from the Settings view. In both cases the frontend posts to `POST /api/sync`, then polls `GET /api/sync/status` every 2 seconds via `AppCache.runSync()`. On `finished: true`, cache is invalidated so all views refetch fresh data.
 
 ## Dev tasks
 
