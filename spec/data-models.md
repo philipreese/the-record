@@ -86,6 +86,19 @@ interface TrackStatsResponse {
   duration_secs?: number | null;   // null for rows where LB did not provide duration
 }
 
+interface TrackBatchRequestItem {
+  artist: string;
+  title: string;
+}
+
+interface TrackBatchResponseItem {
+  artist: string;
+  title: string;
+  play_count: number;
+  duration_secs?: number | null;
+}
+
+
 interface SyncStartResponse {
   status: string;       // "started" | "already_running"
   mode?: string;
