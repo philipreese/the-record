@@ -24,6 +24,8 @@ export type SyncStartInfo = components['schemas']['SyncStartResponse'];
 export type PlayingNowInfo = components['schemas']['PlayingNowResponse'];
 export type TrackStatsInfo = components['schemas']['TrackStatsResponse'];
 export type OnThisDayGroup = components['schemas']['OnThisDayGroup'];
+export type TrackBatchRequestItem = components['schemas']['TrackBatchRequestItem'];
+export type TrackBatchResponseItem = components['schemas']['TrackBatchResponseItem'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -243,6 +245,18 @@ export async function fetchTrackStats(
   }
   const res = await apiFetch(`/api/track-stats?${params}`);
   if (!res.ok) throw new Error('Failed to fetch track stats');
+  return res.json();
+}
+
+export async function fetchTrackStatsBatch(
+  tracks: TrackBatchRequestItem[],
+): Promise<TrackBatchResponseItem[]> {
+  const res = await apiFetch('/api/track-stats/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(tracks),
+  });
+  if (!res.ok) throw new Error('Failed to fetch batch track stats');
   return res.json();
 }
 

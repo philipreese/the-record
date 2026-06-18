@@ -67,11 +67,21 @@
       <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
     </div>
 
-    {#if label}
-      <span class="badge badge-ghost badge-xs text-base-content/45 font-mono shrink-0 mr-2"
-        >{label}</span
-      >
-    {/if}
+    <div class="flex items-center gap-1.5 shrink-0 mr-2">
+      {#if stats && stats.play_count !== undefined}
+        <span
+          class="badge badge-ghost badge-xs text-base-content/35 font-mono"
+          title={`${stats.play_count} ${stats.play_count === 1 ? 'play' : 'plays'}`}
+        >
+          {stats.play_count}
+        </span>
+      {/if}
+      {#if label}
+        <span class="badge badge-ghost badge-xs text-base-content/45 font-mono">
+          {label}
+        </span>
+      {/if}
+    </div>
   </div>
 
   {#if expanded}

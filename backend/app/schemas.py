@@ -111,3 +111,14 @@ class OnThisDayGroup(BaseModel):
     year: int
     listens: List[ListenEntry]
 
+class TrackBatchRequestItem(BaseModel):
+    artist: str
+    title: str
+
+class TrackBatchResponseItem(BaseModel):
+    artist: str
+    title: str
+    play_count: int
+    duration_secs: Optional[int] = None
+
+
