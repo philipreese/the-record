@@ -21,6 +21,7 @@ A self-hosted dashboard that gives you a complete, unified view of your music li
 - **Calendar heatmap** — daily play counts laid out as a GitHub-style calendar, by year
 - **Hourly heat clock** — play distribution across hours of the day (24-hour ring)
 - **Monthly bar chart** — chronological monthly play counts
+- **Temporal streamgraph** — top 5 artists month-by-month for a selected year, rendered as a custom SVG streamgraph; hover to highlight a stream with exact counts, click to drill into that artist's top 5 tracks over time
 - **Listening streaks** — current and longest consecutive daily listening streaks
 - **Wrapped reviews** — Spotify Wrapped-style aggregation by year, quarter, or month: total plays, top artist, top track, peak day, minutes listened, on-repeat peak (most replayed track in a single day)
 - **Export** — Download full listening history as CSV or JSON, with optional time-range filter, from the Settings page

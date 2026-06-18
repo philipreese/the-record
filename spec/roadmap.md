@@ -12,7 +12,7 @@
 
 *Make the existing charts richer, searchable, and explorable with temporal depth.*
 
-### Temporal Charts (Artists & Tracks Over Time)
+### Temporal Charts (Artists & Tracks Over Time) ✅ Shipped (#28)
 A custom SVG streamgraph or stacked area chart showing top artists/tracks month-by-month over a selected year — built with Svelte's native SVG bindings, no chart library dependency.
 
 **Progressive Reveal:**
