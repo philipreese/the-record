@@ -265,9 +265,7 @@
   </div>
 
   <!-- Range Selector & Search Bar Row -->
-  <div
-    class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-theme-border-soft pb-4"
-  >
+  <div class="sticky-sub-header flex flex-col md:flex-row md:items-center justify-between gap-6">
     <div class="nav-selector w-full md:w-auto justify-between md:justify-start gap-2 md:gap-8">
       {#each rangeOptions as [val, label]}
         <button
