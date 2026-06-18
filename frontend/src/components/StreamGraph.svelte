@@ -373,7 +373,7 @@
               onmouseenter={() => (hoveredSeriesIndex = idx)}
               onclick={() => {
                 if (!focusedArtist) {
-                  if (isTouch) {
+                  if (isTouch && width < 1024) {
                     if (tappedSeriesIndex === idx) {
                       focusedArtist = series.name;
                       tappedSeriesIndex = null;
@@ -437,7 +437,7 @@
           {tooltipContent.count.toLocaleString()}
           <span class="text-theme-secondary font-normal text-[9px] italic">plays</span>
         </div>
-        {#if isTouch && !focusedArtist}
+        {#if isTouch && width < 1024 && !focusedArtist}
           <div class="text-[8px] text-theme-muted opacity-80 mt-1 italic">Tap again to zoom</div>
         {/if}
       </div>
