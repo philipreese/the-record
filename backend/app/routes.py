@@ -368,10 +368,18 @@ async def get_playing_now() -> Any:
                 if lp_res.status_code == 200:
                     lp_listens = lp_res.json().get("payload", {}).get("listens", [])
                     if lp_listens:
-                        lp_mm = lp_listens[0].get("track_metadata", {}).get("mbid_mapping", {})
-                        lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
-                        lp_recording_mbid = lp_mm.get("recording_mbid")
-                        lp_release_group_mbid = lp_mm.get("release_group_mbid")
+                        meta = lp_listens[0].get("track_metadata", {})
+                        # Only use MBIDs if this listen matches the local DB's last synced listen
+                        lb_artist = meta.get("artist_name", "")
+                        lb_title = meta.get("track_name", "")
+                        if (
+                            lb_artist.casefold().strip() == r["artist"].casefold().strip()
+                            and lb_title.casefold().strip() == r["title"].casefold().strip()
+                        ):
+                            lp_mm = meta.get("mbid_mapping", {})
+                            lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
+                            lp_recording_mbid = lp_mm.get("recording_mbid")
+                            lp_release_group_mbid = lp_mm.get("release_group_mbid")
             except Exception:
                 logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
             art = await _resolve_cover_art(
