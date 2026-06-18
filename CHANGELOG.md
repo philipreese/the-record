@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0](https://github.com/philipreese/the-record/compare/v0.14.0...v0.15.0) (2026-06-18)
+
+
+### Features
+
+* **journal:** Batch track-stats endpoint for inline play counts on journal rows ([b2f15af](https://github.com/philipreese/the-record/commit/b2f15aff797c05a0181ef23b91680b97f5a73072))
+* **journal:** Improve row wrapping, style play counts, and extend batch stats to overview ([0efd541](https://github.com/philipreese/the-record/commit/0efd5419f05483384efef70838769c4887e01ead))
+
+
+### Bug Fixes
+
+* **backend:** Add Cache-Control middleware to prevent browser caching of API endpoints ([19b70ca](https://github.com/philipreese/the-record/commit/19b70ca6d19403612fbbb9b81ea64480cedee899))
+* **backend:** Cache DNS socket address lookups to bypass IPv6 DNS timeouts ([83124e1](https://github.com/philipreese/the-record/commit/83124e18a1a8a2d5b4dfec86b175b6f4cad14766))
+* **sync:** Cache cover art lookup failures immediately to prevent repeated 2s delays ([0a23873](https://github.com/philipreese/the-record/commit/0a23873cfed1f766e48e397ebb65bf4ef278d800))
+* **sync:** Optimize playing-now timeouts and add polling in-flight guard ([d5d7946](https://github.com/philipreese/the-record/commit/d5d794695b8618176d346be1d1792cea3f6a4110))
+* **sync:** Skip ListenBrainz listens lookup when last played cover art is cached ([1ed0d3b](https://github.com/philipreese/the-record/commit/1ed0d3bbc601ac6451275357af887375143a3571))
+
+
+### Code Refactoring
+
+* **frontend:** Consolidate batch track stats caching and fetching into shared appCache ([69e7a32](https://github.com/philipreese/the-record/commit/69e7a32153806324b89ca444950bef42316c1f8c))
+
+
+### Documentation
+
+* **spec:** Document TrackBatchRequestItem and TrackBatchResponseItem schemas ([3ec582b](https://github.com/philipreese/the-record/commit/3ec582bc1f2f69761db40d41a7cdceded5fa3aab))
+
 ## [0.14.0](https://github.com/philipreese/the-record/compare/v0.13.0...v0.14.0) (2026-06-17)
 
 
