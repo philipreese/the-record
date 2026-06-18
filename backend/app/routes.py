@@ -343,6 +343,18 @@ async def get_playing_now() -> Any:
             if not rows:
                 return PlayingNowResponse(is_playing=False)
             r = rows[0]
+
+            # Fast-path cache check: if we already have a resolved or suppressed art result
+            # for this track, avoid calling ListenBrainz listens endpoint and CAA/MB.
+            cache_key = _art_key(r["artist"], r["title"])
+            if cache_key in _cover_art_cache:
+                return PlayingNowResponse(
+                    is_playing=False,
+                    last_played=LastPlayedEntry(
+                        artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"],
+                        cover_art_url=_cover_art_cache[cache_key],
+                    ),
+                )
             lp_release_mbid: Optional[str] = None
             lp_recording_mbid: Optional[str] = None
             lp_release_group_mbid: Optional[str] = None
