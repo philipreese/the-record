@@ -15,6 +15,7 @@
   import PageHeader from '../components/layout/PageHeader.svelte';
   import Icon from '../components/layout/Icon.svelte';
   import StreamGraph from '../components/StreamGraph.svelte';
+  import SelectDropdown from '../components/layout/SelectDropdown.svelte';
 
   let selectedYear = $state(new Date().getFullYear());
 
@@ -28,6 +29,10 @@
     }
     return years.reverse();
   });
+
+  let yearDropdownOptions = $derived(
+    availableYears.map((yr) => ({ value: yr, label: String(yr) })),
+  );
 
   onMount(() => {
     if (!appCache.statsLoaded) {
@@ -338,13 +343,7 @@
       <h2 class="editorial-text-h2">temporal trends</h2>
 
       <!-- Year Selector -->
-      <div class="select-premium-wrapper">
-        <select class="select-premium text-xs" bind:value={selectedYear}>
-          {#each availableYears as yr}
-            <option value={yr}>{yr}</option>
-          {/each}
-        </select>
-      </div>
+      <SelectDropdown bind:value={selectedYear} options={yearDropdownOptions} />
     </div>
 
     <StreamGraph year={selectedYear} />
