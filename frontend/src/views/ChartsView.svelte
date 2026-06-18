@@ -249,71 +249,38 @@
   }
 </script>
 
-<PageHeader title="top charts" subtitle="Your most played creators and tracks over time.">
-  {#snippet actions(isShrunk)}
-    <div class="hidden lg:block">
-      <div
-        class="nav-selector transition-all duration-300"
-        class:text-xs={isShrunk}
-        class:text-sm={!isShrunk}
-      >
-        {#each rangeOptions as [val, label]}
-          <button
-            class="nav-selector-item"
-            class:active={topRange === val}
-            onclick={() => (topRange = val)}
-          >
-            {label}
-          </button>
-        {/each}
-      </div>
+<PageHeader title="top charts" subtitle="Your most played creators and tracks over time." />
+
+<div class="flex flex-col sm:gap-8 gap-12 text-base-content mt-6">
+  <!-- Streamgraph section -->
+  <div class="flex flex-col gap-4">
+    <div class="flex justify-between items-center pb-2 border-b border-theme-border-soft">
+      <h2 class="editorial-text-h2">temporal trends</h2>
+
+      <!-- Year Selector -->
+      <SelectDropdown bind:value={selectedYear} options={yearDropdownOptions} />
     </div>
-  {/snippet}
-</PageHeader>
 
-<!-- Mobile Sticky Sub-Header: Stuck range selector and search input on mobile -->
-<div class="sticky-sub-header lg:hidden flex flex-col gap-3">
-  <div class="nav-selector w-full justify-between gap-1 border-b border-theme-border-soft pb-2.5">
-    {#each rangeOptions as [val, label]}
-      <button
-        class="nav-selector-item flex-1 text-center justify-center py-1 text-xs"
-        class:active={topRange === val}
-        onclick={() => (topRange = val)}
-      >
-        {label}
-      </button>
-    {/each}
+    <StreamGraph year={selectedYear} />
   </div>
-  <div class="relative w-full">
-    <input
-      type="text"
-      placeholder="Search creators or tracks..."
-      class="input input-sm pl-8 pr-8 w-full bg-base-200 border border-base-content/10 rounded-md focus:border-theme-accent focus:outline-none transition-colors text-sm"
-      bind:value={searchQuery}
-    />
-    <span
-      class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none opacity-40 z-10"
-    >
-      <Icon name="search" size="w-4 h-4" class="text-base-content" />
-    </span>
-    {#if searchQuery}
-      <button
-        class="absolute inset-y-0 right-0 flex items-center pr-3 opacity-40 hover:opacity-100 transition-opacity z-10"
-        aria-label="Clear search"
-        onclick={() => (searchQuery = '')}
-      >
-        <Icon name="close" size="w-4 h-4" />
-      </button>
-    {/if}
-  </div>
-</div>
 
-<div class="flex flex-col sm:gap-8 gap-12 text-base-content">
-  <!-- Desktop Search Bar Row (hidden on mobile) -->
+  <!-- Range Selector & Search Bar Row -->
   <div
-    class="hidden lg:flex flex-row items-center justify-between gap-4 border-b border-theme-border-soft pb-4 mt-6"
+    class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-theme-border-soft pb-4"
   >
-    <div class="relative max-w-md w-full">
+    <div class="nav-selector w-full md:w-auto justify-between md:justify-start gap-2 md:gap-8">
+      {#each rangeOptions as [val, label]}
+        <button
+          class="nav-selector-item flex-1 md:flex-initial text-center md:text-left py-1 md:py-0 text-xs md:text-sm"
+          class:active={topRange === val}
+          onclick={() => (topRange = val)}
+        >
+          {label}
+        </button>
+      {/each}
+    </div>
+
+    <div class="relative w-full md:max-w-md">
       <input
         type="text"
         placeholder="Search creators or tracks..."
@@ -335,18 +302,6 @@
         </button>
       {/if}
     </div>
-  </div>
-
-  <!-- Streamgraph section -->
-  <div class="flex flex-col gap-4">
-    <div class="flex justify-between items-center pb-2 border-b border-theme-border-soft">
-      <h2 class="editorial-text-h2">temporal trends</h2>
-
-      <!-- Year Selector -->
-      <SelectDropdown bind:value={selectedYear} options={yearDropdownOptions} />
-    </div>
-
-    <StreamGraph year={selectedYear} />
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 sm:mt-0">
