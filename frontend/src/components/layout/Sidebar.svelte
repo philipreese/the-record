@@ -1,5 +1,6 @@
 <script lang="ts">
   import { appCache } from '../../services/store.svelte';
+  import NarrativeText from './NarrativeText.svelte';
   import Icon from './Icon.svelte';
   import NowPlaying from '../NowPlaying.svelte';
 
@@ -67,7 +68,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'dashboard'}
             >
-              {@html appCache.narrative['sidebar.nav.dashboard'] || 'Overview'}
+              {appCache.narrative['sidebar.nav.dashboard'] || 'Overview'}
             </span>
           </button>
         </li>
@@ -93,7 +94,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'charts'}
             >
-              {@html appCache.narrative['sidebar.nav.charts'] || 'Top Charts'}
+              {appCache.narrative['sidebar.nav.charts'] || 'Top Charts'}
             </span>
           </button>
         </li>
@@ -120,7 +121,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'wrapped'}
             >
-              {@html appCache.narrative['sidebar.nav.wrapped'] || 'Reviews'}
+              {appCache.narrative['sidebar.nav.wrapped'] || 'Reviews'}
             </span>
           </button>
         </li>
@@ -146,7 +147,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'recent'}
             >
-              {@html appCache.narrative['sidebar.nav.recent'] || 'Journal'}
+              {appCache.narrative['sidebar.nav.recent'] || 'Journal'}
             </span>
           </button>
         </li>
@@ -188,7 +189,7 @@
           <div class="flex items-center gap-2">
             <div class="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse"></div>
             <span class="text-xs font-mono tracking-widest uppercase text-theme-muted">
-              {@html appCache.narrative['sidebar.memory_surface'] || 'Memory Surface'}
+              {appCache.narrative['sidebar.memory_surface'] || 'Memory Surface'}
             </span>
           </div>
           {#if appCache.isSyncing}
@@ -203,7 +204,7 @@
         {#if appCache.isSyncing}
           <div class="space-y-1.5">
             <div class="text-sm font-light leading-relaxed text-theme-accent animate-pulse">
-              {@html appCache.narrative['sidebar.syncing'] || 'Syncing latest plays...'}
+              {appCache.narrative['sidebar.syncing'] || 'Syncing latest plays...'}
             </div>
             {#if appCache.stats}
               <div class="text-xs font-mono text-theme-muted">
@@ -214,21 +215,24 @@
         {:else if appCache.stats}
           <div class="space-y-1.5">
             <div class="text-sm md:text-base font-light leading-relaxed text-theme-secondary">
-              {@html appCache.narrative['sidebar.archived_plays'] ||
-                `Archived <span class="font-mono font-medium text-theme-accent">${appCache.stats.total_listens.toLocaleString()}</span> plays`}
+              <NarrativeText
+                text={appCache.narrative['sidebar.archived_plays'] ||
+                  `Archived *${appCache.stats.total_listens.toLocaleString()}* plays`}
+                accentClass="font-mono font-medium text-theme-accent"
+              />
             </div>
             <div class="text-xs font-mono text-theme-muted tracking-wide">
-              {@html appCache.narrative['sidebar.active_habit'] || 'Active habit:'}
+              {appCache.narrative['sidebar.active_habit'] || 'Active habit:'}
               <span class="text-theme-text font-normal">{appCache.stats.avg_per_day}</span> / day
             </div>
           </div>
         {:else if appCache.isWakingUp}
           <div class="text-sm font-mono text-theme-accent animate-pulse">
-            {@html appCache.narrative['sidebar.waking_up'] || 'Waking up the server...'}
+            {appCache.narrative['sidebar.waking_up'] || 'Waking up the server...'}
           </div>
         {:else}
           <div class="text-sm font-mono text-theme-muted">
-            {@html appCache.narrative['sidebar.connecting'] || 'Connecting to archive...'}
+            {appCache.narrative['sidebar.connecting'] || 'Connecting to archive...'}
           </div>
         {/if}
 

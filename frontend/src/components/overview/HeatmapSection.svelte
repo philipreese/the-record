@@ -31,10 +31,10 @@
   >
     <div>
       <h2 class="editorial-text-h2">
-        {@html appCache.narrative['heatmap.section_title'] || '01 / Temporal Archive & Trends'}
+        {appCache.narrative['heatmap.section_title'] || '01 / Temporal Archive & Trends'}
       </h2>
       <p class="text-[11px] text-theme-muted font-mono tracking-wide mt-1">
-        {@html appCache.narrative['heatmap.section_desc'] ||
+        {appCache.narrative['heatmap.section_desc'] ||
           'Calendar activity grid and monthly play volume (selector affects both)'}
       </p>
     </div>

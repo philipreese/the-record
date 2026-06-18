@@ -155,7 +155,7 @@
     class="flex items-center justify-end gap-2 mt-4 px-2 text-xs font-mono"
     style="color: var(--text-muted);"
   >
-    <span>{@html appCache.narrative['punchcard.legend_quiet'] || 'Quiet'}</span>
+    <span>{appCache.narrative['punchcard.legend_quiet'] || 'Quiet'}</span>
     <button
       type="button"
       class="w-3 h-3 rounded-sm cursor-pointer block p-0 border-none outline-none focus:scale-110"
@@ -216,7 +216,7 @@
       }}
       aria-label="Level 4 plays legend"
     ></button>
-    <span>{@html appCache.narrative['punchcard.legend_resonant'] || 'Resonant'}</span>
+    <span>{appCache.narrative['punchcard.legend_resonant'] || 'Resonant'}</span>
   </div>
 
   <!-- Tooltip -->
@@ -240,13 +240,13 @@
         {@const weight = Math.min(4, Math.max(1, Math.ceil((hoveredCell.count / maxCount) * 4)))}
         <div class="text-micro opacity-75 mt-0.5" style="color: var(--text-secondary);">
           {#if weight === 1}
-            {@html appCache.narrative['punchcard.tooltip.weight1'] || 'Quiet background listening'}
+            {appCache.narrative['punchcard.tooltip.weight1'] || 'Quiet background listening'}
           {:else if weight === 2}
-            {@html appCache.narrative['punchcard.tooltip.weight2'] || 'Regular rhythm'}
+            {appCache.narrative['punchcard.tooltip.weight2'] || 'Regular rhythm'}
           {:else if weight === 3}
-            {@html appCache.narrative['punchcard.tooltip.weight3'] || 'Strong habitual focus'}
+            {appCache.narrative['punchcard.tooltip.weight3'] || 'Strong habitual focus'}
           {:else}
-            {@html appCache.narrative['punchcard.tooltip.weight4'] || 'Peak temporal density'}
+            {appCache.narrative['punchcard.tooltip.weight4'] || 'Peak temporal density'}
           {/if}
         </div>
       {/if}
