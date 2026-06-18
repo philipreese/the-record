@@ -1,14 +1,18 @@
-import type { components, paths, operations } from './api-types';
+import createClient from 'openapi-fetch';
+import type { components, paths } from './api-types';
 
-type _TopArtistsQuery = NonNullable<paths['/api/top-artists']['get']['parameters']['query']>;
-export type TimeRange = NonNullable<_TopArtistsQuery['range']>;
-
-type _SyncQuery = NonNullable<operations['start_sync_api_sync_post']['parameters']['query']>;
-export type SyncMode = NonNullable<_SyncQuery['mode']>;
-
-type _WrappedQuery = NonNullable<paths['/api/wrapped']['get']['parameters']['query']>;
-export type WrappedQuarter = NonNullable<_WrappedQuery['quarter']>;
-export type WrappedMonth = NonNullable<_WrappedQuery['month']>;
+export type TimeRange = NonNullable<
+  NonNullable<paths['/api/top-artists']['get']['parameters']['query']>['range']
+>;
+export type SyncMode = NonNullable<
+  NonNullable<paths['/api/sync']['post']['parameters']['query']>['mode']
+>;
+export type WrappedQuarter = NonNullable<
+  NonNullable<paths['/api/wrapped']['get']['parameters']['query']>['quarter']
+>;
+export type WrappedMonth = NonNullable<
+  NonNullable<paths['/api/wrapped']['get']['parameters']['query']>['month']
+>;
 
 export type StatsInfo = components['schemas']['StatsSummaryResponse'];
 export type StreakInfo = components['schemas']['StreakStatsResponse'];
@@ -58,12 +62,8 @@ function endWaking(): void {
   if (activeRetries === 0) wakingListener?.(false);
 }
 
-async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
-  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
-  const method = (options?.method ?? 'GET').toUpperCase();
-
-  // Only retry idempotent GETs — never replay a mutating POST (e.g. /api/sync).
-  if (method !== 'GET') return fetch(url, options);
+async function resilientFetch(input: Request): Promise<Response> {
+  if (input.method !== 'GET') return fetch(input);
 
   let waking = false;
   const markWaking = () => {
@@ -77,7 +77,7 @@ async function apiFetch(path: string, options?: RequestInit): Promise<Response> 
     let lastError: unknown;
     for (let attempt = 0; attempt <= RETRY_ATTEMPTS; attempt++) {
       try {
-        const res = await fetch(url, options);
+        const res = await fetch(input.clone());
         if (COLD_START_STATUSES.has(res.status) && attempt < RETRY_ATTEMPTS) {
           markWaking();
           await delay(RETRY_DELAY_MS);
@@ -99,52 +99,55 @@ async function apiFetch(path: string, options?: RequestInit): Promise<Response> 
   }
 }
 
+const client = createClient<paths>({ baseUrl: API_BASE, fetch: resilientFetch });
+
 export async function fetchStats(): Promise<StatsInfo> {
-  const res = await apiFetch('/api/stats');
-  if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
+  const { data, error } = await client.GET('/api/stats');
+  if (error) throw new Error('Failed to fetch stats');
+  return data;
 }
 
 export async function fetchStreak(): Promise<StreakInfo> {
-  const res = await apiFetch('/api/trends/streak');
-  if (!res.ok) throw new Error('Failed to fetch streak');
-  return res.json();
+  const { data, error } = await client.GET('/api/trends/streak');
+  if (error) throw new Error('Failed to fetch streak');
+  return data;
 }
 
 export async function fetchHeatmap(year: number): Promise<Record<string, number>> {
-  const res = await apiFetch(`/api/heatmap?year=${year}`);
-  if (!res.ok) throw new Error('Failed to fetch heatmap data');
-  return res.json();
+  const { data, error } = await client.GET('/api/heatmap', { params: { query: { year } } });
+  if (error) throw new Error('Failed to fetch heatmap data');
+  return data;
 }
 
 export async function fetchHourlyTrends(): Promise<Record<string, number>> {
-  const res = await apiFetch('/api/trends/hourly');
-  if (!res.ok) throw new Error('Failed to fetch hourly trends');
-  return res.json();
+  const { data, error } = await client.GET('/api/trends/hourly');
+  if (error) throw new Error('Failed to fetch hourly trends');
+  return data;
 }
 
 export async function fetchPunchcard(): Promise<Record<string, number>> {
-  const res = await apiFetch('/api/trends/punchcard');
-  if (!res.ok) throw new Error('Failed to fetch punchcard data');
-  return res.json();
+  const { data, error } = await client.GET('/api/trends/punchcard');
+  if (error) throw new Error('Failed to fetch punchcard data');
+  return data;
 }
 
 export async function fetchMonthlyTrends(): Promise<MonthlyTrendInfo[]> {
-  const res = await apiFetch('/api/trends/monthly');
-  if (!res.ok) throw new Error('Failed to fetch monthly trends');
-  return res.json();
+  const { data, error } = await client.GET('/api/trends/monthly');
+  if (error) throw new Error('Failed to fetch monthly trends');
+  return data;
 }
+
 export async function fetchTopArtists(
   range: TimeRange,
   limit: number = 15,
   page: number = 1,
   search?: string,
 ): Promise<TopArtistsResponse> {
-  const params = new URLSearchParams({ range, limit: String(limit), page: String(page) });
-  if (search) params.set('search', search);
-  const res = await apiFetch(`/api/top-artists?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch top artists');
-  return res.json();
+  const { data, error } = await client.GET('/api/top-artists', {
+    params: { query: { range, limit, page, ...(search ? { search } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch top artists');
+  return data;
 }
 
 export async function fetchTopTracks(
@@ -153,43 +156,44 @@ export async function fetchTopTracks(
   page: number = 1,
   search?: string,
 ): Promise<TopTracksResponse> {
-  const params = new URLSearchParams({ range, limit: String(limit), page: String(page) });
-  if (search) params.set('search', search);
-  const res = await apiFetch(`/api/top-tracks?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch top tracks');
-  return res.json();
+  const { data, error } = await client.GET('/api/top-tracks', {
+    params: { query: { range, limit, page, ...(search ? { search } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch top tracks');
+  return data;
 }
+
 export async function generateWrapped(
   period: 'year' | 'quarter' | 'month',
   year: number,
   quarter: WrappedQuarter,
   month: WrappedMonth,
 ): Promise<WrappedDataInfo> {
-  const queryParams: string[] = [];
-  queryParams.push(`year=${year}`);
-  if (period === 'quarter') queryParams.push(`quarter=${quarter}`);
-  if (period === 'month') queryParams.push(`month=${month}`);
-
-  const res = await apiFetch(`/api/wrapped?${queryParams.join('&')}`);
-  if (!res.ok) {
-    const errData = await res.json();
-    throw new Error(errData.detail || 'Failed to generate Wrapped.');
+  const { data, error } = await client.GET('/api/wrapped', {
+    params: {
+      query: {
+        year,
+        ...(period === 'quarter' ? { quarter } : {}),
+        ...(period === 'month' ? { month } : {}),
+      },
+    },
+  });
+  if (error) {
+    throw new Error((error as { detail?: string }).detail || 'Failed to generate Wrapped.');
   }
-  return res.json();
+  return data;
 }
 
 export async function triggerSync(mode: SyncMode): Promise<SyncStartInfo> {
-  const params = new URLSearchParams({ mode });
   const token = localStorage.getItem('syncToken') ?? '';
-  const res = await apiFetch(`/api/sync?${params}`, {
-    method: 'POST',
+  const { data, error } = await client.POST('/api/sync', {
+    params: { query: { mode } },
     headers: { 'X-Sync-Token': token },
   });
-  if (!res.ok) {
-    const errData = await res.json();
-    throw new Error(errData.detail || 'Sync failed to start.');
+  if (error) {
+    throw new Error((error as { detail?: string }).detail || 'Sync failed to start.');
   }
-  return res.json();
+  return data;
 }
 
 export async function fetchRecentListens(
@@ -198,26 +202,30 @@ export async function fetchRecentListens(
   before_id?: number,
   anchor_date?: string,
 ): Promise<ListenEntry[]> {
-  const params = new URLSearchParams({ limit: String(limit) });
-  if (before_ts !== undefined) params.set('before_ts', String(before_ts));
-  if (before_id !== undefined) params.set('before_id', String(before_id));
-  if (anchor_date !== undefined) params.set('anchor_date', anchor_date);
-  const res = await apiFetch(`/api/recent?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch recent listens');
-  return res.json();
+  const { data, error } = await client.GET('/api/recent', {
+    params: {
+      query: {
+        limit,
+        ...(before_ts !== undefined ? { before_ts } : {}),
+        ...(before_id !== undefined ? { before_id } : {}),
+        ...(anchor_date !== undefined ? { anchor_date } : {}),
+      },
+    },
+  });
+  if (error) throw new Error('Failed to fetch recent listens');
+  return data;
 }
 
 export async function getSyncStatus(): Promise<SyncStatusInfo> {
-  const res = await apiFetch('/api/sync/status');
-  if (!res.ok) throw new Error('Failed to fetch sync status');
-  return res.json();
+  const { data, error } = await client.GET('/api/sync/status');
+  if (error) throw new Error('Failed to fetch sync status');
+  return data;
 }
 
 export async function fetchPlayingNow(): Promise<PlayingNowInfo> {
   try {
-    const res = await apiFetch('/api/playing-now');
-    if (!res.ok) return { is_playing: false };
-    return res.json();
+    const { data } = await client.GET('/api/playing-now');
+    return data ?? { is_playing: false };
   } catch {
     return { is_playing: false };
   }
@@ -226,9 +234,8 @@ export async function fetchPlayingNow(): Promise<PlayingNowInfo> {
 /** DB-only pre-population: no LB call, responds in ~50ms. */
 export async function fetchLastPlayed(): Promise<PlayingNowInfo> {
   try {
-    const res = await apiFetch('/api/last-played');
-    if (!res.ok) return { is_playing: false };
-    return res.json();
+    const { data } = await client.GET('/api/last-played');
+    return data ?? { is_playing: false };
   } catch {
     return { is_playing: false };
   }
@@ -239,29 +246,23 @@ export async function fetchTrackStats(
   title: string,
   album?: string | null,
 ): Promise<TrackStatsInfo> {
-  const params = new URLSearchParams({ artist, title });
-  if (album) {
-    params.set('album', album);
-  }
-  const res = await apiFetch(`/api/track-stats?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch track stats');
-  return res.json();
+  const { data, error } = await client.GET('/api/track-stats', {
+    params: { query: { artist, title, ...(album ? { album } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch track stats');
+  return data;
 }
 
 export async function fetchTrackStatsBatch(
   tracks: TrackBatchRequestItem[],
 ): Promise<TrackBatchResponseItem[]> {
-  const res = await apiFetch('/api/track-stats/batch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tracks),
-  });
-  if (!res.ok) throw new Error('Failed to fetch batch track stats');
-  return res.json();
+  const { data, error } = await client.POST('/api/track-stats/batch', { body: tracks });
+  if (error) throw new Error('Failed to fetch batch track stats');
+  return data;
 }
 
 export async function fetchOnThisDay(): Promise<OnThisDayGroup[]> {
-  const res = await apiFetch('/api/on-this-day');
-  if (!res.ok) throw new Error('Failed to fetch on-this-day data');
-  return res.json();
+  const { data, error } = await client.GET('/api/on-this-day');
+  if (error) throw new Error('Failed to fetch on-this-day data');
+  return data;
 }
