@@ -3,6 +3,7 @@
   import { fetchDayListens } from '../services/api';
   import type { ListenEntry } from '../services/api';
   import ListenRow from './dashboard/ListenRow.svelte';
+  import { portal } from '../utils/portal';
 
   let { date = $bindable(null) }: { date: string | null } = $props();
 
@@ -22,7 +23,7 @@
 
   $effect(() => {
     if (date && closeButton) {
-      closeButton.focus();
+      closeButton.focus({ preventScroll: true });
     }
   });
 
@@ -62,10 +63,12 @@
 </script>
 
 {#if date}
-  <!-- Backdrop -->
+  <!-- Backdrop — portaled to body so fixed positioning is relative to the viewport,
+       not the transformed .memory-surface ancestor -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+    use:portal
+    class="fixed inset-0 z-9998 bg-black/40 backdrop-blur-sm"
     transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
@@ -73,11 +76,12 @@
 
   <!-- Panel -->
   <div
+    use:portal
     role="dialog"
     aria-modal="true"
     tabindex="-1"
     aria-label="Tracks played on {formatOverlayDate(date)}"
-    class="fixed bottom-0 left-0 right-0 z-50 max-h-[80vh] flex flex-col memory-surface rounded-t-2xl shadow-2xl"
+    class="fixed bottom-0 left-0 right-0 z-9999 max-h-[80vh] flex flex-col memory-surface rounded-t-2xl shadow-2xl"
     transition:fly={{ y: 400, duration: 300, opacity: 1 }}
     onkeydown={handleKeydown}
   >

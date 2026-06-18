@@ -2,6 +2,7 @@
   import { fly, fade } from 'svelte/transition';
   import { fetchWeeklyBreakdown } from '../services/api';
   import type { WeeklyBreakdownItem } from '../services/api';
+  import { portal } from '../utils/portal';
 
   let { monthKey = $bindable(null) }: { monthKey: string | null } = $props();
 
@@ -21,7 +22,7 @@
 
   $effect(() => {
     if (monthKey && closeButton) {
-      closeButton.focus();
+      closeButton.focus({ preventScroll: true });
     }
   });
 
@@ -69,10 +70,11 @@
 </script>
 
 {#if monthKey}
-  <!-- Backdrop -->
+  <!-- Backdrop — portaled to body so fixed positioning is relative to the viewport -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+    use:portal
+    class="fixed inset-0 z-9998 bg-black/40 backdrop-blur-sm"
     transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
@@ -80,11 +82,12 @@
 
   <!-- Panel -->
   <div
+    use:portal
     role="dialog"
     aria-modal="true"
     tabindex="-1"
     aria-label="Weekly breakdown for {formatMonthTitle(monthKey)}"
-    class="fixed bottom-0 left-0 right-0 z-50 flex flex-col memory-surface rounded-t-2xl shadow-2xl"
+    class="fixed bottom-0 left-0 right-0 z-9999 flex flex-col memory-surface rounded-t-2xl shadow-2xl"
     transition:fly={{ y: 400, duration: 300, opacity: 1 }}
     onkeydown={handleKeydown}
   >
