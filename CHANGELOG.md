@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/philipreese/the-record/compare/v0.15.2...v0.16.0) (2026-06-18)
+
+
+### Features
+
+* **backend:** Add /api/day/{date} and /api/trends/monthly/{year}/{month}/weekly endpoints ([197c3aa](https://github.com/philipreese/the-record/commit/197c3aa46888464b166e0b577c07c8feda81e2b0))
+* **frontend:** Add drill-down overlays for heatmap cells and monthly bars ([2589ea5](https://github.com/philipreese/the-record/commit/2589ea514274d602e460034c6c60ed7fd6ea1ebe))
+* **frontend:** Interactive legend tooltips, dynamic heatmap weights, overlay polish ([b79abd6](https://github.com/philipreese/the-record/commit/b79abd647807e92b1ded0637b1da92b9e1c6aed2))
+* **frontend:** Regenerate OpenAPI types and add fetchDayListens/fetchWeeklyBreakdown ([f554cfa](https://github.com/philipreese/the-record/commit/f554cfa709418fa4755dce4d014c0664799a27c6))
+
+
+### Bug Fixes
+
+* **frontend:** Portal overlays to body to escape .memory-surface stacking context ([6bf2dd0](https://github.com/philipreese/the-record/commit/6bf2dd07417e9552d43262d6afefbe6ecce9b280))
+
 ## [0.15.2](https://github.com/philipreese/the-record/compare/v0.15.1...v0.15.2) (2026-06-18)
 
 
