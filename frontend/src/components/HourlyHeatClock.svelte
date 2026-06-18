@@ -157,28 +157,42 @@
         {#each segments as seg, idx}
           <!-- AM Segment (Inner Ring: rInner=40, rOuter=70) -->
           {@const amCount = hourlyData[seg.amKey] || 0}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 40, 70, seg.startAngle, seg.endAngle)}
-            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer"
+            role="button"
+            tabindex="0"
+            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer focus:outline-none focus:stroke-(--text-primary) focus:stroke-1"
             style="fill: var(--accent); --target-opacity: {getOpacity(
               amCount,
             )}; animation-delay: {idx * 40}ms;"
+            aria-label="{seg.amLabel}: {amCount} play{amCount === 1 ? '' : 's'}"
             onmouseenter={() => (hoveredSegment = { label: seg.amLabel, count: amCount })}
             onmouseleave={() => (hoveredSegment = null)}
+            onfocus={() => (hoveredSegment = { label: seg.amLabel, count: amCount })}
+            onblur={() => (hoveredSegment = null)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+            }}
           />
 
           <!-- PM Segment (Outer Ring: rInner=72, rOuter=102) -->
           {@const pmCount = hourlyData[seg.pmKey] || 0}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <path
             d={getSegmentPath(120, 120, 72, 102, seg.startAngle, seg.endAngle)}
-            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer"
+            role="button"
+            tabindex="0"
+            class="clock-segment transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 hover:brightness-110 cursor-pointer focus:outline-none focus:stroke-(--text-primary) focus:stroke-1"
             style="fill: color-mix(in srgb, var(--accent) 60%, var(--text-primary) 40%); --target-opacity: {getOpacity(
               pmCount,
             )}; animation-delay: {(idx + 12) * 40}ms;"
+            aria-label="{seg.pmLabel}: {pmCount} play{pmCount === 1 ? '' : 's'}"
             onmouseenter={() => (hoveredSegment = { label: seg.pmLabel, count: pmCount })}
             onmouseleave={() => (hoveredSegment = null)}
+            onfocus={() => (hoveredSegment = { label: seg.pmLabel, count: pmCount })}
+            onblur={() => (hoveredSegment = null)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+            }}
           />
         {/each}
       </g>
