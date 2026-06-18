@@ -28,6 +28,16 @@
     updatePopoverPosition(event);
   }
 
+  function showPopoverFromFocus(day: DayInfo, event: FocusEvent) {
+    hoveredDay = day;
+    if (!containerElement) return;
+    const target = event.currentTarget as SVGRectElement;
+    const cellRect = target.getBoundingClientRect();
+    const containerRect = containerElement.getBoundingClientRect();
+    popoverX = cellRect.left - containerRect.left + cellRect.width + 4;
+    popoverY = cellRect.top - containerRect.top - 68;
+  }
+
   function movePopover(event: MouseEvent) {
     updatePopoverPosition(event);
   }
@@ -161,6 +171,7 @@
       class="min-w-195 w-full h-auto"
       preserveAspectRatio="xMidYMid meet"
       style="color: var(--text-primary);"
+      aria-label="Listening activity heatmap for {year}"
     >
       <!-- Month Labels -->
       {#each monthHeaders as header}
@@ -205,7 +216,6 @@
             {#each week as day, dIndex}
               {#if day}
                 {#if day.isFuture}
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <rect
                     y={dIndex * 15}
                     width="12"
@@ -214,24 +224,23 @@
                     fill="transparent"
                     class="heatmap-cell"
                     style="
-                        stroke: var(--text-primary); 
-                        stroke-opacity: 0.15; 
+                        stroke: var(--text-primary);
+                        stroke-opacity: 0.15;
                         stroke-width: 1px;
                         animation-delay: {wIndex * 12}ms;
                       "
                     stroke-dasharray="1.5 1.5"
-                    onmouseenter={(e) => showPopover(day, e)}
-                    onmousemove={movePopover}
-                    onmouseleave={hidePopover}
+                    aria-label="{formatDate(day.date)} — unwritten moment"
                   />
                 {:else}
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <rect
                     y={dIndex * 15}
                     width="12"
                     height="12"
                     rx="2.5"
-                    class="heatmap-cell transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 cursor-pointer"
+                    role="button"
+                    tabindex="0"
+                    class="heatmap-cell transition-all duration-(--t-immediate) var(--ease-fluid) hover:stroke-(--text-primary) hover:stroke-1 cursor-pointer focus:outline-none focus:stroke-(--text-primary) focus:stroke-1"
                     class:fill-base-300={day.weight === 0}
                     style="
                        fill: {day.weight > 0 ? 'var(--accent)' : ''};
@@ -246,9 +255,17 @@
                             : '1.0'};
                        animation-delay: {wIndex * 12}ms;
                      "
+                    aria-label="{formatDate(day.date)} — {day.count} play{day.count === 1
+                      ? ''
+                      : 's'}"
                     onmouseenter={(e) => showPopover(day, e)}
                     onmousemove={movePopover}
                     onmouseleave={hidePopover}
+                    onfocus={(e) => showPopoverFromFocus(day, e)}
+                    onblur={hidePopover}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+                    }}
                   />
                 {/if}
               {:else}
