@@ -44,7 +44,7 @@ Views              — OverviewView, ChartsView, WrappedView, SettingsView, Rece
 Components
   layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown
   dashboard/       — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid,
-                     AnimatedCounter, NowPlaying, WrappedCard, ListenRow
+                     AnimatedCounter, NowPlaying, WrappedCard, ListenRow, StreamGraph
   overview/        — HeatmapSection, DiurnalSection, TelemetrySection, RecentScrobblesSection
   settings/        — ThemeSelector, DataSyncPanel
 ```
@@ -72,6 +72,8 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | POST | `/api/track-stats/batch` | Request body: `TrackBatchRequestItem[]` | `TrackBatchResponseItem[]` |
 | GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback + cover art) |
 | GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
+| GET | `/api/top-artist-trends` | `year` (required int), `limit` (default 5) | `TopArtistTrendsResponse` |
+| GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
 
 ### Sync authentication
 
