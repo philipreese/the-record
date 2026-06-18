@@ -67,7 +67,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'dashboard'}
             >
-              Overview
+              {@html appCache.narrative['sidebar.nav.dashboard'] || 'Overview'}
             </span>
           </button>
         </li>
@@ -93,7 +93,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'charts'}
             >
-              Top Charts
+              {@html appCache.narrative['sidebar.nav.charts'] || 'Top Charts'}
             </span>
           </button>
         </li>
@@ -120,7 +120,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'wrapped'}
             >
-              Reviews
+              {@html appCache.narrative['sidebar.nav.wrapped'] || 'Reviews'}
             </span>
           </button>
         </li>
@@ -146,7 +146,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'recent'}
             >
-              Journal
+              {@html appCache.narrative['sidebar.nav.recent'] || 'Journal'}
             </span>
           </button>
         </li>
@@ -188,7 +188,7 @@
           <div class="flex items-center gap-2">
             <div class="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse"></div>
             <span class="text-xs font-mono tracking-widest uppercase text-theme-muted">
-              Memory Surface
+              {@html appCache.narrative['sidebar.memory_surface'] || 'Memory Surface'}
             </span>
           </div>
           {#if appCache.isSyncing}
@@ -203,7 +203,7 @@
         {#if appCache.isSyncing}
           <div class="space-y-1.5">
             <div class="text-sm font-light leading-relaxed text-theme-accent animate-pulse">
-              Syncing latest plays...
+              {@html appCache.narrative['sidebar.syncing'] || 'Syncing latest plays...'}
             </div>
             {#if appCache.stats}
               <div class="text-xs font-mono text-theme-muted">
@@ -214,22 +214,22 @@
         {:else if appCache.stats}
           <div class="space-y-1.5">
             <div class="text-sm md:text-base font-light leading-relaxed text-theme-secondary">
-              Archived <span class="font-mono font-medium text-theme-accent"
-                >{appCache.stats.total_listens.toLocaleString()}</span
-              > plays
+              {@html appCache.narrative['sidebar.archived_plays'] ||
+                `Archived <span class="font-mono font-medium text-theme-accent">${appCache.stats.total_listens.toLocaleString()}</span> plays`}
             </div>
             <div class="text-xs font-mono text-theme-muted tracking-wide">
-              Active habit: <span class="text-theme-text font-normal"
-                >{appCache.stats.avg_per_day}</span
-              > / day
+              {@html appCache.narrative['sidebar.active_habit'] || 'Active habit:'}
+              <span class="text-theme-text font-normal">{appCache.stats.avg_per_day}</span> / day
             </div>
           </div>
         {:else if appCache.isWakingUp}
           <div class="text-sm font-mono text-theme-accent animate-pulse">
-            Waking up the server...
+            {@html appCache.narrative['sidebar.waking_up'] || 'Waking up the server...'}
           </div>
         {:else}
-          <div class="text-sm font-mono text-theme-muted">Connecting to archive...</div>
+          <div class="text-sm font-mono text-theme-muted">
+            {@html appCache.narrative['sidebar.connecting'] || 'Connecting to archive...'}
+          </div>
         {/if}
 
         <!-- Sync trigger -->

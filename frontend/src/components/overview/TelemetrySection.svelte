@@ -4,6 +4,7 @@
   import type { StatsInfo } from '../../services/api';
   import StatsGrid from '../dashboard/StatsGrid.svelte';
   import LoadingSpinner from '../layout/LoadingSpinner.svelte';
+  import { appCache } from '../../services/store.svelte';
 
   let {
     loading,
@@ -22,7 +23,10 @@
   role="region"
   id="telemetry-volumes"
 >
-  <h2 class="editorial-text-h2">{sectionNumber} / Telemetry & Volumes</h2>
+  <h2 class="editorial-text-h2">
+    {sectionNumber} / {@html appCache.narrative['overview.insight.telemetry_volumes_header'] ||
+      'Telemetry & Volumes'}
+  </h2>
   <div class="mt-8 reveal-content" transition:slide={{ duration: 250 }}>
     {#if loading}
       <LoadingSpinner py="py-10" />

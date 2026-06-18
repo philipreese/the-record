@@ -116,6 +116,15 @@ export async function fetchStreak(): Promise<StreakInfo> {
   return data;
 }
 
+export async function fetchNarrative(seed?: string): Promise<Record<string, string>> {
+  // @ts-expect-error - /api/narrative not yet in openapi-types if not regenerated
+  const { data, error } = await client.GET('/api/narrative', {
+    params: { query: { ...(seed ? { seed } : {}) } },
+  });
+  if (error) throw new Error('Failed to fetch narrative');
+  return data as Record<string, string>;
+}
+
 export async function fetchHeatmap(year: number): Promise<Record<string, number>> {
   const { data, error } = await client.GET('/api/heatmap', { params: { query: { year } } });
   if (error) throw new Error('Failed to fetch heatmap data');

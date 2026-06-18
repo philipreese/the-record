@@ -3,6 +3,7 @@
   import type { MonthlyTrendInfo } from '../../services/api';
   import Heatmap from '../Heatmap.svelte';
   import MonthlyBarChart from '../MonthlyBarChart.svelte';
+  import { appCache } from '../../services/store.svelte';
 
   let {
     heatmapYear = $bindable(),
@@ -29,9 +30,12 @@
     class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2 reveal-label pb-2 border-b border-theme-border-soft"
   >
     <div>
-      <h2 class="editorial-text-h2">01 / Temporal Archive & Trends</h2>
+      <h2 class="editorial-text-h2">
+        {@html appCache.narrative['heatmap.section_title'] || '01 / Temporal Archive & Trends'}
+      </h2>
       <p class="text-[11px] text-theme-muted font-mono tracking-wide mt-1">
-        Calendar activity grid and monthly play volume (selector affects both)
+        {@html appCache.narrative['heatmap.section_desc'] ||
+          'Calendar activity grid and monthly play volume (selector affects both)'}
       </p>
     </div>
 

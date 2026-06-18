@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 import app.repository as repo
 import app.sync as sync_worker
 import httpx
+from app.narrative import generate_narrative
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
@@ -98,6 +99,20 @@ def read_monthly_trends() -> Any:
 def read_streak() -> Any:
     """Retrieve active and historical daily listening streaks."""
     return repo.get_streak_stats()
+
+@router.get("/narrative", response_model=Dict[str, str])
+def read_narrative(
+    seed: Optional[str] = Query(None, description="Optional seed for daily stable randomization"),
+) -> Any:
+    """Retrieve dynamic narrative strings for the UI."""
+    stats = repo.get_stats_summary()
+    streak = repo.get_streak_stats()
+    
+    stats_dict = stats.model_dump() if hasattr(stats, "model_dump") else (stats.dict() if hasattr(stats, "dict") else stats)
+    streak_dict = streak.model_dump() if hasattr(streak, "model_dump") else (streak.dict() if hasattr(streak, "dict") else streak)
+    
+    return generate_narrative(stats_dict, streak_dict, seed)
+
 
 @router.get("/wrapped", response_model=WrappedDataResponse)
 def read_wrapped(

@@ -66,7 +66,11 @@
   id="on-this-day"
 >
   <div class="pb-2 border-b border-theme-border-soft reveal-label">
-    <h2 class="editorial-text-h2">04 / On This Day &mdash; {todayLabel}</h2>
+    <h2 class="editorial-text-h2">
+      {@html (
+        appCache.narrative['on_this_day.section'] || '04 / On This Day &mdash; {date}'
+      ).replace('{date}', todayLabel)}
+    </h2>
   </div>
 
   <div class="reveal-content space-y-2">

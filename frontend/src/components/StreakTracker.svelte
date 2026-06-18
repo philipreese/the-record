@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './layout/Icon.svelte';
+  import { appCache } from '../services/store.svelte';
 
   interface StreakInfo {
     current_streak: number;
@@ -13,21 +14,10 @@
   let longest = $derived(streakData.longest_streak || 0);
 
   // Motivational messages depending on active streak
-  let message = $derived(getMotivationalMessage(current));
-
-  function getMotivationalMessage(streak: number): string {
-    if (streak === 0) {
-      return 'Start listening today to kick off a new daily music streak!';
-    } else if (streak <= 2) {
-      return 'Streak started! Listen again tomorrow to keep the flame alive.';
-    } else if (streak <= 5) {
-      return "Nice job! You've listened to music multiple days in a row.";
-    } else if (streak <= 10) {
-      return "On fire! You're building an incredible daily music habit.";
-    } else {
-      return 'Legendary! Your music connection is unstoppable. Keep rocking!';
-    }
-  }
+  let message = $derived(
+    appCache.narrative['streak.message'] ||
+      'Start listening today to kick off a new daily music streak!',
+  );
 </script>
 
 <div class="memory-surface flex flex-col justify-between h-full space-y-6">

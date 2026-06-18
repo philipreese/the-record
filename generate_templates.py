@@ -1,0 +1,722 @@
+import json
+import os
+
+templates = {
+    # Sidebar
+    "sidebar.memory_surface": [
+        {"condition": "always_true", "text": "Memory Surface"},
+        {"condition": "always_true", "text": "Acoustic Horizon"},
+        {"condition": "always_true", "text": "Sonic Imprint"},
+        {"condition": "always_true", "text": "Audio Archive"},
+        {"condition": "always_true", "text": "Listening History"},
+        {"condition": "always_true", "text": "Temporal Log"}
+    ],
+    "sidebar.active_habit": [
+        {"condition": "always_true", "text": "Active habit:"},
+        {"condition": "always_true", "text": "Daily rhythm:"},
+        {"condition": "always_true", "text": "Average pace:"},
+        {"condition": "always_true", "text": "Frequency:"},
+        {"condition": "always_true", "text": "Listening rate:"}
+    ],
+    "sidebar.connecting": [
+        {"condition": "always_true", "text": "Connecting to archive..."},
+        {"condition": "always_true", "text": "Establishing link..."},
+        {"condition": "always_true", "text": "Accessing history..."},
+        {"condition": "always_true", "text": "Loading records..."},
+        {"condition": "always_true", "text": "Syncing timeline..."}
+    ],
+    "sidebar.waking_up": [
+        {"condition": "always_true", "text": "Waking up the server..."},
+        {"condition": "always_true", "text": "Initializing systems..."},
+        {"condition": "always_true", "text": "Powering up archive..."},
+        {"condition": "always_true", "text": "Starting the record..."},
+        {"condition": "always_true", "text": "Connecting to database..."}
+    ],
+    "sidebar.syncing": [
+        {"condition": "always_true", "text": "Syncing latest plays..."},
+        {"condition": "always_true", "text": "Fetching new scrobbles..."},
+        {"condition": "always_true", "text": "Updating archive..."},
+        {"condition": "always_true", "text": "Pulling recent history..."},
+        {"condition": "always_true", "text": "Aligning timelines..."}
+    ],
+    "sidebar.archived_plays": [
+        {"condition": "always_true", "text": "Archived <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> plays"},
+        {"condition": "always_true", "text": "Cataloged <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> tracks"},
+        {"condition": "always_true", "text": "Stored <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> memories"},
+        {"condition": "always_true", "text": "Recorded <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> listens"},
+        {"condition": "always_true", "text": "Secured <span class=\"font-mono font-medium text-theme-accent\">{total_listens}</span> moments"}
+    ],
+    "sidebar.nav.dashboard": [
+        {"condition": "always_true", "text": "Overview"},
+        {"condition": "always_true", "text": "Dashboard"},
+        {"condition": "always_true", "text": "Home"},
+        {"condition": "always_true", "text": "Command Center"},
+        {"condition": "always_true", "text": "Main Feed"}
+    ],
+    "sidebar.nav.charts": [
+        {"condition": "always_true", "text": "Top Charts"},
+        {"condition": "always_true", "text": "Rankings"},
+        {"condition": "always_true", "text": "Leaderboards"},
+        {"condition": "always_true", "text": "Most Played"},
+        {"condition": "always_true", "text": "Favorites"}
+    ],
+    "sidebar.nav.wrapped": [
+        {"condition": "always_true", "text": "Reviews"},
+        {"condition": "always_true", "text": "Retrospectives"},
+        {"condition": "always_true", "text": "Wrapped"},
+        {"condition": "always_true", "text": "Summaries"},
+        {"condition": "always_true", "text": "Periods"}
+    ],
+    "sidebar.nav.recent": [
+        {"condition": "always_true", "text": "Journal"},
+        {"condition": "always_true", "text": "History"},
+        {"condition": "always_true", "text": "Timeline"},
+        {"condition": "always_true", "text": "Recent Plays"},
+        {"condition": "always_true", "text": "Logbook"}
+    ],
+
+    # Overview
+    "overview.title": [
+        {"condition": "always_true", "text": "music journal"},
+        {"condition": "always_true", "text": "listening archive"},
+        {"condition": "always_true", "text": "sonic record"},
+        {"condition": "always_true", "text": "audio history"},
+        {"condition": "always_true", "text": "the record"}
+    ],
+    "overview.subtitle": [
+        {"condition": "always_true", "text": "Self-hosted scrobble archives and listening insights."},
+        {"condition": "always_true", "text": "Your personal history of musical consumption."},
+        {"condition": "always_true", "text": "An archaeology of the sounds that accompany your days."},
+        {"condition": "always_true", "text": "Tracking the rhythm of your life through music."},
+        {"condition": "always_true", "text": "A meticulous log of every track, artist, and album."}
+    ],
+    "overview.hero": [
+        {
+            "condition": "streak_over_30",
+            "text": "An unbroken chain of <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> of musical immersion. You have logged <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> total, averaging <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily via <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+        },
+        {
+            "condition": "streak_over_30",
+            "text": "A relentless acoustic journey. For <span class=\"font-sans font-normal text-theme-accent\">{current_streak} consecutive days</span>, music has been a constant companion. Over <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span>, your <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> pipeline has delivered <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day."
+        },
+        {
+            "condition": "high_avg_per_day",
+            "text": "A period of intense musical recollection. You average a staggering <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily through <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>. In total, <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your journey have been scored, currently riding a <span class=\"font-sans font-normal text-theme-accent\">{current_streak} day</span> streak."
+        },
+        {
+            "condition": "always_true",
+            "text": "A period of active musical recollection. You have integrated music into <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your journey, averaging <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily. Your primary sonic gateway is <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, sustaining a continuous streak of <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> of conscious listening."
+        },
+        {
+            "condition": "always_true",
+            "text": "Your sonic footprint is growing. Across <span class=\"font-sans font-normal text-theme-accent\">{days_active} active days</span>, you've maintained an average of <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> a day. Currently on a <span class=\"font-sans font-normal text-theme-accent\">{current_streak} day</span> streak, with <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> acting as the primary vessel."
+        },
+        {
+            "condition": "always_true",
+            "text": "Documenting the soundtrack of your life. <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> recorded, flowing at <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day. The streak stands at <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>, primarily fueled by <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+        },
+        {
+            "condition": "always_true",
+            "text": "The archive deepens. Music has touched <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of your timeline. You're absorbing <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> daily, primarily through <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, keeping a streak alive for <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+        },
+        {
+            "condition": "always_true",
+            "text": "A steady acoustic flow. <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> pass through your ears on an average day. This habit has spanned <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span>, driven by <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>, and is currently unbroken for <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+        },
+        {
+            "condition": "always_true",
+            "text": "Music as a daily ritual. <span class=\"font-sans font-normal text-theme-accent\">{days_active} days</span> of history reveal a pace of <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> per day. You are <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span> into your current run, utilizing <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span>."
+        },
+        {
+            "condition": "always_true",
+            "text": "The rhythm of your days. You average <span class=\"font-sans font-normal text-theme-accent\">{avg_per_day} tracks</span> over <span class=\"font-sans font-normal text-theme-accent\">{days_active} active days</span>. <span class=\"font-sans font-normal capitalize text-theme-accent\">{top_source}</span> delivers the sound, keeping your current streak at <span class=\"font-sans font-normal text-theme-accent\">{current_streak} days</span>."
+        }
+    ],
+
+    # Section Headers & Nav
+    "overview.section_streak": [
+        {"condition": "always_true", "text": "03 / Recollection Continuous"},
+        {"condition": "always_true", "text": "03 / The Listening Streak"},
+        {"condition": "always_true", "text": "03 / Unbroken Rhythm"},
+        {"condition": "always_true", "text": "03 / Consecutive Days"},
+        {"condition": "always_true", "text": "03 / Daily Habit"}
+    ],
+    "nav.insights": [
+        {"condition": "always_true", "text": "insights"},
+        {"condition": "always_true", "text": "trends"},
+        {"condition": "always_true", "text": "archive"},
+        {"condition": "always_true", "text": "heatmap"},
+        {"condition": "always_true", "text": "overview"}
+    ],
+    "nav.patterns": [
+        {"condition": "always_true", "text": "patterns"},
+        {"condition": "always_true", "text": "diurnal"},
+        {"condition": "always_true", "text": "clocks"},
+        {"condition": "always_true", "text": "rhythms"},
+        {"condition": "always_true", "text": "cadence"}
+    ],
+    "nav.streak": [
+        {"condition": "always_true", "text": "streak"},
+        {"condition": "always_true", "text": "habit"},
+        {"condition": "always_true", "text": "momentum"},
+        {"condition": "always_true", "text": "consistency"},
+        {"condition": "always_true", "text": "continuous"}
+    ],
+    "nav.on_this_day": [
+        {"condition": "always_true", "text": "on this day"},
+        {"condition": "always_true", "text": "anniversaries"},
+        {"condition": "always_true", "text": "time capsule"},
+        {"condition": "always_true", "text": "history"},
+        {"condition": "always_true", "text": "flashbacks"}
+    ],
+    "nav.recent": [
+        {"condition": "always_true", "text": "recent"},
+        {"condition": "always_true", "text": "timeline"},
+        {"condition": "always_true", "text": "latest"},
+        {"condition": "always_true", "text": "journal"},
+        {"condition": "always_true", "text": "scrobbles"}
+    ],
+    "nav.volumes": [
+        {"condition": "always_true", "text": "volumes"},
+        {"condition": "always_true", "text": "telemetry"},
+        {"condition": "always_true", "text": "totals"},
+        {"condition": "always_true", "text": "metrics"},
+        {"condition": "always_true", "text": "stats"}
+    ],
+
+    # Stats Grid
+    "stats.total_listens.label": [
+        {"condition": "always_true", "text": "Total Scrobbles"},
+        {"condition": "always_true", "text": "Total Plays"},
+        {"condition": "always_true", "text": "Archived Listens"},
+        {"condition": "always_true", "text": "Recorded Tracks"},
+        {"condition": "always_true", "text": "Sonic Footprints"}
+    ],
+    "stats.total_listens.detail": [
+        {"condition": "always_true", "text": "all-time collection"},
+        {"condition": "always_true", "text": "lifetime volume"},
+        {"condition": "always_true", "text": "total moments logged"},
+        {"condition": "always_true", "text": "historical sum"},
+        {"condition": "always_true", "text": "complete archive"}
+    ],
+    "stats.unique_creators.label": [
+        {"condition": "always_true", "text": "Unique Creators"},
+        {"condition": "always_true", "text": "Distinct Artists"},
+        {"condition": "always_true", "text": "Discovered Artists"},
+        {"condition": "always_true", "text": "Different Voices"},
+        {"condition": "always_true", "text": "Artist Variety"}
+    ],
+    "stats.unique_creators.detail": [
+        {"condition": "always_true", "text": "diverse artists"},
+        {"condition": "always_true", "text": "unique musicians"},
+        {"condition": "always_true", "text": "creative sources"},
+        {"condition": "always_true", "text": "individual performers"},
+        {"condition": "always_true", "text": "artistic footprint"}
+    ],
+    "stats.unique_tracks.label": [
+        {"condition": "always_true", "text": "Unique Tracks"},
+        {"condition": "always_true", "text": "Distinct Songs"},
+        {"condition": "always_true", "text": "Different Tracks"},
+        {"condition": "always_true", "text": "Discovered Songs"},
+        {"condition": "always_true", "text": "Track Variety"}
+    ],
+    "stats.unique_tracks.detail": [
+        {"condition": "always_true", "text": "different songs"},
+        {"condition": "always_true", "text": "unique compositions"},
+        {"condition": "always_true", "text": "individual recordings"},
+        {"condition": "always_true", "text": "unique pieces"},
+        {"condition": "always_true", "text": "track diversity"}
+    ],
+    "stats.active_days.label": [
+        {"condition": "always_true", "text": "Active Days"},
+        {"condition": "always_true", "text": "Days Listened"},
+        {"condition": "always_true", "text": "Logged Days"},
+        {"condition": "always_true", "text": "Musical Days"},
+        {"condition": "always_true", "text": "Days Active"}
+    ],
+    "stats.active_days.detail": [
+        {"condition": "always_true", "text": "total days logged"},
+        {"condition": "always_true", "text": "days with music"},
+        {"condition": "always_true", "text": "active timeline"},
+        {"condition": "always_true", "text": "days in archive"},
+        {"condition": "always_true", "text": "recorded history"}
+    ],
+    "stats.avg_per_day.label": [
+        {"condition": "always_true", "text": "Daily Play Rate"},
+        {"condition": "always_true", "text": "Average per Day"},
+        {"condition": "always_true", "text": "Daily Average"},
+        {"condition": "always_true", "text": "Plays per Day"},
+        {"condition": "always_true", "text": "Listening Velocity"}
+    ],
+    "stats.avg_per_day.detail": [
+        {"condition": "always_true", "text": "plays per day"},
+        {"condition": "always_true", "text": "tracks every 24h"},
+        {"condition": "always_true", "text": "daily volume"},
+        {"condition": "always_true", "text": "average velocity"},
+        {"condition": "always_true", "text": "daily habit"}
+    ],
+    "stats.top_source.label": [
+        {"condition": "always_true", "text": "Top Source"},
+        {"condition": "always_true", "text": "Primary Player"},
+        {"condition": "always_true", "text": "Main Pipeline"},
+        {"condition": "always_true", "text": "Preferred App"},
+        {"condition": "always_true", "text": "Listening Medium"}
+    ],
+    "stats.top_source.detail": [
+        {"condition": "always_true", "text": "music pipeline"},
+        {"condition": "always_true", "text": "where you listen"},
+        {"condition": "always_true", "text": "primary platform"},
+        {"condition": "always_true", "text": "scrobble client"},
+        {"condition": "always_true", "text": "top integration"}
+    ],
+
+    # Telemetry
+    "telemetry.section": [
+        {"condition": "always_true", "text": "{number} / Telemetry & Volumes"},
+        {"condition": "always_true", "text": "{number} / High-Level Metrics"},
+        {"condition": "always_true", "text": "{number} / Global Statistics"},
+        {"condition": "always_true", "text": "{number} / Archive Totals"},
+        {"condition": "always_true", "text": "{number} / The Big Picture"}
+    ],
+
+    # Heatmap
+    "heatmap.section_title": [
+        {"condition": "always_true", "text": "01 / Temporal Archive & Trends"},
+        {"condition": "always_true", "text": "01 / The Calendar Grid"},
+        {"condition": "always_true", "text": "01 / Yearly Rhythms"},
+        {"condition": "always_true", "text": "01 / Activity Heatmap"},
+        {"condition": "always_true", "text": "01 / Days & Months"}
+    ],
+    "heatmap.section_desc": [
+        {"condition": "always_true", "text": "Calendar activity grid and monthly play volume (selector affects both)"},
+        {"condition": "always_true", "text": "Visualizing your listening intensity across the days and months of the year"},
+        {"condition": "always_true", "text": "A heat map of your daily scrobbles and monthly aggregate totals"},
+        {"condition": "always_true", "text": "Track your musical immersion throughout the chosen year"},
+        {"condition": "always_true", "text": "Daily presence and monthly flow over the course of a single year"}
+    ],
+    "heatmap.legend_quiet": [
+        {"condition": "always_true", "text": "Quiet"},
+        {"condition": "always_true", "text": "Silent"},
+        {"condition": "always_true", "text": "Faint"},
+        {"condition": "always_true", "text": "Still"},
+        {"condition": "always_true", "text": "Empty"}
+    ],
+    "heatmap.legend_resonant": [
+        {"condition": "always_true", "text": "Resonant"},
+        {"condition": "always_true", "text": "Loud"},
+        {"condition": "always_true", "text": "Intense"},
+        {"condition": "always_true", "text": "Active"},
+        {"condition": "always_true", "text": "Vibrant"}
+    ],
+    "heatmap.tooltip.unwritten": [
+        {"condition": "always_true", "text": "Unwritten moment"},
+        {"condition": "always_true", "text": "The future awaits"},
+        {"condition": "always_true", "text": "Yet to come"},
+        {"condition": "always_true", "text": "Tomorrow's silence"},
+        {"condition": "always_true", "text": "Pending memory"}
+    ],
+    "heatmap.tooltip.silence": [
+        {"condition": "always_true", "text": "Silence and space"},
+        {"condition": "always_true", "text": "A day without records"},
+        {"condition": "always_true", "text": "Total quiet"},
+        {"condition": "always_true", "text": "No plays logged"},
+        {"condition": "always_true", "text": "An empty page"}
+    ],
+    "heatmap.tooltip.weight1": [
+        {"condition": "always_true", "text": "Quiet, observed resonance"},
+        {"condition": "always_true", "text": "A faint musical presence"},
+        {"condition": "always_true", "text": "Light listening"},
+        {"condition": "always_true", "text": "Just a few tracks"},
+        {"condition": "always_true", "text": "A soft acoustic hum"}
+    ],
+    "heatmap.tooltip.weight2": [
+        {"condition": "always_true", "text": "Active connection"},
+        {"condition": "always_true", "text": "A steady rhythm"},
+        {"condition": "always_true", "text": "Moderate engagement"},
+        {"condition": "always_true", "text": "A solid day of sound"},
+        {"condition": "always_true", "text": "Consistent listening"}
+    ],
+    "heatmap.tooltip.weight3": [
+        {"condition": "always_true", "text": "Deep musical immersion"},
+        {"condition": "always_true", "text": "Heavy listening volume"},
+        {"condition": "always_true", "text": "A highly resonant day"},
+        {"condition": "always_true", "text": "Strong audio engagement"},
+        {"condition": "always_true", "text": "A wall of sound"}
+    ],
+    "heatmap.tooltip.weight4": [
+        {"condition": "always_true", "text": "Intense emotional archaeology"},
+        {"condition": "always_true", "text": "A peak auditory experience"},
+        {"condition": "always_true", "text": "Maximum volume"},
+        {"condition": "always_true", "text": "Obsessive listening"},
+        {"condition": "always_true", "text": "An overwhelming wave of music"}
+    ],
+
+    # Punchcard
+    "punchcard.legend_quiet": [
+        {"condition": "always_true", "text": "Quiet"},
+        {"condition": "always_true", "text": "Rare"},
+        {"condition": "always_true", "text": "Sparse"},
+        {"condition": "always_true", "text": "Uncommon"},
+        {"condition": "always_true", "text": "Low"}
+    ],
+    "punchcard.legend_resonant": [
+        {"condition": "always_true", "text": "Resonant"},
+        {"condition": "always_true", "text": "Frequent"},
+        {"condition": "always_true", "text": "Dense"},
+        {"condition": "always_true", "text": "Common"},
+        {"condition": "always_true", "text": "High"}
+    ],
+    "punchcard.tooltip.weight1": [
+        {"condition": "always_true", "text": "Quiet background listening"},
+        {"condition": "always_true", "text": "Occasional presence"},
+        {"condition": "always_true", "text": "Rarely active"},
+        {"condition": "always_true", "text": "A slight trend"},
+        {"condition": "always_true", "text": "Low probability hour"}
+    ],
+    "punchcard.tooltip.weight2": [
+        {"condition": "always_true", "text": "Regular rhythm"},
+        {"condition": "always_true", "text": "A common listening time"},
+        {"condition": "always_true", "text": "Moderate activity"},
+        {"condition": "always_true", "text": "A reliable hour"},
+        {"condition": "always_true", "text": "Consistent engagement"}
+    ],
+    "punchcard.tooltip.weight3": [
+        {"condition": "always_true", "text": "Strong habitual focus"},
+        {"condition": "always_true", "text": "High activity zone"},
+        {"condition": "always_true", "text": "A core listening window"},
+        {"condition": "always_true", "text": "Frequent immersion"},
+        {"condition": "always_true", "text": "A very active time"}
+    ],
+    "punchcard.tooltip.weight4": [
+        {"condition": "always_true", "text": "Peak temporal density"},
+        {"condition": "always_true", "text": "Maximum concentration"},
+        {"condition": "always_true", "text": "Your most active hour"},
+        {"condition": "always_true", "text": "An intense listening pocket"},
+        {"condition": "always_true", "text": "The center of your audio week"}
+    ],
+
+    # Diurnal
+    "diurnal.section1": [
+        {"condition": "always_true", "text": "02A / Diurnal Intensity"},
+        {"condition": "always_true", "text": "02A / The Hourly Clock"},
+        {"condition": "always_true", "text": "02A / Daily Rhythms"},
+        {"condition": "always_true", "text": "02A / 24-Hour Cycle"},
+        {"condition": "always_true", "text": "02A / Time of Day"}
+    ],
+    "diurnal.section2": [
+        {"condition": "always_true", "text": "02B / Weekly Cadence"},
+        {"condition": "always_true", "text": "02B / The Punchcard"},
+        {"condition": "always_true", "text": "02B / Days of the Week"},
+        {"condition": "always_true", "text": "02B / Routine Mapping"},
+        {"condition": "always_true", "text": "02B / Temporal Density"}
+    ],
+
+    # Recent Scrobbles
+    "recent.section": [
+        {"condition": "always_true", "text": "{number} / Recent Scrobbles"},
+        {"condition": "always_true", "text": "{number} / The Latest Log"},
+        {"condition": "always_true", "text": "{number} / Just Played"},
+        {"condition": "always_true", "text": "{number} / Current Timeline"},
+        {"condition": "always_true", "text": "{number} / Fresh History"}
+    ],
+    "recent.view_all": [
+        {"condition": "always_true", "text": "View full journal &rarr;"},
+        {"condition": "always_true", "text": "See all &rarr;"},
+        {"condition": "always_true", "text": "Open logbook &rarr;"},
+        {"condition": "always_true", "text": "Explore timeline &rarr;"},
+        {"condition": "always_true", "text": "Show more &rarr;"}
+    ],
+    "recent.empty": [
+        {"condition": "always_true", "text": "No listens yet."},
+        {"condition": "always_true", "text": "The timeline is empty."},
+        {"condition": "always_true", "text": "Waiting for the first play."},
+        {"condition": "always_true", "text": "No records found."},
+        {"condition": "always_true", "text": "Silence."}
+    ],
+
+    # On This Day
+    "on_this_day.section": [
+        {"condition": "always_true", "text": "04 / On This Day &mdash; {date}"},
+        {"condition": "always_true", "text": "04 / Anniversaries &mdash; {date}"},
+        {"condition": "always_true", "text": "04 / Time Capsule &mdash; {date}"},
+        {"condition": "always_true", "text": "04 / Echoes of {date}"},
+        {"condition": "always_true", "text": "04 / Flashbacks &mdash; {date}"}
+    ],
+
+    # Now Playing
+    "now_playing.playing": [
+        {"condition": "always_true", "text": "Now Playing"},
+        {"condition": "always_true", "text": "Spinning Now"},
+        {"condition": "always_true", "text": "Currently Active"},
+        {"condition": "always_true", "text": "Live Stream"},
+        {"condition": "always_true", "text": "On Air"}
+    ],
+    "now_playing.last_played": [
+        {"condition": "always_true", "text": "Last Played"},
+        {"condition": "always_true", "text": "Previous Track"},
+        {"condition": "always_true", "text": "Most Recent"},
+        {"condition": "always_true", "text": "Last Drop"},
+        {"condition": "always_true", "text": "Echoing Fade"}
+    ],
+
+    # Footer
+    "footer.title": [
+        {"condition": "always_true", "text": "the record"},
+        {"condition": "always_true", "text": "the archive"},
+        {"condition": "always_true", "text": "the ledger"},
+        {"condition": "always_true", "text": "the log"},
+        {"condition": "always_true", "text": "the chronicle"}
+    ],
+    "footer.subtitle": [
+        {"condition": "always_true", "text": "listening journal"},
+        {"condition": "always_true", "text": "sonic footprint"},
+        {"condition": "always_true", "text": "audio history"},
+        {"condition": "always_true", "text": "personal scrobbles"},
+        {"condition": "always_true", "text": "music memory"}
+    ],
+    "footer.desc": [
+        {"condition": "always_true", "text": "Your personal music history, archived and analyzed."},
+        {"condition": "always_true", "text": "A meticulous accounting of every track you've heard."},
+        {"condition": "always_true", "text": "Preserving the soundtrack of your days."},
+        {"condition": "always_true", "text": "The quiet observer of your musical journey."},
+        {"condition": "always_true", "text": "Keeping the score of your acoustic life."}
+    ],
+    "footer.copyright": [
+        {"condition": "always_true", "text": "&copy; 2026 the record. all plays accounted for."},
+        {"condition": "always_true", "text": "&copy; 2026 the record. no sound forgotten."},
+        {"condition": "always_true", "text": "&copy; 2026 the record. preserving the signal."},
+        {"condition": "always_true", "text": "&copy; 2026 the record. the archive remains."},
+        {"condition": "always_true", "text": "&copy; 2026 the record. tracking every beat."}
+    ],
+
+    # Wrapped Card
+    "wrapped.slide0.section": [
+        {"condition": "always_true", "text": "01 / The Archeology"},
+        {"condition": "always_true", "text": "01 / The Overview"},
+        {"condition": "always_true", "text": "01 / The Big Picture"},
+        {"condition": "always_true", "text": "01 / The Surface"},
+        {"condition": "always_true", "text": "01 / Top Level"}
+    ],
+    "wrapped.slide0.title": [
+        {"condition": "always_true", "text": "reviewing the <span class=\"italic text-theme-accent\">resonance</span>"},
+        {"condition": "always_true", "text": "uncovering the <span class=\"italic text-theme-accent\">archive</span>"},
+        {"condition": "always_true", "text": "analyzing the <span class=\"italic text-theme-accent\">signal</span>"},
+        {"condition": "always_true", "text": "exploring the <span class=\"italic text-theme-accent\">echoes</span>"},
+        {"condition": "always_true", "text": "surveying the <span class=\"italic text-theme-accent\">volume</span>"}
+    ],
+    "wrapped.period_summary": [
+        {"condition": "always_true", "text": "Unfolding the musical residue of your archive for <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "A retrospective of the sounds that defined <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "Digging into the audio footprint you left behind in <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "An examination of your listening habits during <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "The aggregated story of your musical choices in <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "Reviewing the tracks, artists, and moments that shaped <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "Bringing the quiet statistics of <span class=\"text-theme-accent font-normal\">{period_str}</span> to light."},
+        {"condition": "always_true", "text": "Tracing your acoustic steps throughout <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "A data-driven look back at your <span class=\"text-theme-accent font-normal\">{period_str}</span>."},
+        {"condition": "always_true", "text": "Reflecting on the continuous stream of music from <span class=\"text-theme-accent font-normal\">{period_str}</span>."}
+    ],
+    "wrapped.slide0.button": [
+        {"condition": "always_true", "text": "Begin Deep Dive &rarr;"},
+        {"condition": "always_true", "text": "Start the Review &rarr;"},
+        {"condition": "always_true", "text": "Explore the Data &rarr;"},
+        {"condition": "always_true", "text": "Open the Archive &rarr;"},
+        {"condition": "always_true", "text": "See the Details &rarr;"}
+    ],
+    "wrapped.slide0.stat1": [
+        {"condition": "always_true", "text": "Total Plays"},
+        {"condition": "always_true", "text": "Volume"},
+        {"condition": "always_true", "text": "Listens"},
+        {"condition": "always_true", "text": "Scrobbles"},
+        {"condition": "always_true", "text": "Track Count"}
+    ],
+    "wrapped.slide0.stat2": [
+        {"condition": "always_true", "text": "Minutes Listened"},
+        {"condition": "always_true", "text": "Time Immersed"},
+        {"condition": "always_true", "text": "Total Duration"},
+        {"condition": "always_true", "text": "Active Time"},
+        {"condition": "always_true", "text": "Clocked Minutes"}
+    ],
+    "wrapped.slide0.stat3": [
+        {"condition": "always_true", "text": "Top Creator"},
+        {"condition": "always_true", "text": "Primary Artist"},
+        {"condition": "always_true", "text": "Lead Voice"},
+        {"condition": "always_true", "text": "Main Artist"},
+        {"condition": "always_true", "text": "Most Played Artist"}
+    ],
+    "wrapped.slide0.stat4": [
+        {"condition": "always_true", "text": "Top Track"},
+        {"condition": "always_true", "text": "The Anthem"},
+        {"condition": "always_true", "text": "Most Played Track"},
+        {"condition": "always_true", "text": "Primary Song"},
+        {"condition": "always_true", "text": "Number One Track"}
+    ],
+    "wrapped.slide0.stat5": [
+        {"condition": "always_true", "text": "Peak Intensity"},
+        {"condition": "always_true", "text": "Loudest Day"},
+        {"condition": "always_true", "text": "Maximum Volume"},
+        {"condition": "always_true", "text": "Highest Activity"},
+        {"condition": "always_true", "text": "Top Day"}
+    ],
+    "wrapped.slide0.stat6": [
+        {"condition": "always_true", "text": "On Repeat"},
+        {"condition": "always_true", "text": "The Obsession"},
+        {"condition": "always_true", "text": "Daily Loop"},
+        {"condition": "always_true", "text": "Stuck in Head"},
+        {"condition": "always_true", "text": "Heavy Rotation"}
+    ],
+    "wrapped.slide1.section": [
+        {"condition": "always_true", "text": "02 / Duration & Echo"},
+        {"condition": "always_true", "text": "02 / Time Spent"},
+        {"condition": "always_true", "text": "02 / The Volume"},
+        {"condition": "always_true", "text": "02 / Acoustic Mass"},
+        {"condition": "always_true", "text": "02 / Immersion"}
+    ],
+    "wrapped.slide1.label": [
+        {"condition": "always_true", "text": "Total Plays Logged"},
+        {"condition": "always_true", "text": "Tracks Recorded"},
+        {"condition": "always_true", "text": "Scrobbles Counted"},
+        {"condition": "always_true", "text": "Moments Saved"},
+        {"condition": "always_true", "text": "Instances Cataloged"}
+    ],
+    "wrapped.slide1.desc": [
+        {"condition": "always_true", "text": "This volume amounts to approximately <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of active listening, a steady acoustic flow in your memory space."},
+        {"condition": "always_true", "text": "You spent <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes immersed in sound, building a vast architecture of echoes."},
+        {"condition": "always_true", "text": "Translating to <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of playtime, your dedication to the stream is undeniable."},
+        {"condition": "always_true", "text": "That's roughly <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes of music shaping your days and filling the silence."},
+        {"condition": "always_true", "text": "A total of <span class=\"font-normal font-mono text-base text-theme-accent\">{minutes_listened}</span> minutes were claimed by these tracks, leaving a profound mark on your timeline."}
+    ],
+    "wrapped.slide2.section": [
+        {"condition": "always_true", "text": "03 / Key Companions"},
+        {"condition": "always_true", "text": "03 / The Protagonists"},
+        {"condition": "always_true", "text": "03 / Main Characters"},
+        {"condition": "always_true", "text": "03 / Frequent Voices"},
+        {"condition": "always_true", "text": "03 / The Favorites"}
+    ],
+    "wrapped.slide2.label1": [
+        {"condition": "always_true", "text": "Top Creator"},
+        {"condition": "always_true", "text": "Primary Artist"},
+        {"condition": "always_true", "text": "Lead Voice"},
+        {"condition": "always_true", "text": "Number One Artist"},
+        {"condition": "always_true", "text": "Most Played"}
+    ],
+    "wrapped.slide2.label2": [
+        {"condition": "always_true", "text": "Top Track"},
+        {"condition": "always_true", "text": "The Anthem"},
+        {"condition": "always_true", "text": "Most Played Track"},
+        {"condition": "always_true", "text": "Song of the Period"},
+        {"condition": "always_true", "text": "Number One Track"}
+    ],
+    "wrapped.slide3.section": [
+        {"condition": "always_true", "text": "04 / Peak Intensity"},
+        {"condition": "always_true", "text": "04 / The Loudest Day"},
+        {"condition": "always_true", "text": "04 / Maximum Volume"},
+        {"condition": "always_true", "text": "04 / High Water Mark"},
+        {"condition": "always_true", "text": "04 / Deepest Dive"}
+    ],
+    "wrapped.slide3.label": [
+        {"condition": "always_true", "text": "Peak listening day"},
+        {"condition": "always_true", "text": "Most active date"},
+        {"condition": "always_true", "text": "Day of highest volume"},
+        {"condition": "always_true", "text": "The loudest 24 hours"},
+        {"condition": "always_true", "text": "Maximum daily plays"}
+    ],
+    "wrapped.slide3.desc": [
+        {"condition": "always_true", "text": "A day of intense musical immersion, leaving a distinct marker in your temporal archive."},
+        {"condition": "always_true", "text": "On this day, the music rarely stopped, resulting in an anomalous spike in your records."},
+        {"condition": "always_true", "text": "A marathon of listening. This date stands out as a towering peak in your history."},
+        {"condition": "always_true", "text": "The audio flowed freely, marking the absolute zenith of your engagement during this period."},
+        {"condition": "always_true", "text": "An overwhelming wave of sound washed over you on this profoundly loud day."}
+    ],
+    "wrapped.slide4.section": [
+        {"condition": "always_true", "text": "05 / The Obsession"},
+        {"condition": "always_true", "text": "05 / On Repeat"},
+        {"condition": "always_true", "text": "05 / The Loop"},
+        {"condition": "always_true", "text": "05 / Stuck in Head"},
+        {"condition": "always_true", "text": "05 / Heavy Rotation"}
+    ],
+    "wrapped.slide4.label": [
+        {"condition": "always_true", "text": "Most replayed in a single day"},
+        {"condition": "always_true", "text": "Highest single-day repetitions"},
+        {"condition": "always_true", "text": "The strongest daily loop"},
+        {"condition": "always_true", "text": "Max plays of one track in 24h"},
+        {"condition": "always_true", "text": "The daily obsession"}
+    ],
+    "wrapped.slide4.desc": [
+        {"condition": "always_true", "text": "The single track you returned to most obsessively &mdash; a sonic loop that defined its day."},
+        {"condition": "always_true", "text": "You couldn't let it go. This song dominated your attention for hours on end."},
+        {"condition": "always_true", "text": "A tight feedback loop of sound. You hit replay more times on this day than any other."},
+        {"condition": "always_true", "text": "This track anchored your day, repeated with an intensity unmatched by the rest of the archive."},
+        {"condition": "always_true", "text": "An inescapable melody. You surrendered to its rhythm completely on this particular date."}
+    ],
+
+    # Streak
+    "streak.message": [
+        {
+            "condition": "streak_0",
+            "text": "Start listening today to kick off a new daily music streak!"
+        },
+        {
+            "condition": "streak_0",
+            "text": "The timeline is quiet. Play a track to ignite a new streak."
+        },
+        {
+            "condition": "streak_0",
+            "text": "Your record awaits. Break the silence and start a fresh streak."
+        },
+        {
+            "condition": "streak_1_2",
+            "text": "Streak started! Listen again tomorrow to keep the flame alive."
+        },
+        {
+            "condition": "streak_1_2",
+            "text": "A new rhythm begins. Don't let the music fade tomorrow."
+        },
+        {
+            "condition": "streak_1_2",
+            "text": "You're on the board. Tune in again tomorrow to build momentum."
+        },
+        {
+            "condition": "streak_3_5",
+            "text": "Nice job! You've listened to music multiple days in a row."
+        },
+        {
+            "condition": "streak_3_5",
+            "text": "A solid pattern is forming. Keep returning to the sound."
+        },
+        {
+            "condition": "streak_3_5",
+            "text": "The habit is taking root. Your consecutive days are stacking up."
+        },
+        {
+            "condition": "streak_6_10",
+            "text": "On fire! You're building an incredible daily music habit."
+        },
+        {
+            "condition": "streak_6_10",
+            "text": "A continuous flow. You've made music an unbroken daily ritual."
+        },
+        {
+            "condition": "streak_6_10",
+            "text": "Exceptional consistency. The streak is becoming a core part of your day."
+        },
+        {
+            "condition": "streak_11_plus",
+            "text": "Legendary! Your music connection is unstoppable. Keep rocking!"
+        },
+        {
+            "condition": "streak_11_plus",
+            "text": "An unbroken monumental run. Your dedication to the archive is absolute."
+        },
+        {
+            "condition": "streak_11_plus",
+            "text": "A massive chain of sound. You have achieved an elite level of daily listening."
+        }
+    ]
+}
+
+os.makedirs('backend/data', exist_ok=True)
+with open('backend/data/narrative_templates.json', 'w', encoding='utf-8') as f:
+    json.dump(templates, f, indent=2)
+
+print("Generated backend/data/narrative_templates.json")

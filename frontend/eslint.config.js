@@ -37,6 +37,8 @@ export default [
     rules: {
       // TypeScript handles undefined-symbol checks (incl. generic type params).
       'no-undef': 'off',
+      // The narrative engine injects Tailwind-styled text dynamically
+      'svelte/no-at-html-tags': 'off',
     },
   },
   {
