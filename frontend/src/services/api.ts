@@ -30,6 +30,7 @@ export type TrackStatsInfo = components['schemas']['TrackStatsResponse'];
 export type OnThisDayGroup = components['schemas']['OnThisDayGroup'];
 export type TrackBatchRequestItem = components['schemas']['TrackBatchRequestItem'];
 export type TrackBatchResponseItem = components['schemas']['TrackBatchResponseItem'];
+export type WeeklyBreakdownItem = components['schemas']['WeeklyBreakdownItem'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -264,5 +265,24 @@ export async function fetchTrackStatsBatch(
 export async function fetchOnThisDay(): Promise<OnThisDayGroup[]> {
   const { data, error } = await client.GET('/api/on-this-day');
   if (error) throw new Error('Failed to fetch on-this-day data');
+  return data;
+}
+
+export async function fetchDayListens(dateStr: string): Promise<ListenEntry[]> {
+  const { data, error } = await client.GET('/api/day/{date_str}', {
+    params: { path: { date_str: dateStr } },
+  });
+  if (error) throw new Error('Failed to fetch day listens');
+  return data;
+}
+
+export async function fetchWeeklyBreakdown(
+  year: number,
+  month: number,
+): Promise<WeeklyBreakdownItem[]> {
+  const { data, error } = await client.GET('/api/trends/monthly/{year}/{month}/weekly', {
+    params: { path: { year, month } },
+  });
+  if (error) throw new Error('Failed to fetch weekly breakdown');
   return data;
 }
