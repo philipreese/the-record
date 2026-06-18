@@ -1,12 +1,6 @@
 <script lang="ts">
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
-  import {
-    sourceLabel,
-    sourceLabelFull,
-    timeOnly,
-    relativeTimeShort,
-    absoluteTime,
-  } from '../../utils/listens';
+  import { sourceLabelFull, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
 
   let {
     entry,
@@ -23,8 +17,6 @@
     stats?: TrackStatsInfo | null | undefined;
     onToggle?: () => void;
   } = $props();
-
-  const label = $derived(sourceLabel(entry.source));
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -63,25 +55,33 @@
     </div>
 
     <div class="flex-1 min-w-0">
-      <span class="text-sm font-medium truncate block text-base-content">{entry.title}</span>
-      <span class="text-xs text-base-content/65 truncate block">{entry.artist}</span>
+      <span
+        class="text-sm font-medium block text-base-content"
+        class:truncate={!expanded}
+        class:whitespace-normal={expanded}
+        class:break-words={expanded}
+      >
+        {entry.title}
+      </span>
+      <span
+        class="text-xs text-base-content/65 block"
+        class:truncate={!expanded}
+        class:whitespace-normal={expanded}
+        class:break-words={expanded}
+      >
+        {entry.artist}
+      </span>
     </div>
 
-    <div class="flex items-center gap-1.5 shrink-0 mr-2">
-      {#if stats && stats.play_count !== undefined}
-        <span
-          class="badge badge-ghost badge-xs text-base-content/35 font-mono"
-          title={`${stats.play_count} ${stats.play_count === 1 ? 'play' : 'plays'}`}
-        >
-          {stats.play_count}
-        </span>
-      {/if}
-      {#if label}
-        <span class="badge badge-ghost badge-xs text-base-content/45 font-mono">
-          {label}
-        </span>
-      {/if}
-    </div>
+    {#if stats && stats.play_count !== undefined}
+      <span
+        class="text-xs font-mono text-base-content/35 shrink-0 mr-2"
+        title={`${stats.play_count} ${stats.play_count === 1 ? 'play' : 'plays'}`}
+      >
+        {stats.play_count}
+        {stats.play_count === 1 ? 'play' : 'plays'}
+      </span>
+    {/if}
   </div>
 
   {#if expanded}
