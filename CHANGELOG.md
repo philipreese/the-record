@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1](https://github.com/philipreese/the-record/compare/v0.15.0...v0.15.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* **backend:** Fix Lucene quote escaping and conditional UPDATE in backfill script ([e4e150d](https://github.com/philipreese/the-record/commit/e4e150da5dea3e15fc25b0caa8d0c600e5972c3b))
+* **frontend:** Fix api.test.ts for openapi-fetch Request-based fetch signature ([df32b7d](https://github.com/philipreese/the-record/commit/df32b7de34439a74f96ebbc8e756bd117216e31a))
+* **frontend:** Trigger a soft background sync automatically on page load ([f124a7b](https://github.com/philipreese/the-record/commit/f124a7be91acd0cf5351cf480f13e60464abf53c))
+* **routes:** Verify track metadata match before enriching last-played MBIDs ([cc4294a](https://github.com/philipreese/the-record/commit/cc4294a1252a53c79533dd4ac02a0ebfd27c23a9))
+
+
+### Documentation
+
+* **spec:** Update architecture.md for openapi-fetch and auto-sync on page load ([1868325](https://github.com/philipreese/the-record/commit/186832533849b29f552741dabe643d5c8e1ab44d))
+
+
+### Miscellaneous
+
+* **backend:** Add backfill_metadata.py script to fetch and populate durations and albums from MusicBrainz ([ba49282](https://github.com/philipreese/the-record/commit/ba49282d7be695c8927eb664d2e0784894d4a091))
+* **frontend:** Replace apiFetch wrappers with openapi-fetch for end-to-end type safety ([35d29ff](https://github.com/philipreese/the-record/commit/35d29ff3a8ec25038b638664f41dd3f9e883fbc7))
+
 ## [0.15.0](https://github.com/philipreese/the-record/compare/v0.14.0...v0.15.0) (2026-06-18)
 
 
