@@ -4,7 +4,7 @@ import json
 import logging
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path
 from fastapi.responses import StreamingResponse
 from typing import Any, List, Literal, Optional, Dict
 
@@ -31,6 +31,7 @@ from app.schemas import (
     TopTracksResponse,
     TrackBatchRequestItem,
     TrackBatchResponseItem,
+    WeeklyBreakdownItem,
 )
 
 router = APIRouter()
@@ -541,4 +542,21 @@ def export_listens(
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/day/{date_str}", response_model=List[ListenEntry])
+def read_day_listens(
+    date_str: str = Path(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Calendar date (YYYY-MM-DD) in local timezone"),
+) -> Any:
+    """Retrieve all listens for a specific calendar date, in chronological order."""
+    return repo.get_listens_by_day(date_str)
+
+
+@router.get("/trends/monthly/{year}/{month}/weekly", response_model=List[WeeklyBreakdownItem])
+def read_monthly_weekly_breakdown(
+    year: int = Path(..., ge=2000, le=2100),
+    month: int = Path(..., ge=1, le=12),
+) -> Any:
+    """Retrieve play counts grouped by week-of-month for a given year and month."""
+    return repo.get_weekly_breakdown(year, month)
 
