@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack, onMount } from 'svelte';
   import { inView } from '../utils/inView';
   import {
     fetchTopArtists,
     fetchTopTracks,
+    fetchStats,
     type TimeRange,
     type ArtistInfo,
     type TrackInfo,
@@ -13,6 +14,31 @@
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import Icon from '../components/layout/Icon.svelte';
+  import StreamGraph from '../components/StreamGraph.svelte';
+
+  let selectedYear = $state(new Date().getFullYear());
+
+  let firstListenYear = $derived(appCache.stats?.first_year || new Date().getFullYear());
+  let currentYear = $derived(new Date().getFullYear());
+
+  let availableYears = $derived.by(() => {
+    const years = [];
+    for (let y = firstListenYear; y <= currentYear; y++) {
+      years.push(y);
+    }
+    return years.reverse();
+  });
+
+  onMount(() => {
+    if (!appCache.statsLoaded) {
+      fetchStats()
+        .then((s) => {
+          appCache.stats = s;
+          appCache.statsLoaded = true;
+        })
+        .catch((e) => console.error('Failed to fetch stats for charts view:', e));
+    }
+  });
 
   let topRange = $state<TimeRange>('all');
 
@@ -304,6 +330,24 @@
         </button>
       {/if}
     </div>
+  </div>
+
+  <!-- Streamgraph section -->
+  <div class="flex flex-col gap-4">
+    <div class="flex justify-between items-center pb-2 border-b border-theme-border-soft">
+      <h2 class="editorial-text-h2">temporal trends</h2>
+
+      <!-- Year Selector -->
+      <div class="select-premium-wrapper">
+        <select class="select-premium text-xs" bind:value={selectedYear}>
+          {#each availableYears as yr}
+            <option value={yr}>{yr}</option>
+          {/each}
+        </select>
+      </div>
+    </div>
+
+    <StreamGraph year={selectedYear} />
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 sm:mt-0">

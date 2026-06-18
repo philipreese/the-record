@@ -681,3 +681,128 @@ def deduplicate_listens() -> int:
         """
         res = conn.execute(text(stmt))
         return res.rowcount
+
+
+def get_top_artist_trends(year: int, limit: int = 5) -> dict[str, Any]:
+    """Retrieve top artists with their monthly breakdowns for a given year."""
+    year_str = str(year)
+    year_expr = get_year_expr(Listen.unix_ts)
+    month_expr = get_month_expr(Listen.unix_ts)
+
+    with get_engine().connect() as conn:
+        # 1. Get top N artists by play count in that year
+        stmt_top = (
+            select(Listen.artist, func.count(Listen.id).label("play_count"))
+            .where(year_expr == year_str)
+            .group_by(Listen.artist)
+            .order_by(desc("play_count"))
+            .limit(limit)
+        )
+        top_rows = conn.execute(stmt_top).all()
+        if not top_rows:
+            return {"year": year, "trends": []}
+
+        top_artists = [r.artist for r in top_rows]
+        artist_play_counts = {r.artist: r.play_count for r in top_rows}
+
+        # 2. Get monthly breakdowns for these top artists in a single query
+        stmt_breakdown = (
+            select(
+                Listen.artist,
+                month_expr.label("month"),
+                func.count(Listen.id).label("cnt")
+            )
+            .where(year_expr == year_str, Listen.artist.in_(top_artists))
+            .group_by(Listen.artist, month_expr)
+        )
+        breakdown_rows = conn.execute(stmt_breakdown).all()
+
+    # Pre-populate all 12 months for every artist
+    months = [f"{year}-{m:02d}" for m in range(1, 13)]
+    artist_data = {
+        artist: {m: 0 for m in months}
+        for artist in top_artists
+    }
+
+    for r in breakdown_rows:
+        if r.artist in artist_data and r.month in artist_data[r.artist]:
+            artist_data[r.artist][r.month] = r.cnt
+
+    trends = []
+    for artist in top_artists:
+        monthly_counts = [
+            {"month": m, "count": artist_data[artist][m]}
+            for m in months
+        ]
+        trends.append({
+            "artist": artist,
+            "play_count": artist_play_counts[artist],
+            "monthly_counts": monthly_counts
+        })
+
+    return {"year": year, "trends": trends}
+
+
+def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> dict[str, Any]:
+    """Retrieve top tracks of an artist with their monthly breakdowns for a given year."""
+    year_str = str(year)
+    year_expr = get_year_expr(Listen.unix_ts)
+    month_expr = get_month_expr(Listen.unix_ts)
+
+    with get_engine().connect() as conn:
+        # 1. Get top N tracks for the artist by play count in that year
+        stmt_top = (
+            select(Listen.title, func.count(Listen.id).label("play_count"))
+            .where(year_expr == year_str, func.lower(Listen.artist) == artist.lower())
+            .group_by(Listen.title)
+            .order_by(desc("play_count"))
+            .limit(limit)
+        )
+        top_rows = conn.execute(stmt_top).all()
+        if not top_rows:
+            return {"artist": artist, "year": year, "trends": []}
+
+        top_tracks = [r.title for r in top_rows]
+        track_play_counts = {r.title: r.play_count for r in top_rows}
+
+        # 2. Get monthly breakdowns for these top tracks in a single query
+        stmt_breakdown = (
+            select(
+                Listen.title,
+                month_expr.label("month"),
+                func.count(Listen.id).label("cnt")
+            )
+            .where(
+                year_expr == year_str,
+                func.lower(Listen.artist) == artist.lower(),
+                Listen.title.in_(top_tracks)
+            )
+            .group_by(Listen.title, month_expr)
+        )
+        breakdown_rows = conn.execute(stmt_breakdown).all()
+
+    # Pre-populate all 12 months for every track
+    months = [f"{year}-{m:02d}" for m in range(1, 13)]
+    track_data = {
+        title: {m: 0 for m in months}
+        for title in top_tracks
+    }
+
+    for r in breakdown_rows:
+        if r.title in track_data and r.month in track_data[r.title]:
+            track_data[r.title][r.month] = r.cnt
+
+    trends = []
+    for title in top_tracks:
+        monthly_counts = [
+            {"month": m, "count": track_data[title][m]}
+            for m in months
+        ]
+        trends.append({
+            "track": title,
+            "play_count": track_play_counts[title],
+            "monthly_counts": monthly_counts
+        })
+
+    return {"artist": artist, "year": year, "trends": trends}
+

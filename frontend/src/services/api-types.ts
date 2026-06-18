@@ -405,6 +405,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/top-artist-trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Top Artist Trends
+         * @description Retrieve top N artists with their monthly breakdowns for a specified year.
+         */
+        get: operations["read_top_artist_trends_api_top_artist_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/artist-trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Artist Trend
+         * @description Retrieve top N tracks of an artist with their monthly breakdowns for a specified year.
+         */
+        get: operations["read_artist_trend_api_artist_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -417,6 +457,31 @@ export interface components {
             play_count: number;
             /** Rank */
             rank?: number | null;
+        };
+        /** ArtistMonthlyTrend */
+        ArtistMonthlyTrend: {
+            /** Month */
+            month: string;
+            /** Count */
+            count: number;
+        };
+        /** ArtistTrendResponse */
+        ArtistTrendResponse: {
+            /** Artist */
+            artist: string;
+            /** Year */
+            year: number;
+            /** Trends */
+            trends: components["schemas"]["TrackTrendSeries"][];
+        };
+        /** ArtistTrendSeries */
+        ArtistTrendSeries: {
+            /** Artist */
+            artist: string;
+            /** Play Count */
+            play_count: number;
+            /** Monthly Counts */
+            monthly_counts: components["schemas"]["ArtistMonthlyTrend"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -546,6 +611,13 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** TopArtistTrendsResponse */
+        TopArtistTrendsResponse: {
+            /** Year */
+            year: number;
+            /** Trends */
+            trends: components["schemas"]["ArtistTrendSeries"][];
+        };
         /** TopArtistsResponse */
         TopArtistsResponse: {
             /** Items */
@@ -589,12 +661,28 @@ export interface components {
             /** Rank */
             rank?: number | null;
         };
+        /** TrackMonthlyTrend */
+        TrackMonthlyTrend: {
+            /** Month */
+            month: string;
+            /** Count */
+            count: number;
+        };
         /** TrackStatsResponse */
         TrackStatsResponse: {
             /** Play Count */
             play_count: number;
             /** Duration Secs */
             duration_secs?: number | null;
+        };
+        /** TrackTrendSeries */
+        TrackTrendSeries: {
+            /** Track */
+            track: string;
+            /** Play Count */
+            play_count: number;
+            /** Monthly Counts */
+            monthly_counts: components["schemas"]["TrackMonthlyTrend"][];
         };
         /** ValidationError */
         ValidationError: {
@@ -1217,6 +1305,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeeklyBreakdownItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_top_artist_trends_api_top_artist_trends_get: {
+        parameters: {
+            query: {
+                /** @description The calendar year to display */
+                year: number;
+                /** @description Max artists to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopArtistTrendsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_artist_trend_api_artist_trend_get: {
+        parameters: {
+            query: {
+                /** @description Artist name */
+                artist: string;
+                /** @description The calendar year to display */
+                year: number;
+                /** @description Max tracks to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtistTrendResponse"];
                 };
             };
             /** @description Validation Error */

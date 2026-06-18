@@ -126,3 +126,34 @@ class WeeklyBreakdownItem(BaseModel):
     count: int
 
 
+class ArtistMonthlyTrend(BaseModel):
+    month: str
+    count: int
+
+
+class ArtistTrendSeries(BaseModel):
+    artist: str
+    play_count: int
+    monthly_counts: List[ArtistMonthlyTrend]
+
+
+class TopArtistTrendsResponse(BaseModel):
+    year: int
+    trends: List[ArtistTrendSeries]
+
+
+class TrackMonthlyTrend(BaseModel):
+    month: str
+    count: int
+
+
+class TrackTrendSeries(BaseModel):
+    track: str
+    play_count: int
+    monthly_counts: List[TrackMonthlyTrend]
+
+
+class ArtistTrendResponse(BaseModel):
+    artist: str
+    year: int
+    trends: List[TrackTrendSeries]
