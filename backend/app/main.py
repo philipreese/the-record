@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 import sys
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -7,6 +8,20 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+
+# Thread-safe in-memory DNS cache to avoid repeating slow DNS timeouts (e.g. IPv6 resolution delays) on consecutive API requests.
+_dns_cache = {}
+_original_getaddrinfo = socket.getaddrinfo
+
+def _cached_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    key = (host, port, family, type, proto, flags)
+    if key in _dns_cache:
+        return _dns_cache[key]
+    res = _original_getaddrinfo(host, port, family, type, proto, flags)
+    _dns_cache[key] = res
+    return res
+
+socket.getaddrinfo = _cached_getaddrinfo
 
 # Adjust path to import backend modules
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
