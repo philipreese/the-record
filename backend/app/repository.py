@@ -489,6 +489,56 @@ def get_track_play_count(artist: str, title: str) -> int:
     count, _ = get_track_stats(artist, title)
     return count
 
+def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Get the all-time play count and first available non-null duration for a list of tracks in a single batch query."""
+    if not tracks:
+        return []
+        
+    seen = set()
+    unique_pairs = []
+    for t in tracks:
+        a_low = t["artist"].lower()
+        t_low = t["title"].lower()
+        if (a_low, t_low) not in seen:
+            seen.add((a_low, t_low))
+            unique_pairs.append({"artist": t["artist"], "title": t["title"]})
+            
+    from sqlalchemy import and_, or_
+    
+    stmt = select(
+        func.lower(Listen.artist).label("artist_lower"),
+        func.lower(Listen.title).label("title_lower"),
+        func.count(Listen.id).label("play_count"),
+        func.max(Listen.duration_secs).label("duration_secs")
+    ).where(
+        or_(*(
+            and_(
+                func.lower(Listen.artist) == p["artist"].lower(),
+                func.lower(Listen.title) == p["title"].lower()
+            )
+            for p in unique_pairs
+        ))
+    ).group_by(func.lower(Listen.artist), func.lower(Listen.title))
+    
+    counts_map = {}
+    with get_engine().connect() as conn:
+        rows = conn.execute(stmt).all()
+        for r in rows:
+            counts_map[(r.artist_lower, r.title_lower)] = (r.play_count, r.duration_secs)
+            
+    result = []
+    for t in tracks:
+        key = (t["artist"].lower(), t["title"].lower())
+        play_count, duration = counts_map.get(key, (0, None))
+        result.append({
+            "artist": t["artist"],
+            "title": t["title"],
+            "play_count": play_count,
+            "duration_secs": duration
+        })
+        
+    return result
+
 def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
     """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
     month_expr = get_month_num_expr(Listen.unix_ts)

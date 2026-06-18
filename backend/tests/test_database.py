@@ -241,6 +241,35 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(play_count, 1)  # 0 Album B + 1 null-album
         self.assertIsNone(duration)
 
+    def test_track_stats_batch(self):
+        # Batch query matching existing tracks and non-existent track
+        tracks = [
+            {"artist": "Artist A", "title": "Track 1"},
+            {"artist": "artist a", "title": "track 2"},  # test lower casing
+            {"artist": "NonExistent", "title": "Track"}, # test non-existent
+        ]
+        res = database.get_track_stats_batch(tracks)
+        self.assertEqual(len(res), 3)
+        
+        # Check first track (Artist A - Track 1)
+        self.assertEqual(res[0]["artist"], "Artist A")
+        self.assertEqual(res[0]["title"], "Track 1")
+        self.assertEqual(res[0]["play_count"], 3)
+        self.assertEqual(res[0]["duration_secs"], 180)
+        
+        # Check second track (artist a - track 2)
+        self.assertEqual(res[1]["artist"], "artist a")
+        self.assertEqual(res[1]["title"], "track 2")
+        self.assertEqual(res[1]["play_count"], 1)
+        self.assertEqual(res[1]["duration_secs"], 240)
+        
+        # Check third track (NonExistent - Track)
+        self.assertEqual(res[2]["artist"], "NonExistent")
+        self.assertEqual(res[2]["title"], "Track")
+        self.assertEqual(res[2]["play_count"], 0)
+        self.assertIsNone(res[2]["duration_secs"])
+
+
     def test_recent_listens_with_anchor_date(self):
         yesterday_date_str = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
         listens = database.get_recent_listens(limit=10, anchor_date=yesterday_date_str)

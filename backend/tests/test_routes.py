@@ -125,6 +125,29 @@ class TestTrackStatsRoute(unittest.TestCase):
         self.assertEqual(res.json(), {"play_count": 5, "duration_secs": 200})
         mock_get_stats.assert_called_with(artist="Radiohead", title="Creep", album="Pablo Honey")
 
+    @mock.patch("app.routes.repo.get_track_stats_batch")
+    def test_track_stats_batch_endpoint(self, mock_get_stats_batch) -> None:
+        mock_get_stats_batch.return_value = [
+            {"artist": "Radiohead", "title": "Creep", "play_count": 5, "duration_secs": 200},
+            {"artist": "Mitski", "title": "Nobody", "play_count": 10, "duration_secs": 190},
+        ]
+
+        payload = [
+            {"artist": "Radiohead", "title": "Creep"},
+            {"artist": "Mitski", "title": "Nobody"},
+        ]
+        res = self.client.post("/api/track-stats/batch", json=payload)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), [
+            {"artist": "Radiohead", "title": "Creep", "play_count": 5, "duration_secs": 200},
+            {"artist": "Mitski", "title": "Nobody", "play_count": 10, "duration_secs": 190},
+        ])
+        mock_get_stats_batch.assert_called_once_with([
+            {"artist": "Radiohead", "title": "Creep"},
+            {"artist": "Mitski", "title": "Nobody"},
+        ])
+
+
 
 if __name__ == "__main__":
     unittest.main()

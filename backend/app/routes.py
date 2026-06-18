@@ -29,6 +29,8 @@ from app.schemas import (
     OnThisDayGroup,
     TopArtistsResponse,
     TopTracksResponse,
+    TrackBatchRequestItem,
+    TrackBatchResponseItem,
 )
 
 router = APIRouter()
@@ -128,6 +130,15 @@ def read_track_stats(
     album_val = album.strip() if album and album.strip() else None
     play_count, duration = repo.get_track_stats(artist=artist, title=title, album=album_val)
     return {"play_count": play_count, "duration_secs": duration}
+
+@router.post("/track-stats/batch", response_model=List[TrackBatchResponseItem])
+def read_track_stats_batch(
+    tracks: List[TrackBatchRequestItem]
+) -> Any:
+    """Retrieve all-time play count and first available non-null duration for a list of tracks."""
+    track_dicts = [{"artist": t.artist, "title": t.title} for t in tracks]
+    return repo.get_track_stats_batch(track_dicts)
+
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
 # Only successful lookups are stored; failed attempts are counted separately so transient

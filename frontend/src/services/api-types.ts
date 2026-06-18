@@ -224,6 +224,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/track-stats/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Track Stats Batch
+         * @description Retrieve all-time play count and first available non-null duration for a list of tracks.
+         */
+        post: operations["read_track_stats_batch_api_track_stats_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playing-now": {
         parameters: {
             query?: never;
@@ -499,6 +519,24 @@ export interface components {
             items: components["schemas"]["TrackInfo"][];
             /** Total Count */
             total_count: number;
+        };
+        /** TrackBatchRequestItem */
+        TrackBatchRequestItem: {
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+        };
+        /** TrackBatchResponseItem */
+        TrackBatchResponseItem: {
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+            /** Play Count */
+            play_count: number;
+            /** Duration Secs */
+            duration_secs?: number | null;
         };
         /** TrackInfo */
         TrackInfo: {
@@ -837,6 +875,8 @@ export interface operations {
                 before_ts?: number | null;
                 /** @description Cursor: id of the last item from the previous page */
                 before_id?: number | null;
+                /** @description Anchor date: seek to first listen on or before YYYY-MM-DD */
+                anchor_date?: string | null;
             };
             header?: never;
             path?: never;
@@ -887,6 +927,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrackStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_track_stats_batch_api_track_stats_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackBatchRequestItem"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackBatchResponseItem"][];
                 };
             };
             /** @description Validation Error */

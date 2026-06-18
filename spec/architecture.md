@@ -69,6 +69,7 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
 | GET | `/api/recent` | `limit` (default 50, max 100), `before_ts`, `before_id` (cursor pagination), `anchor_date` (optional YYYY-MM-DD) | `ListenEntry[]` |
 | GET | `/api/track-stats` | `artist` (required), `title` (required), `album` (optional — includes null-album rows when provided) | `TrackStatsResponse` |
+| POST | `/api/track-stats/batch` | Request body: `TrackBatchRequestItem[]` | `TrackBatchResponseItem[]` |
 | GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback + cover art) |
 | GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
 

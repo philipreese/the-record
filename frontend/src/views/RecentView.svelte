@@ -4,6 +4,7 @@
     fetchRecentListens,
     fetchTrackStats,
     fetchMonthlyTrends,
+    fetchTrackStatsBatch,
     type ListenEntry,
     type TrackStatsInfo,
   } from '../services/api';
@@ -21,6 +22,7 @@
 
   let expandedId: number | null = $state(null);
   let trackStatsCache = $state<Record<string, TrackStatsInfo | null>>({});
+  const inFlightKeys = new Set<string>();
 
   // Date jump states
   let selectedDate = $state('');
@@ -29,6 +31,60 @@
   function trackKey(entry: ListenEntry): string {
     return `${entry.artist}||${entry.title}||${entry.album || ''}`;
   }
+
+  async function fetchStatsForPage(page: ListenEntry[]) {
+    const uniqueTracksToFetch: { artist: string; title: string; key: string }[] = [];
+
+    for (const entry of page) {
+      const statsKey = trackKey(entry);
+      if (!(statsKey in trackStatsCache) && !inFlightKeys.has(statsKey)) {
+        inFlightKeys.add(statsKey);
+        uniqueTracksToFetch.push({
+          artist: entry.artist,
+          title: entry.title,
+          key: statsKey,
+        });
+      }
+    }
+
+    if (uniqueTracksToFetch.length === 0) return;
+
+    try {
+      const batchRes = await fetchTrackStatsBatch(
+        uniqueTracksToFetch.map((t) => ({ artist: t.artist, title: t.title })),
+      );
+
+      for (let i = 0; i < uniqueTracksToFetch.length; i++) {
+        const statsKey = uniqueTracksToFetch[i].key;
+        const resItem = batchRes[i];
+        if (resItem) {
+          trackStatsCache[statsKey] = {
+            play_count: resItem.play_count,
+            duration_secs: resItem.duration_secs ?? null,
+          };
+        } else {
+          trackStatsCache[statsKey] = { play_count: 0, duration_secs: null };
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch batch track stats:', err);
+      for (const t of uniqueTracksToFetch) {
+        inFlightKeys.delete(t.key);
+      }
+    }
+  }
+
+  $effect(() => {
+    const listens = appCache.recentListens;
+    if (listens.length > 0) {
+      const missing = listens.filter((entry) => !(trackKey(entry) in trackStatsCache));
+      if (missing.length > 0) {
+        untrack(() => {
+          fetchStatsForPage(missing);
+        });
+      }
+    }
+  });
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
     if (expandedId === entry.id) {
