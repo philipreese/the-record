@@ -32,6 +32,8 @@
 
   let hoveredSeriesIndex = $state<number | null>(null);
   let hoveredMonthIndex = $state<number | null>(null);
+  let tappedSeriesIndex = $state<number | null>(null);
+  let isTouch = $state(false);
 
   let tooltipX = $state(0);
   let tooltipY = $state(0);
@@ -274,6 +276,7 @@
   function handleMouseLeave() {
     hoveredMonthIndex = null;
     hoveredSeriesIndex = null;
+    tappedSeriesIndex = null;
   }
 </script>
 
@@ -324,6 +327,9 @@
         preserveAspectRatio="none"
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
+        ontouchstart={() => {
+          isTouch = true;
+        }}
         role="img"
         aria-label="Artist listening trends streamgraph"
       >
@@ -367,7 +373,17 @@
               onmouseenter={() => (hoveredSeriesIndex = idx)}
               onclick={() => {
                 if (!focusedArtist) {
-                  focusedArtist = series.name;
+                  if (isTouch) {
+                    if (tappedSeriesIndex === idx) {
+                      focusedArtist = series.name;
+                      tappedSeriesIndex = null;
+                    } else {
+                      tappedSeriesIndex = idx;
+                      hoveredSeriesIndex = idx;
+                    }
+                  } else {
+                    focusedArtist = series.name;
+                  }
                 }
               }}
               onkeydown={(e) => {
@@ -421,6 +437,9 @@
           {tooltipContent.count.toLocaleString()}
           <span class="text-theme-secondary font-normal text-[9px] italic">plays</span>
         </div>
+        {#if isTouch && !focusedArtist}
+          <div class="text-[8px] text-theme-muted opacity-80 mt-1 italic">Tap again to zoom</div>
+        {/if}
       </div>
     {/if}
   </div>
