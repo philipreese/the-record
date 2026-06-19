@@ -116,23 +116,23 @@
   "sidebar.archived_plays": [
     {
       "condition": "always_true",
-      "text": "Archived *{total_listens}* plays"
+      "text": "Archived [[{total_listens}]] plays"
     },
     {
       "condition": "always_true",
-      "text": "Cataloged *{total_listens}* tracks"
+      "text": "Cataloged [[{total_listens}]] tracks"
     },
     {
       "condition": "always_true",
-      "text": "Stored *{total_listens}* memories"
+      "text": "Stored [[{total_listens}]] memories"
     },
     {
       "condition": "always_true",
-      "text": "Recorded *{total_listens}* listens"
+      "text": "Recorded [[{total_listens}]] listens"
     },
     {
       "condition": "always_true",
-      "text": "Secured *{total_listens}* moments"
+      "text": "Secured [[{total_listens}]] moments"
     }
   ],
   "sidebar.nav.dashboard": [
@@ -270,43 +270,43 @@
   "overview.hero": [
     {
       "condition": "streak_over_30",
-      "text": "An unbroken chain of *{current_streak} days* of musical immersion. You have logged *{days_active} days* total, averaging *{avg_per_day} tracks* daily via *{top_source}*."
+      "text": "An unbroken chain of [[{current_streak} days]] of musical immersion. You have logged [[{days_active} days]] total, averaging [[{avg_per_day} tracks]] daily via [[{top_source}]]."
     },
     {
       "condition": "streak_over_30",
-      "text": "A relentless acoustic journey. For *{current_streak} consecutive days*, music has been a constant companion. Over *{days_active} days*, your *{top_source}* pipeline has delivered *{avg_per_day} tracks* per day."
+      "text": "A relentless acoustic journey. For [[{current_streak} consecutive days]], music has been a constant companion. Over [[{days_active} days]], your [[{top_source}]] pipeline has delivered [[{avg_per_day} tracks]] per day."
     },
     {
       "condition": "high_avg_per_day",
-      "text": "A period of intense musical recollection. You average a staggering *{avg_per_day} tracks* daily through *{top_source}*. In total, *{days_active} days* of your journey have been scored, currently riding a *{current_streak} day* streak."
+      "text": "A period of intense musical recollection. You average a staggering [[{avg_per_day} tracks]] daily through [[{top_source}]]. In total, [[{days_active} days]] of your journey have been scored, currently riding a [[{current_streak} day]] streak."
     },
     {
       "condition": "always_true",
-      "text": "A period of active musical recollection. You have integrated music into *{days_active} days* of your journey, averaging *{avg_per_day} tracks* daily. Your primary sonic gateway is *{top_source}*, sustaining a continuous streak of *{current_streak} days* of conscious listening."
+      "text": "A period of active musical recollection. You have integrated music into [[{days_active} days]] of your journey, averaging [[{avg_per_day} tracks]] daily. Your primary sonic gateway is [[{top_source}]], sustaining a continuous streak of [[{current_streak} days]] of conscious listening."
     },
     {
       "condition": "always_true",
-      "text": "Your sonic footprint is growing. Across *{days_active} active days*, you've maintained an average of *{avg_per_day} tracks* a day. Currently on a *{current_streak} day* streak, with *{top_source}* acting as the primary vessel."
+      "text": "Your sonic footprint is growing. Across [[{days_active} active days]], you've maintained an average of [[{avg_per_day} tracks]] a day. Currently on a [[{current_streak} day]] streak, with [[{top_source}]] acting as the primary vessel."
     },
     {
       "condition": "always_true",
-      "text": "Documenting the soundtrack of your life. *{days_active} days* recorded, flowing at *{avg_per_day} tracks* per day. The streak stands at *{current_streak} days*, primarily fueled by *{top_source}*."
+      "text": "Documenting the soundtrack of your life. [[{days_active} days]] recorded, flowing at [[{avg_per_day} tracks]] per day. The streak stands at [[{current_streak} days]], primarily fueled by [[{top_source}]]."
     },
     {
       "condition": "always_true",
-      "text": "The archive deepens. Music has touched *{days_active} days* of your timeline. You're absorbing *{avg_per_day} tracks* daily, primarily through *{top_source}*, keeping a streak alive for *{current_streak} days*."
+      "text": "The archive deepens. Music has touched [[{days_active} days]] of your timeline. You're absorbing [[{avg_per_day} tracks]] daily, primarily through [[{top_source}]], keeping a streak alive for [[{current_streak} days]]."
     },
     {
       "condition": "always_true",
-      "text": "A steady acoustic flow. *{avg_per_day} tracks* pass through your ears on an average day. This habit has spanned *{days_active} days*, driven by *{top_source}*, and is currently unbroken for *{current_streak} days*."
+      "text": "A steady acoustic flow. [[{avg_per_day} tracks]] pass through your ears on an average day. This habit has spanned [[{days_active} days]], driven by [[{top_source}]], and is currently unbroken for [[{current_streak} days]]."
     },
     {
       "condition": "always_true",
-      "text": "Music as a daily ritual. *{days_active} days* of history reveal a pace of *{avg_per_day} tracks* per day. You are *{current_streak} days* into your current run, utilizing *{top_source}*."
+      "text": "Music as a daily ritual. [[{days_active} days]] of history reveal a pace of [[{avg_per_day} tracks]] per day. You are [[{current_streak} days]] into your current run, utilizing [[{top_source}]]."
     },
     {
       "condition": "always_true",
-      "text": "The rhythm of your days. You average *{avg_per_day} tracks* over *{days_active} active days*. *{top_source}* delivers the sound, keeping your current streak at *{current_streak} days*."
+      "text": "The rhythm of your days. You average [[{avg_per_day} tracks]] over [[{days_active} active days]]. [[{top_source}]] delivers the sound, keeping your current streak at [[{current_streak} days]]."
     }
   ],
   "overview.section_streak": [
@@ -1390,65 +1390,65 @@
   "wrapped.slide0.title": [
     {
       "condition": "always_true",
-      "text": "reviewing the *resonance*"
+      "text": "reviewing the [[resonance]]"
     },
     {
       "condition": "always_true",
-      "text": "uncovering the *archive*"
+      "text": "uncovering the [[archive]]"
     },
     {
       "condition": "always_true",
-      "text": "analyzing the *signal*"
+      "text": "analyzing the [[signal]]"
     },
     {
       "condition": "always_true",
-      "text": "exploring the *echoes*"
+      "text": "exploring the [[echoes]]"
     },
     {
       "condition": "always_true",
-      "text": "surveying the *volume*"
+      "text": "surveying the [[volume]]"
     }
   ],
   "wrapped.period_summary": [
     {
       "condition": "always_true",
-      "text": "Unfolding the musical residue of your archive for *{period_str}*."
+      "text": "Unfolding the musical residue of your archive for [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "A retrospective of the sounds that defined *{period_str}*."
+      "text": "A retrospective of the sounds that defined [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "Digging into the audio footprint you left behind in *{period_str}*."
+      "text": "Digging into the audio footprint you left behind in [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "An examination of your listening habits during *{period_str}*."
+      "text": "An examination of your listening habits during [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "The aggregated story of your musical choices in *{period_str}*."
+      "text": "The aggregated story of your musical choices in [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "Reviewing the tracks, artists, and moments that shaped *{period_str}*."
+      "text": "Reviewing the tracks, artists, and moments that shaped [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "Bringing the quiet statistics of *{period_str}* to light."
+      "text": "Bringing the quiet statistics of [[{period_str}]] to light."
     },
     {
       "condition": "always_true",
-      "text": "Tracing your acoustic steps throughout *{period_str}*."
+      "text": "Tracing your acoustic steps throughout [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "A data-driven look back at your *{period_str}*."
+      "text": "A data-driven look back at your [[{period_str}]]."
     },
     {
       "condition": "always_true",
-      "text": "Reflecting on the continuous stream of music from *{period_str}*."
+      "text": "Reflecting on the continuous stream of music from [[{period_str}]]."
     }
   ],
   "wrapped.slide0.button": [
@@ -1652,23 +1652,23 @@
   "wrapped.slide1.desc": [
     {
       "condition": "always_true",
-      "text": "This volume amounts to approximately *{minutes_listened}* minutes of active listening, a steady acoustic flow in your memory space."
+      "text": "This volume amounts to approximately [[{minutes_listened}]] minutes of active listening, a steady acoustic flow in your memory space."
     },
     {
       "condition": "always_true",
-      "text": "You spent *{minutes_listened}* minutes immersed in sound, building a vast architecture of echoes."
+      "text": "You spent [[{minutes_listened}]] minutes immersed in sound, building a vast architecture of echoes."
     },
     {
       "condition": "always_true",
-      "text": "Translating to *{minutes_listened}* minutes of playtime, your dedication to the stream is undeniable."
+      "text": "Translating to [[{minutes_listened}]] minutes of playtime, your dedication to the stream is undeniable."
     },
     {
       "condition": "always_true",
-      "text": "That's roughly *{minutes_listened}* minutes of music shaping your days and filling the silence."
+      "text": "That's roughly [[{minutes_listened}]] minutes of music shaping your days and filling the silence."
     },
     {
       "condition": "always_true",
-      "text": "A total of *{minutes_listened}* minutes were claimed by these tracks, leaving a profound mark on your timeline."
+      "text": "A total of [[{minutes_listened}]] minutes were claimed by these tracks, leaving a profound mark on your timeline."
     }
   ],
   "wrapped.slide2.section": [

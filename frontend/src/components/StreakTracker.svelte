@@ -15,7 +15,7 @@
 
   // Motivational messages depending on active streak
   let message = $derived(
-    appCache.narrative['streak.message'] ||
+    appCache.narrative.plain['streak.message'] ||
       'Start listening today to kick off a new daily music streak!',
   );
 </script>

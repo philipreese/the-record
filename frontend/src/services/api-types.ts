@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/narrative": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Narrative
+         * @description Retrieve dynamic narrative strings for the UI.
+         */
+        get: operations["read_narrative_api_narrative_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wrapped": {
         parameters: {
             query?: never;
@@ -522,6 +542,17 @@ export interface components {
             month: string;
             /** Count */
             count: number;
+        };
+        /** NarrativeResponse */
+        NarrativeResponse: {
+            /** Plain */
+            plain: {
+                [key: string]: string;
+            };
+            /** Rich */
+            rich: {
+                [key: string]: string;
+            };
         };
         /** OnRepeatPeak */
         OnRepeatPeak: {
@@ -961,6 +992,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StreakStatsResponse"];
+                };
+            };
+        };
+    };
+    read_narrative_api_narrative_get: {
+        parameters: {
+            query?: {
+                /** @description Optional seed for daily stable randomization */
+                seed?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NarrativeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

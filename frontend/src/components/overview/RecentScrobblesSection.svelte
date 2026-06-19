@@ -55,7 +55,7 @@
     class="pb-2 border-b border-theme-border-soft reveal-label flex items-center justify-between"
   >
     <h2 class="editorial-text-h2">
-      {(appCache.narrative['recent.section'] || '{number} / Recent Scrobbles').replace(
+      {(appCache.narrative.plain['recent.section'] || '{number} / Recent Scrobbles').replace(
         '{number}',
         sectionNumber,
       )}
@@ -64,7 +64,7 @@
       class="text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors cursor-pointer focus:outline-none"
       onclick={onViewAll}
     >
-      {appCache.narrative['recent.view_all'] || 'View full journal &rarr;'}
+      {appCache.narrative.plain['recent.view_all'] || 'View full journal →'}
     </button>
   </div>
   <div class="reveal-content">
@@ -79,7 +79,7 @@
       </div>
     {:else if recentListens.length === 0}
       <p class="text-sm text-base-content/40 font-mono">
-        {appCache.narrative['recent.empty'] || 'No listens yet.'}
+        {appCache.narrative.plain['recent.empty'] || 'No listens yet.'}
       </p>
     {:else}
       <div class="space-y-0">

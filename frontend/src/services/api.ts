@@ -116,13 +116,14 @@ export async function fetchStreak(): Promise<StreakInfo> {
   return data;
 }
 
-export async function fetchNarrative(seed?: string): Promise<Record<string, string>> {
-  // @ts-expect-error - /api/narrative not yet in openapi-types if not regenerated
+export type NarrativeData = { plain: Record<string, string>; rich: Record<string, string> };
+
+export async function fetchNarrative(seed?: string): Promise<NarrativeData> {
   const { data, error } = await client.GET('/api/narrative', {
     params: { query: { ...(seed ? { seed } : {}) } },
   });
   if (error) throw new Error('Failed to fetch narrative');
-  return data as Record<string, string>;
+  return data as NarrativeData;
 }
 
 export async function fetchHeatmap(year: number): Promise<Record<string, number>> {

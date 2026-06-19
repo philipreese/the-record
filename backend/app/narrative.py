@@ -76,5 +76,13 @@ def generate_narrative(stats, streak, seed=None):
             result[key] = safe_interpolate(chosen, vars_dict)
         else:
             result[key] = ""
-            
-    return result
+
+    plain: dict[str, str] = {}
+    rich: dict[str, str] = {}
+    for key, value in result.items():
+        if "[[" in value:
+            rich[key] = value
+        else:
+            plain[key] = value
+
+    return {"plain": plain, "rich": rich}

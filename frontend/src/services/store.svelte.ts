@@ -8,6 +8,7 @@ import {
   fetchNarrative,
   registerWakingListener,
   fetchTrackStatsBatch,
+  type NarrativeData,
   type SyncMode,
   type StatsInfo,
   type StreakInfo,
@@ -39,7 +40,7 @@ class AppCache {
   statsLoaded = $state(false);
 
   // Narrative Engine Cache
-  narrative = $state<Record<string, string>>({});
+  narrative = $state<NarrativeData>({ plain: {}, rich: {} });
   narrativeSeed = $state<string | undefined>(undefined);
 
   // Top Charts Cache (keyed by range: '30' | '90' | '365' | 'all')
@@ -96,7 +97,7 @@ class AppCache {
     this.punchcardData = {};
     this.monthlyTrends = [];
     this.statsLoaded = false;
-    this.narrative = {};
+    this.narrative = { plain: {}, rich: {} };
     this.charts = {};
     this.wrapped = {};
     this.onThisDay = [];
@@ -265,6 +266,16 @@ class AppCache {
         }
       })
       .catch(() => {});
+    // Eagerly fetch stats + narrative so the UI has content immediately,
+    // independent of playing-now polling and sync completion timing.
+    Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)])
+      .then(([s, n]) => {
+        this.stats = s;
+        this.narrative = n;
+        this.statsLoaded = true;
+      })
+      .catch(() => {});
+
     this._poll();
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
