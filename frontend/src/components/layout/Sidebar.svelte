@@ -80,7 +80,8 @@
             <Icon
               name="charts"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {router.route.type === 'charts'
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
+              'charts'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
@@ -133,7 +134,8 @@
             <Icon
               name="clock"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {router.route.type === 'recent'
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
+              'recent'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />

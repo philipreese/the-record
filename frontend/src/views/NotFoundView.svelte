@@ -6,9 +6,7 @@
 
 <div class="flex flex-col items-start justify-center min-h-[60vh] gap-8 py-16">
   <div class="space-y-4">
-    <p class="text-[10px] font-mono tracking-widest uppercase text-theme-muted">
-      404 / not found
-    </p>
+    <p class="text-[10px] font-mono tracking-widest uppercase text-theme-muted">404 / not found</p>
     <h1
       class="text-3xl md:text-4xl xl:text-5xl font-serif font-light leading-relaxed italic text-theme-secondary"
     >
