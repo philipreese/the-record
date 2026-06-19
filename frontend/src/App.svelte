@@ -10,6 +10,7 @@
   import WrappedView from './views/WrappedView.svelte';
   import SettingsView from './views/SettingsView.svelte';
   import RecentView from './views/RecentView.svelte';
+  import NotFoundView from './views/NotFoundView.svelte';
 
   import { themeManager } from './services/theme.svelte';
   import { appCache } from './services/store.svelte';
@@ -66,6 +67,8 @@
           {:else if router.route.type === 'artist'}
             <!-- ArtistView — Phase 3 (#16) -->
             <div class="text-theme-muted font-mono text-sm p-8">Artist view coming soon</div>
+          {:else if router.route.type === 'not-found'}
+            <NotFoundView />
           {/if}
         </div>
       {/key}
