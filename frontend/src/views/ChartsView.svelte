@@ -272,7 +272,8 @@
             class="btn-nav-text text-2xl! leading-none"
             aria-label="Previous Year"
             disabled={selectedYear <= firstListenYear}
-            onclick={() => router.navigate(`/charts?range=${topRange}&year=${selectedYear - 1}`, true)}
+            onclick={() =>
+              router.navigate(`/charts?range=${topRange}&year=${selectedYear - 1}`, true)}
           >
             &larr;
           </button>
@@ -283,7 +284,8 @@
             class="btn-nav-text text-2xl! leading-none"
             aria-label="Next Year"
             disabled={selectedYear >= currentYear}
-            onclick={() => router.navigate(`/charts?range=${topRange}&year=${selectedYear + 1}`, true)}
+            onclick={() =>
+              router.navigate(`/charts?range=${topRange}&year=${selectedYear + 1}`, true)}
           >
             &rarr;
           </button>
