@@ -25,6 +25,7 @@ repository.py      — All SQL queries (stats, charts, heatmap, trends, streak, 
 db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
 sync.py            — ListenBrainz sync worker (async, background)
+narrative.py       — Template loading, condition evaluation, {token} interpolation; returns plain/rich split
 schemas.py         — Pydantic request/response models
 migrations/        — Alembic env + versioned migration scripts
 ```
@@ -42,7 +43,7 @@ store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the respons
 Views              — OverviewView, ChartsView, WrappedView, SettingsView, RecentView
     ↓
 Components
-  layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown
+  layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown, NarrativeText
   dashboard/       — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid,
                      AnimatedCounter, NowPlaying, WrappedCard, ListenRow, StreamGraph
   overview/        — HeatmapSection, DiurnalSection, TelemetrySection, RecentScrobblesSection
@@ -70,7 +71,8 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/recent` | `limit` (default 50, max 100), `before_ts`, `before_id` (cursor pagination), `anchor_date` (optional YYYY-MM-DD) | `ListenEntry[]` |
 | GET | `/api/track-stats` | `artist` (required), `title` (required), `album` (optional — includes null-album rows when provided) | `TrackStatsResponse` |
 | POST | `/api/track-stats/batch` | Request body: `TrackBatchRequestItem[]` | `TrackBatchResponseItem[]` |
-| GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback + cover art) |
+| GET | `/api/narrative` | `seed` (optional string — defaults to UTC date for daily stability) | `NarrativeResponse` |
+| GET | `/api/playing-now` | — | `PlayingNowResponse` (LB live status + last-played fallback; cover art resolved via background asyncio task, non-blocking) |
 | GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
 | GET | `/api/top-artist-trends` | `year` (required int), `limit` (default 5) | `TopArtistTrendsResponse` |
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |

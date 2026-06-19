@@ -24,6 +24,7 @@ A self-hosted dashboard that gives you a complete, unified view of your music li
 - **Temporal streamgraph** — top 5 artists month-by-month for a selected year, rendered as a custom SVG streamgraph; hover to highlight a stream with exact counts, click to drill into that artist's top 5 tracks over time
 - **Listening streaks** — current and longest consecutive daily listening streaks
 - **Wrapped reviews** — Spotify Wrapped-style aggregation by year, quarter, or month: total plays, top artist, top track, peak day, minutes listened, on-repeat peak (most replayed track in a single day)
+- **Narrative engine** — Dynamically generated plain-language copy across the Overview, Wrapped cards, sidebar, and section headers. Drawn from a curated JSON template database (441 templates, 84 keys) evaluated against streak and stats conditions (specificity-first: the most specific true condition wins over a generic fallback). Seeded by UTC date for stable daily randomization; manual rotation available from Settings. Accent phrases rendered via `NarrativeText.svelte` using `[[...]]` delimiters — no `{@html}`, XSS-safe.
 - **Export** — Download full listening history as CSV or JSON, with optional time-range filter, from the Settings page
 - **Background sync** — ListenBrainz sync runs in the background; the UI polls for progress without blocking
 
