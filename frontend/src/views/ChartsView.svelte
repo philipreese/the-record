@@ -11,12 +11,15 @@
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { themeManager, stringToColor } from '../services/theme.svelte';
+  import { router } from '../services/router.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import Icon from '../components/layout/Icon.svelte';
   import StreamGraph from '../components/StreamGraph.svelte';
 
-  let selectedYear = $state(new Date().getFullYear());
+  let selectedYear = $derived(
+    parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
+  );
 
   let firstListenYear = $derived(appCache.stats?.first_year || new Date().getFullYear());
   let currentYear = $derived(new Date().getFullYear());
@@ -32,7 +35,7 @@
     }
   });
 
-  let topRange = $state<TimeRange>('all');
+  let topRange = $derived<TimeRange>((router.params.get('range') as TimeRange) ?? 'all');
 
   const rangeOptions: [TimeRange, string][] = [
     ['30', '30 Days'],
@@ -46,8 +49,8 @@
   let artistPage = $state(1);
   let trackPage = $state(1);
 
-  let searchQuery = $state('');
-  let debouncedSearch = $state('');
+  let searchQuery = $state(router.params.get('q') ?? '');
+  let debouncedSearch = $derived(router.params.get('q') ?? '');
   let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
   let loadingArtists = $state(false);
@@ -77,13 +80,26 @@
   // from overwriting the album-art color in localStorage.
   const preChartsAmbientColor = themeManager.ambientColor;
 
-  // Debounce search query
+  // Debounce search: write to URL (which drives debouncedSearch $derived) after 300ms
   $effect(() => {
     const q = searchQuery;
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      debouncedSearch = q.trim();
+      const p = new URLSearchParams();
+      p.set('range', topRange);
+      p.set('year', String(selectedYear));
+      const trimmed = q.trim();
+      if (trimmed) p.set('q', trimmed);
+      router.navigate(`/charts?${p}`, true);
     }, 300);
+  });
+
+  // Keep search input in sync when URL changes (e.g. browser back button)
+  $effect(() => {
+    const urlQ = router.params.get('q') ?? '';
+    untrack(() => {
+      if (searchQuery !== urlQ) searchQuery = urlQ;
+    });
   });
 
   // Reset pagination when range or search query changes
@@ -256,7 +272,7 @@
             class="btn-nav-text text-2xl! leading-none"
             aria-label="Previous Year"
             disabled={selectedYear <= firstListenYear}
-            onclick={() => selectedYear--}
+            onclick={() => router.navigate(`/charts?range=${topRange}&year=${selectedYear - 1}`, true)}
           >
             &larr;
           </button>
@@ -267,7 +283,7 @@
             class="btn-nav-text text-2xl! leading-none"
             aria-label="Next Year"
             disabled={selectedYear >= currentYear}
-            onclick={() => selectedYear++}
+            onclick={() => router.navigate(`/charts?range=${topRange}&year=${selectedYear + 1}`, true)}
           >
             &rarr;
           </button>
@@ -285,7 +301,7 @@
         <button
           class="nav-selector-item flex-1 md:flex-initial text-center md:text-left py-1 md:py-0 text-xs md:text-sm"
           class:active={topRange === val}
-          onclick={() => (topRange = val)}
+          onclick={() => router.navigate(`/charts?range=${val}&year=${selectedYear}`, true)}
         >
           {label}
         </button>
@@ -308,7 +324,11 @@
         <button
           class="absolute inset-y-0 right-0 flex items-center pr-3 opacity-40 hover:opacity-100 transition-opacity z-10"
           aria-label="Clear search"
-          onclick={() => (searchQuery = '')}
+          onclick={() => {
+            searchQuery = '';
+            if (searchTimeout) clearTimeout(searchTimeout);
+            router.navigate(`/charts?range=${topRange}&year=${selectedYear}`, true);
+          }}
         >
           <Icon name="close" size="w-4 h-4" />
         </button>

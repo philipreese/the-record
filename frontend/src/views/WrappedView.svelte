@@ -7,6 +7,7 @@
     type WrappedDataInfo,
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
+  import { router } from '../services/router.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import LoadingSpinner from '../components/layout/LoadingSpinner.svelte';
   import PeriodSelector from '../components/layout/PeriodSelector.svelte';
@@ -44,12 +45,40 @@
     { value: 'M12' as WrappedMonth, label: 'December' },
   ];
 
-  let wrappedPeriod = $state<'year' | 'quarter' | 'month'>('year');
-  let wrappedYear = $state(2026);
-  let wrappedQuarter = $state<WrappedQuarter>('Q1');
-  let wrappedMonth = $state<WrappedMonth>('M1');
+  let wrappedPeriod = $state<'year' | 'quarter' | 'month'>(
+    (router.params.get('period') as 'year' | 'quarter' | 'month') ?? 'year',
+  );
+  let wrappedYear = $state(parseInt(router.params.get('year') ?? '2026', 10));
+  let wrappedQuarter = $state<WrappedQuarter>((router.params.get('q') as WrappedQuarter) ?? 'Q1');
+  let wrappedMonth = $state<WrappedMonth>((router.params.get('m') as WrappedMonth) ?? 'M1');
   let loadingWrapped = $state(false);
   let wrappedError = $state<string | null>(null);
+
+  // Sync URL → state (browser back/forward)
+  $effect(() => {
+    const p = router.params;
+    const period = (p.get('period') as 'year' | 'quarter' | 'month') ?? 'year';
+    const year = parseInt(p.get('year') ?? '2026', 10);
+    const q = (p.get('q') as WrappedQuarter) ?? 'Q1';
+    const m = (p.get('m') as WrappedMonth) ?? 'M1';
+    untrack(() => {
+      wrappedPeriod = period;
+      wrappedYear = year;
+      wrappedQuarter = q;
+      wrappedMonth = m;
+    });
+  });
+
+  // Sync state → URL (control changes via PeriodSelector or header buttons)
+  $effect(() => {
+    const period = wrappedPeriod;
+    const year = wrappedYear;
+    const q = wrappedQuarter;
+    const m = wrappedMonth;
+    untrack(() => {
+      router.navigate(`/wrapped?period=${period}&year=${year}&q=${q}&m=${m}`, true);
+    });
+  });
 
   let cacheKey = $derived(`${wrappedPeriod}-${wrappedYear}-${wrappedQuarter}-${wrappedMonth}`);
 

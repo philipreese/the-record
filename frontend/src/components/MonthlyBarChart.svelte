@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { MonthlyTrendInfo } from '../services/api';
   import WeeklyBreakdownOverlay from './WeeklyBreakdownOverlay.svelte';
+  import { router } from '../services/router.svelte';
 
   // Svelte 5 props definition
   let { monthlyTrends = [], year }: { monthlyTrends: MonthlyTrendInfo[]; year: number } = $props();
 
-  let selectedMonth = $state<string | null>(null);
+  let selectedMonth = $derived(router.params.get('month') ?? null);
 
   // Compute 12 months of data for the selected year
   let monthsData = $derived.by(() => {
@@ -54,11 +55,19 @@
         role="button"
         tabindex="0"
         aria-label="{month.label} {year}: {month.count} plays"
-        onclick={() => (selectedMonth = month.key)}
+        onclick={() => {
+          const p = new URLSearchParams(router.params);
+          const alreadyOpen = p.has('month');
+          p.set('month', month.key);
+          router.navigate(`/dashboard?${p}`, alreadyOpen);
+        }}
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            selectedMonth = month.key;
+            const p = new URLSearchParams(router.params);
+            const alreadyOpen = p.has('month');
+            p.set('month', month.key);
+            router.navigate(`/dashboard?${p}`, alreadyOpen);
           }
         }}
       >
@@ -103,4 +112,12 @@
   </div>
 </div>
 
-<WeeklyBreakdownOverlay bind:monthKey={selectedMonth} />
+<WeeklyBreakdownOverlay
+  monthKey={selectedMonth}
+  onclose={() => {
+    const p = new URLSearchParams(router.params);
+    p.delete('month');
+    const qs = p.toString();
+    router.navigate(`/dashboard${qs ? '?' + qs : ''}`, true);
+  }}
+/>
