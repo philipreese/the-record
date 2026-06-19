@@ -59,11 +59,23 @@
     }
 
     const sections = [
-      { id: 'heatmap-section', label: appCache.narrative.plain['overview.nav.insights'] || 'insights' },
-      { id: 'diurnal-patterns', label: appCache.narrative.plain['overview.nav.patterns'] || 'patterns' },
+      {
+        id: 'heatmap-section',
+        label: appCache.narrative.plain['overview.nav.insights'] || 'insights',
+      },
+      {
+        id: 'diurnal-patterns',
+        label: appCache.narrative.plain['overview.nav.patterns'] || 'patterns',
+      },
       { id: 'streak-tracker', label: appCache.narrative.plain['overview.nav.streak'] || 'streak' },
-      { id: 'on-this-day', label: appCache.narrative.plain['overview.nav.on_this_day'] || 'on this day' },
-      { id: 'recent-scrobbles', label: appCache.narrative.plain['overview.nav.recent'] || 'recent' },
+      {
+        id: 'on-this-day',
+        label: appCache.narrative.plain['overview.nav.on_this_day'] || 'on this day',
+      },
+      {
+        id: 'recent-scrobbles',
+        label: appCache.narrative.plain['overview.nav.recent'] || 'recent',
+      },
       {
         id: 'telemetry-volumes',
         label: appCache.narrative.plain['overview.nav.telemetry'] || 'telemetry',
@@ -298,7 +310,8 @@
   >
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h2 class="editorial-text-h2">
-        03 / {appCache.narrative.plain['overview.insight.streak_header'] || 'Recollection Continuous'}
+        03 / {appCache.narrative.plain['overview.insight.streak_header'] ||
+          'Recollection Continuous'}
       </h2>
     </div>
     <div class="reveal-content">
