@@ -1,15 +1,9 @@
 <script lang="ts">
   import { appCache } from '../../services/store.svelte';
+  import { router } from '../../services/router.svelte';
   import NarrativeText from './NarrativeText.svelte';
   import Icon from './Icon.svelte';
   import NowPlaying from '../NowPlaying.svelte';
-
-  // Svelte 5 bindable props
-  let {
-    activeTab = $bindable(),
-  }: {
-    activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent';
-  } = $props();
 
   function closeSidebar() {
     // On mobile the sidebar is a DaisyUI drawer controlled by a checkbox input.
@@ -32,7 +26,7 @@
       <button
         class="cursor-pointer text-left block w-full focus:outline-none"
         onclick={() => {
-          activeTab = 'dashboard';
+          router.navigate('/dashboard');
           closeSidebar();
         }}
       >
@@ -49,24 +43,24 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
-            class:text-theme-accent={activeTab === 'dashboard'}
-            class:text-theme-secondary={activeTab !== 'dashboard'}
+            class:text-theme-accent={router.route.type === 'dashboard'}
+            class:text-theme-secondary={router.route.type !== 'dashboard'}
             onclick={() => {
-              activeTab = 'dashboard';
+              router.navigate('/dashboard');
               closeSidebar();
             }}
           >
             <Icon
               name="home"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {activeTab ===
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
               'dashboard'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
             <span
               class="transition-transform duration-300 group-hover:translate-x-1"
-              class:translate-x-1={activeTab === 'dashboard'}
+              class:translate-x-1={router.route.type === 'dashboard'}
             >
               {appCache.narrative.plain['sidebar.nav.dashboard'] || 'Overview'}
             </span>
@@ -76,23 +70,23 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
-            class:text-theme-accent={activeTab === 'charts'}
-            class:text-theme-secondary={activeTab !== 'charts'}
+            class:text-theme-accent={router.route.type === 'charts'}
+            class:text-theme-secondary={router.route.type !== 'charts'}
             onclick={() => {
-              activeTab = 'charts';
+              router.navigate('/charts');
               closeSidebar();
             }}
           >
             <Icon
               name="charts"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {activeTab === 'charts'
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type === 'charts'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
             <span
               class="transition-transform duration-300 group-hover:translate-x-1"
-              class:translate-x-1={activeTab === 'charts'}
+              class:translate-x-1={router.route.type === 'charts'}
             >
               {appCache.narrative.plain['sidebar.nav.charts'] || 'Top Charts'}
             </span>
@@ -102,24 +96,24 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
-            class:text-theme-accent={activeTab === 'wrapped'}
-            class:text-theme-secondary={activeTab !== 'wrapped'}
+            class:text-theme-accent={router.route.type === 'wrapped'}
+            class:text-theme-secondary={router.route.type !== 'wrapped'}
             onclick={() => {
-              activeTab = 'wrapped';
+              router.navigate('/wrapped');
               closeSidebar();
             }}
           >
             <Icon
               name="book"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {activeTab ===
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
               'wrapped'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
             <span
               class="transition-transform duration-300 group-hover:translate-x-1"
-              class:translate-x-1={activeTab === 'wrapped'}
+              class:translate-x-1={router.route.type === 'wrapped'}
             >
               {appCache.narrative.plain['sidebar.nav.wrapped'] || 'Reviews'}
             </span>
@@ -129,23 +123,23 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
-            class:text-theme-accent={activeTab === 'recent'}
-            class:text-theme-secondary={activeTab !== 'recent'}
+            class:text-theme-accent={router.route.type === 'recent'}
+            class:text-theme-secondary={router.route.type !== 'recent'}
             onclick={() => {
-              activeTab = 'recent';
+              router.navigate('/recent');
               closeSidebar();
             }}
           >
             <Icon
               name="clock"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {activeTab === 'recent'
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type === 'recent'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
             <span
               class="transition-transform duration-300 group-hover:translate-x-1"
-              class:translate-x-1={activeTab === 'recent'}
+              class:translate-x-1={router.route.type === 'recent'}
             >
               {appCache.narrative.plain['sidebar.nav.recent'] || 'Journal'}
             </span>
@@ -155,24 +149,24 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
-            class:text-theme-accent={activeTab === 'settings'}
-            class:text-theme-secondary={activeTab !== 'settings'}
+            class:text-theme-accent={router.route.type === 'settings'}
+            class:text-theme-secondary={router.route.type !== 'settings'}
             onclick={() => {
-              activeTab = 'settings';
+              router.navigate('/settings');
               closeSidebar();
             }}
           >
             <Icon
               name="settings"
               size="w-6 h-6"
-              class="transition-transform duration-300 group-hover:scale-105 {activeTab ===
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
               'settings'
                 ? 'text-theme-accent'
                 : 'text-theme-muted'}"
             />
             <span
               class="transition-transform duration-300 group-hover:translate-x-1"
-              class:translate-x-1={activeTab === 'settings'}
+              class:translate-x-1={router.route.type === 'settings'}
             >
               Settings
             </span>

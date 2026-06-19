@@ -1,17 +1,14 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
+  import { router } from '../../services/router.svelte';
   import Icon from './Icon.svelte';
-
-  let {
-    activeTab = $bindable(),
-  }: { activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent' } = $props();
 
   let scrollY = $state(0);
 
   let activePageLabel = $derived.by(() => {
-    switch (activeTab) {
+    switch (router.route.type) {
       case 'dashboard':
-        return 'journal';
+        return 'overview';
       case 'charts':
         return 'charts';
       case 'wrapped':
