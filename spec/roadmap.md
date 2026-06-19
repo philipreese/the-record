@@ -13,10 +13,8 @@
 
 *Transform artist names into deep-dive portals.*
 
-### URL Routing & Deep Links (prerequisite — do first)
-The current navigation is a single `activeTab` state variable: no shareable URLs, no back button, no history. Artist pages "opened by clicking any artist name anywhere in the app" demand addressable routes (`/artist/Boards%20of%20Canada`), and Phase 2's drill-down states (heatmap day, month → week) deserve URLs too.
-
-A tiny hash-based router (or `svelte-routing`) is enough — this does not require SvelteKit. Retrofitting routing under a shipped ArtistView is much worse than scoping it first.
+### URL Routing & Deep Links ✓ complete — PR #137
+Hash-based router (`services/router.svelte.ts`) ships all five tabs as addressable `#/path?params` URLs. Overlay states (heatmap day, month → week), year selectors, charts range/search, and Wrapped period are all serialized to query params and survive reload and back-button navigation. Artist route (`#/artist/:name`) is stubbed and ready for Phase 3. A 404 view handles unrecognised paths.
 
 ### Artist Detail Page
 A new `ArtistView.svelte` opened by clicking any artist name anywhere in the app.

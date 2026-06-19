@@ -39,8 +39,10 @@ api.ts             — openapi-fetch typed client over api-types.ts; retries ide
     ↓
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
                      and 20s visibility-locked playing-now polling (with baseline data recovery on reconnect)
+router.svelte.ts   — Hash-based router (no library); parses #/path?params, exposes typed route + URLSearchParams,
+                     navigate() with push/replace policy. URL is the single source of truth for all serializable view state.
     ↓
-Views              — OverviewView, ChartsView, WrappedView, SettingsView, RecentView
+Views              — OverviewView, ChartsView, WrappedView, SettingsView, RecentView, NotFoundView
     ↓
 Components
   layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown, NarrativeText
