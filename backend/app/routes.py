@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import json
@@ -165,6 +166,8 @@ def read_track_stats_batch(
 _cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
 _cover_art_attempts: dict[tuple[str, str], int] = {}
 _MAX_ART_ATTEMPTS = 3
+# Tracks keys currently being resolved in background to prevent duplicate tasks.
+_art_in_flight: set[tuple[str, str]] = set()
 
 _UA = "the-record-dashboard/1.0 (https://github.com/philipreese/the-record)"
 
@@ -327,6 +330,73 @@ async def _resolve_cover_art(
     return url
 
 
+async def _bg_resolve_art(
+    artist: str,
+    title: str,
+    release_mbid: Optional[str],
+    recording_mbid: Optional[str],
+    release_group_mbid: Optional[str],
+) -> None:
+    """Fire-and-forget: resolve cover art and populate the cache without blocking a request."""
+    cache_key = _art_key(artist, title)
+    try:
+        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
+            await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
+    except Exception:
+        logger.debug("Background cover art resolution failed for %r / %r", artist, title, exc_info=True)
+    finally:
+        _art_in_flight.discard(cache_key)
+
+
+async def _bg_resolve_last_played_art(
+    artist: str,
+    title: str,
+    lb_username: str,
+    lb_token: str,
+) -> None:
+    """Fire-and-forget: fetch LB MBIDs for last-played track, then resolve cover art."""
+    cache_key = _art_key(artist, title)
+    release_mbid: Optional[str] = None
+    recording_mbid: Optional[str] = None
+    release_group_mbid: Optional[str] = None
+    try:
+        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
+            try:
+                res = await bg.get(
+                    f"https://api.listenbrainz.org/1/user/{lb_username}/listens",
+                    params={"count": "1"},
+                    headers={"Authorization": f"Token {lb_token}", "User-Agent": _UA},
+                    timeout=httpx.Timeout(8.0),
+                )
+                if res.status_code == 200:
+                    lp_listens = res.json().get("payload", {}).get("listens", [])
+                    if lp_listens:
+                        meta = lp_listens[0].get("track_metadata", {})
+                        if (
+                            meta.get("artist_name", "").casefold().strip() == artist.casefold().strip()
+                            and meta.get("track_name", "").casefold().strip() == title.casefold().strip()
+                        ):
+                            mm = meta.get("mbid_mapping", {})
+                            release_mbid = mm.get("caa_release_mbid") or mm.get("release_mbid")
+                            recording_mbid = mm.get("recording_mbid")
+                            release_group_mbid = mm.get("release_group_mbid")
+            except Exception:
+                logger.debug("Background LB MBID enrichment failed for %r / %r", artist, title, exc_info=True)
+            await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
+    except Exception:
+        logger.debug("Background last-played art resolution failed for %r / %r", artist, title, exc_info=True)
+    finally:
+        _art_in_flight.discard(cache_key)
+
+
+def _schedule_art(coro) -> None:
+    """Schedule a background art task if the event loop is running."""
+    try:
+        asyncio.get_running_loop().create_task(coro)
+    except RuntimeError:
+        pass
+
+
 @router.get("/playing-now", response_model=PlayingNowResponse)
 async def get_playing_now() -> Any:
     """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
@@ -374,45 +444,18 @@ async def get_playing_now() -> Any:
                         cover_art_url=_cover_art_cache[cache_key],
                     ),
                 )
-            lp_release_mbid: Optional[str] = None
-            lp_recording_mbid: Optional[str] = None
-            lp_release_group_mbid: Optional[str] = None
-            lp_enrichment_ok = False
-            try:
-                lp_res = await client.get(
-                    f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
-                    params={"count": "1"},
-                    headers=lb_headers,
-                    timeout=httpx.Timeout(3.0),
-                )
-                if lp_res.status_code == 200:
-                    lp_listens = lp_res.json().get("payload", {}).get("listens", [])
-                    if lp_listens:
-                        meta = lp_listens[0].get("track_metadata", {})
-                        # Only use MBIDs if this listen matches the local DB's last synced listen
-                        lb_artist = meta.get("artist_name", "")
-                        lb_title = meta.get("track_name", "")
-                        if (
-                            lb_artist.casefold().strip() == r["artist"].casefold().strip()
-                            and lb_title.casefold().strip() == r["title"].casefold().strip()
-                        ):
-                            lp_mm = meta.get("mbid_mapping", {})
-                            lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
-                            lp_recording_mbid = lp_mm.get("recording_mbid")
-                            lp_release_group_mbid = lp_mm.get("release_group_mbid")
-                lp_enrichment_ok = True
-            except Exception:
-                logger.warning("LB MBID enrichment fetch failed for last-played; skipping art this poll", exc_info=True)
-            # Skip resolution entirely on enrichment failure — a transient timeout
-            # should not burn an attempt or cache None permanently.
-            art = await _resolve_cover_art(
-                client, r["artist"], r["title"],
-                lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
-            ) if lp_enrichment_ok else None
+            # Cache miss: kick off background enrichment + art resolution and return
+            # immediately. The next poll (20s) will hit the cache.
+            bg_key = _art_key(r["artist"], r["title"])
+            if bg_key not in _art_in_flight:
+                _art_in_flight.add(bg_key)
+                _schedule_art(_bg_resolve_last_played_art(
+                    r["artist"], r["title"], LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
+                ))
             return PlayingNowResponse(
                 is_playing=False,
                 last_played=LastPlayedEntry(
-                    artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=art
+                    artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=None
                 ),
             )
 
@@ -427,9 +470,14 @@ async def get_playing_now() -> Any:
 
         cover_art_url: Optional[str] = None
         if artist and title:
-            cover_art_url = await _resolve_cover_art(
-                client, artist, title, release_mbid, recording_mbid, release_group_mbid
-            )
+            np_key = _art_key(artist, title)
+            if np_key in _cover_art_cache:
+                cover_art_url = _cover_art_cache[np_key]
+            elif np_key not in _art_in_flight:
+                _art_in_flight.add(np_key)
+                _schedule_art(_bg_resolve_art(
+                    artist, title, release_mbid, recording_mbid, release_group_mbid
+                ))
 
         return PlayingNowResponse(
             is_playing=bool(artist and title),
