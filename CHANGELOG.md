@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/philipreese/the-record/compare/v0.19.0...v0.20.0) (2026-06-19)
+
+
+### Features
+
+* **frontend:** Add 404 not-found view with narrative text ([d1d7d94](https://github.com/philipreese/the-record/commit/d1d7d94e12a0c4a4f5d4fd49c4ccca5dab93510a))
+* **frontend:** Add hash-based router module ([5ecf162](https://github.com/philipreese/the-record/commit/5ecf162294c5ba10c3d5702644e6e4534cbd01ec))
+* **frontend:** Sync overlay and view params to URL ([2b2d8ae](https://github.com/philipreese/the-record/commit/2b2d8ae5fbcd17a6be6f7ab75e3e8d100db7eab0))
+* **frontend:** Wire primary view navigation to router ([bf7d48e](https://github.com/philipreese/the-record/commit/bf7d48e4c688e5ad67bc752c813fa17a7fe0c633))
+
+
+### Documentation
+
+* **spec:** Update narrative, roadmap, and architecture for routing PR ([e38f30d](https://github.com/philipreese/the-record/commit/e38f30de4bf34622d6c965e9e120061460a9e036))
+
+
+### Miscellaneous
+
+* **lint:** Add endOfLine lf to prettier config; fix line wrapping ([554ca65](https://github.com/philipreese/the-record/commit/554ca65568d356619d50b2327e74b4ee7322b3f5))
+
 ## [0.19.0](https://github.com/philipreese/the-record/compare/v0.18.0...v0.19.0) (2026-06-19)
 
 
