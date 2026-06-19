@@ -4,9 +4,10 @@
   import Heatmap from '../Heatmap.svelte';
   import MonthlyBarChart from '../MonthlyBarChart.svelte';
   import { appCache } from '../../services/store.svelte';
+  import { router } from '../../services/router.svelte';
 
   let {
-    heatmapYear = $bindable(),
+    heatmapYear,
     firstListenYear,
     currentYear,
     heatmapData,
@@ -50,7 +51,7 @@
           class="btn-nav-text text-2xl! leading-none"
           aria-label="Previous Year"
           disabled={heatmapYear <= firstListenYear}
-          onclick={() => heatmapYear--}
+          onclick={() => router.navigate(`/dashboard?year=${heatmapYear - 1}`, true)}
         >
           &larr;
         </button>
@@ -61,7 +62,7 @@
           class="btn-nav-text text-2xl! leading-none"
           aria-label="Next Year"
           disabled={heatmapYear >= currentYear}
-          onclick={() => heatmapYear++}
+          onclick={() => router.navigate(`/dashboard?year=${heatmapYear + 1}`, true)}
         >
           &rarr;
         </button>

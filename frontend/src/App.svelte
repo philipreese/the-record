@@ -13,13 +13,16 @@
 
   import { themeManager } from './services/theme.svelte';
   import { appCache } from './services/store.svelte';
-
-  // Navigation state using Svelte 5 state rune
-  let activeTab = $state<'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent'>('dashboard');
+  import { router } from './services/router.svelte';
 
   onMount(() => {
+    router.init();
     themeManager.init();
     appCache.startPlayingNowPolling();
+
+    const onHashChange = () => router.sync();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   });
 </script>
 
@@ -43,35 +46,38 @@
   <!-- Drawer content (Main Screen) -->
   <div class="drawer-content flex flex-col bg-transparent min-h-screen">
     <!-- Navbar (Mobile only) -->
-    <Navbar bind:activeTab />
+    <Navbar />
 
     <!-- Main Content Area -->
     <main class="grow p-4 lg:p-8 max-w-350 w-full mx-auto relative z-10">
       <!-- Views conditional rendering with dissolve-reconfigure transition -->
-      {#key activeTab}
+      {#key router.route.type}
         <div in:fade={{ duration: 160, delay: 120 }} out:fade={{ duration: 120 }} class="w-full">
-          {#if activeTab === 'dashboard'}
-            <OverviewView bind:activeTab />
-          {:else if activeTab === 'charts'}
+          {#if router.route.type === 'dashboard'}
+            <OverviewView />
+          {:else if router.route.type === 'charts'}
             <ChartsView />
-          {:else if activeTab === 'wrapped'}
+          {:else if router.route.type === 'wrapped'}
             <WrappedView />
-          {:else if activeTab === 'settings'}
+          {:else if router.route.type === 'settings'}
             <SettingsView />
-          {:else if activeTab === 'recent'}
+          {:else if router.route.type === 'recent'}
             <RecentView />
+          {:else if router.route.type === 'artist'}
+            <!-- ArtistView — Phase 3 (#16) -->
+            <div class="text-theme-muted font-mono text-sm p-8">Artist view coming soon</div>
           {/if}
         </div>
       {/key}
 
-      {#if activeTab !== 'recent'}
+      {#if router.route.type !== 'recent'}
         <Footer />
       {/if}
     </main>
   </div>
 
   <!-- Fixed footer for the journal tab (infinite scroll pushes the normal footer out of reach) -->
-  {#if activeTab === 'recent'}
+  {#if router.route.type === 'recent'}
     <div
       class="fixed bottom-0 left-0 lg:left-64 right-0 z-20 bg-base-100/95 backdrop-blur-sm [&>div>footer]:mt-0 [&>div>footer]:pt-3 [&>div>footer]:pb-3"
     >
@@ -82,5 +88,5 @@
   {/if}
 
   <!-- Sidebar Container -->
-  <Sidebar bind:activeTab />
+  <Sidebar />
 </div>

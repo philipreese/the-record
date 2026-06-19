@@ -27,12 +27,11 @@
   } from '../services/api';
 
   import { appCache } from '../services/store.svelte';
+  import { router } from '../services/router.svelte';
 
-  let {
-    activeTab = $bindable(),
-  }: { activeTab: 'dashboard' | 'charts' | 'wrapped' | 'settings' | 'recent' } = $props();
-
-  let heatmapYear = $state(new Date().getFullYear());
+  let heatmapYear = $derived(
+    parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
+  );
   let loadingStats = $state(!appCache.statsLoaded);
   let scrollY = $state(0);
 
@@ -289,7 +288,7 @@
   </div>
 
   <HeatmapSection
-    bind:heatmapYear
+    {heatmapYear}
     {firstListenYear}
     {currentYear}
     heatmapData={appCache.heatmap[heatmapYear] || {}}
@@ -327,7 +326,7 @@
     <RecentScrobblesSection
       recentListens={appCache.recentListens}
       loading={loadingStats}
-      onViewAll={() => (activeTab = 'recent')}
+      onViewAll={() => router.navigate('/recent')}
       sectionNumber={appCache.onThisDay.length > 0 ? '05' : '04'}
     />
 
