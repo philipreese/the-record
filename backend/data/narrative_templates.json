@@ -1170,23 +1170,23 @@
   "recent.view_all": [
     {
       "condition": "always_true",
-      "text": "View full journal &rarr;"
+      "text": "View full journal →"
     },
     {
       "condition": "always_true",
-      "text": "See all &rarr;"
+      "text": "See all →"
     },
     {
       "condition": "always_true",
-      "text": "Open logbook &rarr;"
+      "text": "Open logbook →"
     },
     {
       "condition": "always_true",
-      "text": "Explore timeline &rarr;"
+      "text": "Explore timeline →"
     },
     {
       "condition": "always_true",
-      "text": "Show more &rarr;"
+      "text": "Show more →"
     }
   ],
   "recent.empty": [
@@ -1214,15 +1214,15 @@
   "on_this_day.section": [
     {
       "condition": "always_true",
-      "text": "04 / On This Day &mdash; {date}"
+      "text": "04 / On This Day — {date}"
     },
     {
       "condition": "always_true",
-      "text": "04 / Anniversaries &mdash; {date}"
+      "text": "04 / Anniversaries — {date}"
     },
     {
       "condition": "always_true",
-      "text": "04 / Time Capsule &mdash; {date}"
+      "text": "04 / Time Capsule — {date}"
     },
     {
       "condition": "always_true",
@@ -1230,7 +1230,7 @@
     },
     {
       "condition": "always_true",
-      "text": "04 / Flashbacks &mdash; {date}"
+      "text": "04 / Flashbacks — {date}"
     }
   ],
   "now_playing.playing": [
@@ -1346,23 +1346,23 @@
   "footer.copyright": [
     {
       "condition": "always_true",
-      "text": "&copy; 2026 the record. all plays accounted for."
+      "text": "© 2026 the record. all plays accounted for."
     },
     {
       "condition": "always_true",
-      "text": "&copy; 2026 the record. no sound forgotten."
+      "text": "© 2026 the record. no sound forgotten."
     },
     {
       "condition": "always_true",
-      "text": "&copy; 2026 the record. preserving the signal."
+      "text": "© 2026 the record. preserving the signal."
     },
     {
       "condition": "always_true",
-      "text": "&copy; 2026 the record. the archive remains."
+      "text": "© 2026 the record. the archive remains."
     },
     {
       "condition": "always_true",
-      "text": "&copy; 2026 the record. tracking every beat."
+      "text": "© 2026 the record. tracking every beat."
     }
   ],
   "wrapped.slide0.section": [
@@ -1454,23 +1454,23 @@
   "wrapped.slide0.button": [
     {
       "condition": "always_true",
-      "text": "Begin Deep Dive &rarr;"
+      "text": "Begin Deep Dive →"
     },
     {
       "condition": "always_true",
-      "text": "Start the Review &rarr;"
+      "text": "Start the Review →"
     },
     {
       "condition": "always_true",
-      "text": "Explore the Data &rarr;"
+      "text": "Explore the Data →"
     },
     {
       "condition": "always_true",
-      "text": "Open the Archive &rarr;"
+      "text": "Open the Archive →"
     },
     {
       "condition": "always_true",
-      "text": "See the Details &rarr;"
+      "text": "See the Details →"
     }
   ],
   "wrapped.slide0.stat1": [
@@ -1850,7 +1850,7 @@
   "wrapped.slide4.desc": [
     {
       "condition": "always_true",
-      "text": "The single track you returned to most obsessively &mdash; a sonic loop that defined its day."
+      "text": "The single track you returned to most obsessively — a sonic loop that defined its day."
     },
     {
       "condition": "always_true",
