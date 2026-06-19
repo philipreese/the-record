@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, date, timezone, timedelta
 from typing import Any, List, Optional
 import os
@@ -5,6 +6,8 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_, or_
 from app.db import get_engine, Listen
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
+
+logger = logging.getLogger(__name__)
 
 def get_current_local_date() -> date:
     """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
@@ -449,7 +452,7 @@ def get_recent_listens(
                 anchor_ts = int(dt_end.timestamp())
                 stmt = stmt.where(Listen.unix_ts <= anchor_ts)
             except ValueError:
-                pass
+                logger.warning("Invalid anchor_date format: %r", anchor_date)
         stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
         rows = conn.execute(stmt).all()
         return [
