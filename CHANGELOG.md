@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/philipreese/the-record/compare/v0.17.0...v0.18.0) (2026-06-19)
+
+
+### Features
+
+* **narrative:** Expand narrative engine to power all dynamic UI copy ([403d98e](https://github.com/philipreese/the-record/commit/403d98eecd596727c39c5285c9e18599f97ce8e5))
+* **narrative:** Split into plain/rich, replace * delimiter with [[...]] ([2aef101](https://github.com/philipreese/the-record/commit/2aef101ec048df0f9e70cef681898d0207f2dc7d))
+
+
+### Bug Fixes
+
+* **narrative:** replace {[@html](https://github.com/html)} with NarrativeText for XSS safety ([d0d578a](https://github.com/philipreese/the-record/commit/d0d578a255b457b9709e08c2e5c5caae737dd7ac))
+* **narrative:** Replace HTML entities with Unicode characters in templates ([b80897d](https://github.com/philipreese/the-record/commit/b80897d75d31ef9642458ff1eb92aab244742940))
+* **playing-now:** Background cover art resolution, wire NarrativeResponse, eager narrative load ([ec0e12c](https://github.com/philipreese/the-record/commit/ec0e12cb8bba04ca45a09f84fc66614ebd209e92))
+
+
+### Documentation
+
+* **spec:** Document narrative engine — product, architecture, roadmap, data-models ([22b3784](https://github.com/philipreese/the-record/commit/22b37846f17de404a51995f1d0e55cbf456df115))
+
+
+### Miscellaneous
+
+* **lint:** Fix code style issues ([3388c3b](https://github.com/philipreese/the-record/commit/3388c3bb8f1bb205108ee20fda5a403f0005a2c8))
+
 ## [0.17.0](https://github.com/philipreese/the-record/compare/v0.16.0...v0.17.0) (2026-06-18)
 
 
