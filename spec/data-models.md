@@ -99,6 +99,11 @@ interface TrackBatchResponseItem {
 }
 
 
+interface NarrativeResponse {
+  plain: Record<string, string>;  // keys whose text has no accent markers
+  rich: Record<string, string>;   // keys whose text contains [[...]] accent markers — use NarrativeText
+}
+
 interface SyncStartResponse {
   status: string;       // "started" | "already_running"
   mode?: string;

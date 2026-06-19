@@ -58,14 +58,18 @@ A small widget on the Overview showing what was playing on this exact calendar d
 ### Sync Deletions ✅ Shipped (#33)
 Implemented as `mirror` mode on `POST /api/sync?mode=mirror`. Fetches the complete LB history, inserts any missing rows, backfills missing `duration_secs`/`album` metadata, and deletes any local rows whose identity key `(unix_ts, artist.lower(), title.lower())` is not present in the fetched LB data. Exact-key local duplicates are also pruned (lowest id kept). No source restriction — LB is treated as the single source of truth for all rows. Takes ~15–20 minutes for large histories.
 
-### Dynamic Narrative Engine
-Replace the hardcoded hero narrative text on the Overview and Wrapped cards:
+### Dynamic Narrative Engine ✅ Shipped (#34)
+All dynamic UI copy (hero text, sidebar stats, section headers, Wrapped slides, streak commentary) is drawn from a curated JSON template database (`backend/data/narrative_templates.json`): 441 templates across 84 narrative keys.
 
-**Option A — Template database (zero cost):** A curated JSON file of poetic templates keyed by data conditions (e.g., `streak_over_30`, `top_source_listenbrainz`, `new_peak_day`). Randomly selected at render time.
+**How it works:**
+- `GET /api/narrative?seed=` returns `NarrativeResponse { plain, rich }` — keys whose resolved text contains `[[...]]` accent markers go into `rich`; all others into `plain`
+- Condition evaluator checks stats/streak against named conditions (`always_true`, `streak_0`, `streak_1_2`, `streak_3_5`, `streak_6_10`, `streak_11_plus`, `streak_over_30`, `high_avg_per_day`) — specificity-first: conditional matches win over `always_true` fallbacks
+- `{token}` interpolation for `days_active`, `avg_per_day`, `top_source`, `current_streak`, `total_listens`
+- Daily UTC seed for stable randomization (same text throughout the day); `refreshNarrative()` in `AppCache` generates a random seed for manual rotation from Settings
+- `NarrativeText.svelte` splits on `[[` / `]]` delimiters and renders accent segments as plain text `<span>` nodes — no `{@html}`, XSS-safe, and literal asterisks in prose are unambiguous
+- Frontend enforces the contract structurally: `appCache.narrative.plain[key]` vs `appCache.narrative.rich[key]`
 
-**Option B — LLM-generated (low cost):** Call an LLM with the user's stats as context; cache the result for the session. Generates novel summaries but adds latency and API cost.
-
-Start with Option A; Option B can be layered on top as a settings toggle. The condition keys are effectively a small rules engine — evaluate specificity-first, then randomize among matches, so the most interesting *true* statement wins rather than a generic one.
+**Option B (LLM-generated)** remains viable as a settings toggle on top of this foundation — tracked as issue #129.
 
 ### Stretch: Day-of-Week × Hour Punchcard
 The classic 7×24 punchcard grid. The hourly heat clock shows *when in the day*; this shows *when in the week* ("Sunday morning listener"). Reuses the heatmap's cell-rendering approach.
