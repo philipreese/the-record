@@ -86,9 +86,9 @@
 {#if date}
   <!-- Backdrop — portaled to body so fixed positioning is relative to the viewport,
        not the transformed .memory-surface ancestor -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     use:portal
+    role="presentation"
     class="fixed inset-0 z-9998 bg-black/40 backdrop-blur-sm"
     transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
