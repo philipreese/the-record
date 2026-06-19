@@ -126,6 +126,11 @@ class WeeklyBreakdownItem(BaseModel):
     count: int
 
 
+class NarrativeResponse(BaseModel):
+    plain: Dict[str, str]
+    rich: Dict[str, str]
+
+
 class ArtistMonthlyTrend(BaseModel):
     month: str
     count: int

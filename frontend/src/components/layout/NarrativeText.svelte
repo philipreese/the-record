@@ -7,7 +7,7 @@
     accentClass?: string;
   } = $props();
 
-  let parts = $derived(text.split('*'));
+  let parts = $derived(text.split(/\[\[|\]\]/));
 </script>
 
 {#each parts as part, index}

@@ -68,7 +68,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'dashboard'}
             >
-              {appCache.narrative['sidebar.nav.dashboard'] || 'Overview'}
+              {appCache.narrative.plain['sidebar.nav.dashboard'] || 'Overview'}
             </span>
           </button>
         </li>
@@ -94,7 +94,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'charts'}
             >
-              {appCache.narrative['sidebar.nav.charts'] || 'Top Charts'}
+              {appCache.narrative.plain['sidebar.nav.charts'] || 'Top Charts'}
             </span>
           </button>
         </li>
@@ -121,7 +121,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'wrapped'}
             >
-              {appCache.narrative['sidebar.nav.wrapped'] || 'Reviews'}
+              {appCache.narrative.plain['sidebar.nav.wrapped'] || 'Reviews'}
             </span>
           </button>
         </li>
@@ -147,7 +147,7 @@
               class="transition-transform duration-300 group-hover:translate-x-1"
               class:translate-x-1={activeTab === 'recent'}
             >
-              {appCache.narrative['sidebar.nav.recent'] || 'Journal'}
+              {appCache.narrative.plain['sidebar.nav.recent'] || 'Journal'}
             </span>
           </button>
         </li>
@@ -189,7 +189,7 @@
           <div class="flex items-center gap-2">
             <div class="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse"></div>
             <span class="text-xs font-mono tracking-widest uppercase text-theme-muted">
-              {appCache.narrative['sidebar.memory_surface'] || 'Memory Surface'}
+              {appCache.narrative.plain['sidebar.memory_surface'] || 'Memory Surface'}
             </span>
           </div>
           {#if appCache.isSyncing}
@@ -204,7 +204,7 @@
         {#if appCache.isSyncing}
           <div class="space-y-1.5">
             <div class="text-sm font-light leading-relaxed text-theme-accent animate-pulse">
-              {appCache.narrative['sidebar.syncing'] || 'Syncing latest plays...'}
+              {appCache.narrative.plain['sidebar.syncing'] || 'Syncing latest plays...'}
             </div>
             {#if appCache.stats}
               <div class="text-xs font-mono text-theme-muted">
@@ -216,23 +216,23 @@
           <div class="space-y-1.5">
             <div class="text-sm md:text-base font-light leading-relaxed text-theme-secondary">
               <NarrativeText
-                text={appCache.narrative['sidebar.archived_plays'] ||
-                  `Archived *${appCache.stats.total_listens.toLocaleString()}* plays`}
+                text={appCache.narrative.rich['sidebar.archived_plays'] ||
+                  `Archived [[${appCache.stats.total_listens.toLocaleString()}]] plays`}
                 accentClass="font-mono font-medium text-theme-accent"
               />
             </div>
             <div class="text-xs font-mono text-theme-muted tracking-wide">
-              {appCache.narrative['sidebar.active_habit'] || 'Active habit:'}
+              {appCache.narrative.plain['sidebar.active_habit'] || 'Active habit:'}
               <span class="text-theme-text font-normal">{appCache.stats.avg_per_day}</span> / day
             </div>
           </div>
         {:else if appCache.isWakingUp}
           <div class="text-sm font-mono text-theme-accent animate-pulse">
-            {appCache.narrative['sidebar.waking_up'] || 'Waking up the server...'}
+            {appCache.narrative.plain['sidebar.waking_up'] || 'Waking up the server...'}
           </div>
         {:else}
           <div class="text-sm font-mono text-theme-muted">
-            {appCache.narrative['sidebar.connecting'] || 'Connecting to archive...'}
+            {appCache.narrative.plain['sidebar.connecting'] || 'Connecting to archive...'}
           </div>
         {/if}
 

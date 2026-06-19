@@ -35,6 +35,7 @@ from app.schemas import (
     WeeklyBreakdownItem,
     TopArtistTrendsResponse,
     ArtistTrendResponse,
+    NarrativeResponse,
 )
 
 router = APIRouter()
@@ -100,7 +101,7 @@ def read_streak() -> Any:
     """Retrieve active and historical daily listening streaks."""
     return repo.get_streak_stats()
 
-@router.get("/narrative", response_model=Dict[str, str])
+@router.get("/narrative", response_model=NarrativeResponse)
 def read_narrative(
     seed: Optional[str] = Query(None, description="Optional seed for daily stable randomization"),
 ) -> Any:
@@ -163,7 +164,7 @@ def read_track_stats_batch(
 # hitting rate limits and causing slow HTTP cascades on consecutive polls.
 _cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
 _cover_art_attempts: dict[tuple[str, str], int] = {}
-_MAX_ART_ATTEMPTS = 1
+_MAX_ART_ATTEMPTS = 3
 
 _UA = "the-record-dashboard/1.0 (https://github.com/philipreese/the-record)"
 
@@ -318,8 +319,8 @@ async def _resolve_cover_art(
         _cover_art_cache[cache_key] = url
     else:
         logger.warning(
-            "Cover art resolution failed for %r / %r (attempt %d/%d); release_mbid=%s recording_mbid=%s",
-            artist, title, attempts + 1, _MAX_ART_ATTEMPTS, release_mbid, recording_mbid,
+            "Cover art resolution failed for %r / %r (attempt %d/%d); release_mbid=%s recording_mbid=%s release_group_mbid=%s",
+            artist, title, attempts + 1, _MAX_ART_ATTEMPTS, release_mbid, recording_mbid, release_group_mbid,
         )
         if attempts + 1 >= _MAX_ART_ATTEMPTS:
             _cover_art_cache[cache_key] = None
@@ -376,6 +377,7 @@ async def get_playing_now() -> Any:
             lp_release_mbid: Optional[str] = None
             lp_recording_mbid: Optional[str] = None
             lp_release_group_mbid: Optional[str] = None
+            lp_enrichment_ok = False
             try:
                 lp_res = await client.get(
                     f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
@@ -398,12 +400,15 @@ async def get_playing_now() -> Any:
                             lp_release_mbid = lp_mm.get("caa_release_mbid") or lp_mm.get("release_mbid")
                             lp_recording_mbid = lp_mm.get("recording_mbid")
                             lp_release_group_mbid = lp_mm.get("release_group_mbid")
+                lp_enrichment_ok = True
             except Exception:
-                logger.debug("LB MBID enrichment fetch failed for last-played", exc_info=True)
+                logger.warning("LB MBID enrichment fetch failed for last-played; skipping art this poll", exc_info=True)
+            # Skip resolution entirely on enrichment failure — a transient timeout
+            # should not burn an attempt or cache None permanently.
             art = await _resolve_cover_art(
                 client, r["artist"], r["title"],
                 lp_release_mbid, lp_recording_mbid, lp_release_group_mbid
-            )
+            ) if lp_enrichment_ok else None
             return PlayingNowResponse(
                 is_playing=False,
                 last_played=LastPlayedEntry(

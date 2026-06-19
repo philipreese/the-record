@@ -41,13 +41,13 @@
     if (typeof document === 'undefined')
       return {
         id: 'heatmap-section',
-        label: appCache.narrative['overview.nav.insights'] || 'insights',
+        label: appCache.narrative.plain['overview.nav.insights'] || 'insights',
       };
 
     if (scrollY < 10) {
       return {
         id: 'heatmap-section',
-        label: appCache.narrative['overview.nav.insights'] || 'insights',
+        label: appCache.narrative.plain['overview.nav.insights'] || 'insights',
       };
     }
 
@@ -59,14 +59,14 @@
     }
 
     const sections = [
-      { id: 'heatmap-section', label: appCache.narrative['overview.nav.insights'] || 'insights' },
-      { id: 'diurnal-patterns', label: appCache.narrative['overview.nav.patterns'] || 'patterns' },
-      { id: 'streak-tracker', label: appCache.narrative['overview.nav.streak'] || 'streak' },
-      { id: 'on-this-day', label: appCache.narrative['overview.nav.on_this_day'] || 'on this day' },
-      { id: 'recent-scrobbles', label: appCache.narrative['overview.nav.recent'] || 'recent' },
+      { id: 'heatmap-section', label: appCache.narrative.plain['overview.nav.insights'] || 'insights' },
+      { id: 'diurnal-patterns', label: appCache.narrative.plain['overview.nav.patterns'] || 'patterns' },
+      { id: 'streak-tracker', label: appCache.narrative.plain['overview.nav.streak'] || 'streak' },
+      { id: 'on-this-day', label: appCache.narrative.plain['overview.nav.on_this_day'] || 'on this day' },
+      { id: 'recent-scrobbles', label: appCache.narrative.plain['overview.nav.recent'] || 'recent' },
       {
         id: 'telemetry-volumes',
-        label: appCache.narrative['overview.nav.telemetry'] || 'telemetry',
+        label: appCache.narrative.plain['overview.nav.telemetry'] || 'telemetry',
       },
     ];
 
@@ -263,7 +263,7 @@
             class="text-2xl md:text-3xl xl:text-4xl font-serif font-light leading-relaxed italic text-theme-secondary"
           >
             <NarrativeText
-              text={appCache.narrative['overview.hero'] || 'A continuous stream of sounds.'}
+              text={appCache.narrative.rich['overview.hero'] || 'A continuous stream of sounds.'}
               accentClass="font-sans font-normal text-theme-accent"
             />
           </p>
@@ -298,7 +298,7 @@
   >
     <div class="pb-2 border-b border-theme-border-soft reveal-label">
       <h2 class="editorial-text-h2">
-        03 / {appCache.narrative['overview.insight.streak_header'] || 'Recollection Continuous'}
+        03 / {appCache.narrative.plain['overview.insight.streak_header'] || 'Recollection Continuous'}
       </h2>
     </div>
     <div class="reveal-content">

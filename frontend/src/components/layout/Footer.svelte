@@ -11,17 +11,17 @@
         >the record</span
       >
       <span class="opacity-30">/</span>
-      <span>{appCache.narrative['footer.title_tag'] || 'listening journal'}</span>
+      <span>{appCache.narrative.plain['footer.title_tag'] || 'listening journal'}</span>
     </div>
     <span class="opacity-50 text-[10px]"
-      >{appCache.narrative['footer.subtitle'] ||
+      >{appCache.narrative.plain['footer.subtitle'] ||
         'Your personal music history, archived and analyzed.'}</span
     >
   </div>
 
   <div class="flex items-center gap-6">
     <span class="opacity-40"
-      >{appCache.narrative['footer.copyright'] ||
+      >{appCache.narrative.plain['footer.copyright'] ||
         '© 2026 the record. all plays accounted for.'}</span
     >
   </div>
