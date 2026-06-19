@@ -3,6 +3,7 @@
   import DayDetailOverlay from './DayDetailOverlay.svelte';
   import { getLegendText } from '../utils/listens';
   import { appCache } from '../services/store.svelte';
+  import { router } from '../services/router.svelte';
 
   interface DayInfo {
     date: Date;
@@ -20,7 +21,7 @@
   let daysOfYear = $derived(getDaysOfYear(year));
   let weeks = $derived(chunkIntoWeeks(daysOfYear));
 
-  let selectedDate = $state<string | null>(null);
+  let selectedDate = $derived(router.params.get('date') ?? null);
 
   // Custom HTML Popover State
   let hoveredDay = $state<DayInfo | null>(null);
@@ -314,13 +315,19 @@
                     onfocus={(e) => showPopoverFromFocus(day, e)}
                     onblur={hidePopover}
                     onclick={() => {
-                      selectedDate = day.dateStr;
+                      const p = new URLSearchParams(router.params);
+                      const alreadyOpen = p.has('date');
+                      p.set('date', day.dateStr);
+                      router.navigate(`/dashboard?${p}`, alreadyOpen);
                       hidePopover();
                     }}
                     onkeydown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        selectedDate = day.dateStr;
+                        const p = new URLSearchParams(router.params);
+                        const alreadyOpen = p.has('date');
+                        p.set('date', day.dateStr);
+                        router.navigate(`/dashboard?${p}`, alreadyOpen);
                         hidePopover();
                       }
                     }}
@@ -461,4 +468,12 @@
   {/if}
 </div>
 
-<DayDetailOverlay bind:date={selectedDate} />
+<DayDetailOverlay
+  date={selectedDate}
+  onclose={() => {
+    const p = new URLSearchParams(router.params);
+    p.delete('date');
+    const qs = p.toString();
+    router.navigate(`/dashboard${qs ? '?' + qs : ''}`, true);
+  }}
+/>

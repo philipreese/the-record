@@ -7,7 +7,7 @@
   import { appCache } from '../services/store.svelte';
   import Icon from './layout/Icon.svelte';
 
-  let { date = $bindable(null) }: { date: string | null } = $props();
+  let { date, onclose }: { date: string | null; onclose: () => void } = $props();
 
   let tracks = $state<ListenEntry[]>([]);
   let loading = $state(false);
@@ -61,7 +61,7 @@
   }
 
   function close() {
-    date = null;
+    onclose();
   }
 
   function handleBackdropClick(e: MouseEvent) {

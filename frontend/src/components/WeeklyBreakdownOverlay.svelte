@@ -5,7 +5,7 @@
   import { portal } from '../utils/portal';
   import Icon from './layout/Icon.svelte';
 
-  let { monthKey = $bindable(null) }: { monthKey: string | null } = $props();
+  let { monthKey, onclose }: { monthKey: string | null; onclose: () => void } = $props();
 
   let weeks = $state<WeeklyBreakdownItem[]>([]);
   let loading = $state(false);
@@ -53,7 +53,7 @@
 
   // Rest of script functions unchanged
   function close() {
-    monthKey = null;
+    onclose();
   }
 
   function handleBackdropClick(e: MouseEvent) {
