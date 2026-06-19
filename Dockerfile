@@ -10,6 +10,7 @@ RUN pixi install --locked -v
 
 # Copy backend source code and migration scripts
 COPY backend/app ./backend/app
+COPY backend/data ./backend/data
 COPY backend/alembic.ini ./backend/alembic.ini
 COPY backend/migrations ./backend/migrations
 
