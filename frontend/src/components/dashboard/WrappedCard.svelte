@@ -85,7 +85,8 @@
               >
               <h2 class="editorial-text-h1 lowercase text-4xl lg:text-5xl">
                 <NarrativeText
-                  text={appCache.narrative.rich['wrapped.slide0.title'] || 'reviewing the [[resonance]]'}
+                  text={appCache.narrative.rich['wrapped.slide0.title'] ||
+                    'reviewing the [[resonance]]'}
                   accentClass="italic text-theme-accent"
                 />
               </h2>
@@ -324,7 +325,8 @@
             {#if data.on_repeat_peak}
               <div class="space-y-2">
                 <div class="text-xs font-mono uppercase tracking-widest text-theme-muted">
-                  {appCache.narrative.plain['wrapped.slide4.label'] || 'Most replayed in a single day'}
+                  {appCache.narrative.plain['wrapped.slide4.label'] ||
+                    'Most replayed in a single day'}
                 </div>
                 <h3 class="text-3xl lg:text-4xl font-serif italic text-theme-text">
                   {data.on_repeat_peak.title}
