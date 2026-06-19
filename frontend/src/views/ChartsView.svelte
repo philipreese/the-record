@@ -15,24 +15,11 @@
   import PageHeader from '../components/layout/PageHeader.svelte';
   import Icon from '../components/layout/Icon.svelte';
   import StreamGraph from '../components/StreamGraph.svelte';
-  import SelectDropdown from '../components/layout/SelectDropdown.svelte';
 
   let selectedYear = $state(new Date().getFullYear());
 
   let firstListenYear = $derived(appCache.stats?.first_year || new Date().getFullYear());
   let currentYear = $derived(new Date().getFullYear());
-
-  let availableYears = $derived.by(() => {
-    const years = [];
-    for (let y = firstListenYear; y <= currentYear; y++) {
-      years.push(y);
-    }
-    return years.reverse();
-  });
-
-  let yearDropdownOptions = $derived(
-    availableYears.map((yr) => ({ value: yr, label: String(yr) })),
-  );
 
   onMount(() => {
     if (!appCache.statsLoaded) {
@@ -258,7 +245,34 @@
       <h2 class="editorial-text-h2">temporal trends</h2>
 
       <!-- Year Selector -->
-      <SelectDropdown bind:value={selectedYear} options={yearDropdownOptions} />
+      <div class="flex items-center gap-4">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-theme-muted select-none"
+          >Select Year</span
+        >
+        <div
+          class="flex items-center gap-4 bg-theme-neutral-soft px-3 py-1 rounded-lg border border-theme-border-soft"
+        >
+          <button
+            class="btn-nav-text text-2xl! leading-none"
+            aria-label="Previous Year"
+            disabled={selectedYear <= firstListenYear}
+            onclick={() => selectedYear--}
+          >
+            &larr;
+          </button>
+          <span class="text-lg font-mono tracking-wider font-light text-theme-text select-none"
+            >{selectedYear}</span
+          >
+          <button
+            class="btn-nav-text text-2xl! leading-none"
+            aria-label="Next Year"
+            disabled={selectedYear >= currentYear}
+            onclick={() => selectedYear++}
+          >
+            &rarr;
+          </button>
+        </div>
+      </div>
     </div>
 
     <StreamGraph year={selectedYear} />
@@ -304,7 +318,7 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 sm:mt-0">
     <!-- Top Creators List -->
-    <div class="flex flex-col justify-between h-full min-h-[500px]">
+    <div class="flex flex-col justify-between h-full min-h-125">
       <div class="space-y-6">
         <h2
           class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
@@ -390,7 +404,7 @@
     </div>
 
     <!-- Top Tracks List -->
-    <div class="flex flex-col justify-between h-full min-h-[500px]">
+    <div class="flex flex-col justify-between h-full min-h-125">
       <div class="space-y-6">
         <h2
           class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
