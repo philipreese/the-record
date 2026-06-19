@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/philipreese/the-record/compare/v0.18.0...v0.19.0) (2026-06-19)
+
+
+### Features
+
+* **frontend:** Replace streamgraph year dropdown with arrow selector; fix backdrop a11y ([f15f6d1](https://github.com/philipreese/the-record/commit/f15f6d16e4e607b6d602ab8c63f61e91f64d04c0))
+
+
+### Bug Fixes
+
+* **backend:** DNS cache TTL/IPv4 filter and anchor_date warning log ([68ee46c](https://github.com/philipreese/the-record/commit/68ee46c35607b003ae461b635b36e85c952c8793))
+
+
+### Documentation
+
+* **spec:** Phase 2 close-out — roadmap scrub and issue links ([353dbd2](https://github.com/philipreese/the-record/commit/353dbd2ce547552e1531028805939c9015a816d3))
+
 ## [0.18.0](https://github.com/philipreese/the-record/compare/v0.17.0...v0.18.0) (2026-06-19)
 
 
