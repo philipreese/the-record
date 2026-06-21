@@ -16,7 +16,11 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+BACKEND_DIR = os.path.dirname(SCRIPT_DIR)
+PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
+
+sys.path.insert(0, BACKEND_DIR)
+from app.utils import clean_artist, clean_title, strip_artist_prefix  # noqa: E402
 
 load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
@@ -64,7 +68,7 @@ def parse_yt_entry(entry):
     else:
         artist = subtitle_name
 
-    return artist, raw_title
+    return clean_artist(artist), clean_title(strip_artist_prefix(raw_title, artist))
 
 def filter_rapid_skips(parsed_list):
     """
