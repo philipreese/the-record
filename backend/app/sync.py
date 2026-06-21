@@ -12,6 +12,7 @@ import httpx
 from sqlalchemy import func, text, bindparam
 from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens
+from app.utils import clean_artist, clean_title
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
 LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
@@ -189,6 +190,8 @@ async def _run_sync(mode: str) -> None:
                     artist = meta.get("artist_name")
                     title = meta.get("track_name")
                     if artist and title:
+                        artist = clean_artist(artist)
+                        title = clean_title(title)
                         key = (ts, artist.lower(), title.lower())
                         if key not in local_keys:
                             additional_info = meta.get("additional_info") or {}
@@ -246,6 +249,8 @@ async def _run_sync(mode: str) -> None:
                         artist = meta.get("artist_name")
                         title = meta.get("track_name")
                         if artist and title:
+                            artist = clean_artist(artist)
+                            title = clean_title(title)
                             key = (ts, artist.lower(), title.lower())
                             if key not in local_keys:
                                 additional_info = meta.get("additional_info") or {}

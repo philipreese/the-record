@@ -17,9 +17,11 @@ Welcome, AI Coding Assistant. This workspace is configured with structured archi
 - Files using the `$state` (or other) runes must use the `.svelte.ts` extension, not `.ts`.
 - Run svelte-check / type verification after edits when possible before committing.
 
-## Deployment
-- Ensure the Dockerfile COPIES migrations and that the dev server is restarted (no stale process) when verifying new endpoints.
+## Testing & Verification
+- Always run the full verification suite before committing: tests, type-check (svelte-check), prettier, and eslint. Regenerate lock files (pixi.lock for linux-64) when dependencies change.
 
+## Deployment
+- When deploying with Docker, ensure the Dockerfile COPYs all required runtime assets (migrations, data/ directory) and that the dev server is restarted (no stale process) when verifying new endpoints.
 ---
 
 ## Workflow
