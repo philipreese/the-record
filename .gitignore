@@ -258,4 +258,5 @@ backend/scripts/failure_review.csv
 backend/scripts/fix_retry.json
 backend/scripts/fix_output.json
 backend/scripts/missing_tracks.json
+backend/scripts/diagnose_lb_cache.json
 backend/scripts/clean_lb_state.json

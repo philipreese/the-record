@@ -554,3 +554,32 @@ async def _run_mirror() -> None:
     finally:
         _sync_state.running = False
         _sync_state.finished = True
+
+
+if __name__ == "__main__":
+    import argparse
+    from pathlib import Path
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+    # Module-level os.getenv() ran before load_dotenv — re-read now
+    LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
+    LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
+
+    parser = argparse.ArgumentParser(description="Run ListenBrainz sync standalone")
+    parser.add_argument("--mode", choices=["normal", "mirror"], default="normal")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s",
+                        stream=__import__("sys").stdout)
+
+    _sync_state.running = True
+    _sync_state.finished = False
+
+    asyncio.run(_run_sync(args.mode) if args.mode == "normal" else _run_mirror())
+
+    if _sync_state.error:
+        print(f"ERROR: {_sync_state.error}")
+        raise SystemExit(1)
+    print(f"Done — inserted {_sync_state.synced_count} new play(s), deleted {_sync_state.deleted_count}")
