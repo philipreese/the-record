@@ -1,8 +1,9 @@
 export type Route =
-  | { type: 'dashboard' | 'charts' | 'wrapped' | 'recent' | 'settings' | 'not-found' }
-  | { type: 'artist'; name: string };
+  | { type: 'dashboard' | 'charts' | 'wrapped' | 'recent' | 'settings' | 'blog' | 'not-found' }
+  | { type: 'artist'; name: string }
+  | { type: 'blog-post'; slug: string };
 
-const VALID_TABS = ['dashboard', 'charts', 'wrapped', 'recent', 'settings'] as const;
+const VALID_TABS = ['dashboard', 'charts', 'wrapped', 'recent', 'settings', 'blog'] as const;
 type ValidTab = (typeof VALID_TABS)[number];
 
 class Router {
@@ -29,6 +30,9 @@ class Router {
     const first = segments[0] || 'dashboard';
     if (first === 'artist' && segments[1]) {
       return { type: 'artist', name: decodeURIComponent(segments[1]) };
+    }
+    if (first === 'blog' && segments[1]) {
+      return { type: 'blog-post', slug: decodeURIComponent(segments[1]) };
     }
     return VALID_TABS.includes(first as ValidTab)
       ? { type: first as ValidTab }

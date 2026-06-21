@@ -10,6 +10,8 @@
   import WrappedView from './views/WrappedView.svelte';
   import SettingsView from './views/SettingsView.svelte';
   import RecentView from './views/RecentView.svelte';
+  import BlogView from './views/BlogView.svelte';
+  import BlogPostView from './views/BlogPostView.svelte';
   import NotFoundView from './views/NotFoundView.svelte';
 
   import { themeManager } from './services/theme.svelte';
@@ -64,6 +66,10 @@
             <SettingsView />
           {:else if router.route.type === 'recent'}
             <RecentView />
+          {:else if router.route.type === 'blog'}
+            <BlogView />
+          {:else if router.route.type === 'blog-post'}
+            <BlogPostView slug={router.route.slug} />
           {:else if router.route.type === 'artist'}
             <!-- ArtistView — Phase 3 (#16) -->
             <div class="text-theme-muted font-mono text-sm p-8">Artist view coming soon</div>
