@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.2](https://github.com/philipreese/the-record/compare/v0.20.1...v0.20.2) (2026-06-21)
+
+
+### Miscellaneous
+
+* **ci:** Exclude backend/scripts from pyrefly type-checking ([84eab1a](https://github.com/philipreese/the-record/commit/84eab1ae03af2a2d876fe4817b22504a2a36f039))
+* **scripts:** Add LB reconciliation tooling and sync standalone entry point ([6bd926a](https://github.com/philipreese/the-record/commit/6bd926a7619f87963f9a6a3c1e863abfd1ff93c9))
+* **scripts:** MusicBrainz backfill workflow and ListenBrainz sync tooling ([cfa80ec](https://github.com/philipreese/the-record/commit/cfa80ec2abcc5df00465c9c14f05320e4fbfdfa8))
+
 ## [0.20.1](https://github.com/philipreese/the-record/compare/v0.20.0...v0.20.1) (2026-06-19)
 
 
