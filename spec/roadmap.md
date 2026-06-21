@@ -13,6 +13,9 @@
 
 *Transform artist names into deep-dive portals.*
 
+### Writing / Blog Posts ✓ complete — PR #141
+Markdown-rendered blog posts served from `frontend/src/content/blog/`. Index view at `/blog`, individual post at `/blog/:slug`. Frontmatter (title, slug, date, blurb) parsed client-side; `marked` handles HTML rendering with scoped prose styles. Sidebar "Writing" nav entry (pencil icon) active-highlighted for both route types. Router extended with `blog` and `blog-post` route variants.
+
 ### URL Routing & Deep Links ✓ complete — PR #137
 Hash-based router (`services/router.svelte.ts`) ships all five tabs as addressable `#/path?params` URLs. Overlay states (heatmap day, month → week), year selectors, charts range/search, and Wrapped period are all serialized to query params and survive reload and back-button navigation. Artist route (`#/artist/:name`) is stubbed and ready for Phase 3. A 404 view handles unrecognised paths.
 

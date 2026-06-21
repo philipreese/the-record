@@ -146,7 +146,7 @@
               class:translate-x-1={router.route.type === 'blog' ||
                 router.route.type === 'blog-post'}
             >
-              Writing
+              {appCache.narrative.plain['sidebar.nav.writing'] || 'Writing'}
             </span>
           </button>
         </li>
