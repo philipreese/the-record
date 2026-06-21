@@ -124,6 +124,36 @@
         <li>
           <button
             class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
+            class:text-theme-accent={router.route.type === 'blog' ||
+              router.route.type === 'blog-post'}
+            class:text-theme-secondary={router.route.type !== 'blog' &&
+              router.route.type !== 'blog-post'}
+            onclick={() => {
+              router.navigate('/blog');
+              closeSidebar();
+            }}
+          >
+            <Icon
+              name="pencil"
+              size="w-6 h-6"
+              class="transition-transform duration-300 group-hover:scale-105 {router.route.type ===
+                'blog' || router.route.type === 'blog-post'
+                ? 'text-theme-accent'
+                : 'text-theme-muted'}"
+            />
+            <span
+              class="transition-transform duration-300 group-hover:translate-x-1"
+              class:translate-x-1={router.route.type === 'blog' ||
+                router.route.type === 'blog-post'}
+            >
+              Writing
+            </span>
+          </button>
+        </li>
+
+        <li>
+          <button
+            class="flex items-center gap-3.5 py-1.5 px-2 text-base w-full text-left transition-all duration-(--t-responsive) var(--ease-fluid) relative group cursor-pointer focus:outline-none"
             class:text-theme-accent={router.route.type === 'recent'}
             class:text-theme-secondary={router.route.type !== 'recent'}
             onclick={() => {
