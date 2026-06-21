@@ -2,7 +2,7 @@
 title: I Spent Two Weeks Untangling 55,000 Songs So a Robot Could Finally Tell Me What I Listen To
 slug: the-great-music-data-migration
 date: 2026-06-19
-blurb: How a simple wish for better music charts turned into two weeks of Python scripts, YouTube metadata nightmares, and a very stubborn SQLite bug.
+blurb: How a simple wish for better music charts turned into two weeks of Python scripts, YouTube metadata nightmares, and a SQLite trap I'll never forget.
 ---
 
 There's a specific kind of madness that sets in when you decide your music
@@ -44,9 +44,7 @@ good.
 The listening history did not come with me. There is no export, no recovery path,
 no way to get it back. It's just gone.
 
-I feel almost like I lost a piece of myself — a decade of who I was musically,
-inaccessible because a company decided to shut down a product. I've made my peace
-with it. Mostly.
+I'm still a little mad about it.
 
 ---
 
@@ -88,7 +86,7 @@ wrangling, it felt like I'd cracked a safe.
    |        **        |            |  Music Video)"   |
    |                  |            | "Artist - Topic" |
    +------------------+            |  ...55,000 of    |
-                                   |  these gremlins  |
+                                   |  this hot garbage|
                                    +------------------+
 ```
 
@@ -376,8 +374,7 @@ they were not worth another week of my one finite life. Good enough won.
 
 Out of **20,180** unique tracks, only **888** are still missing both their album
 and their duration — about 4.4%. Counting tracks missing _either_ field, it's 999,
-still just 5%. A 95% complete dataset, built mostly by hand, from a pile of
-YouTube gremlins.
+still just 5%. A 95% complete dataset, built mostly by hand, from YouTube's finest garbage.
 
 And now ListenBrainz is the single, clean, trustworthy home for my entire
 listening life. The charts I wanted at the very beginning — top artists, what I

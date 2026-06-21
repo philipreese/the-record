@@ -201,6 +201,28 @@
       "text": "Periods"
     }
   ],
+  "sidebar.nav.writing": [
+    {
+      "condition": "always_true",
+      "text": "Writing"
+    },
+    {
+      "condition": "always_true",
+      "text": "Notes"
+    },
+    {
+      "condition": "always_true",
+      "text": "Posts"
+    },
+    {
+      "condition": "always_true",
+      "text": "Journal"
+    },
+    {
+      "condition": "always_true",
+      "text": "Field Notes"
+    }
+  ],
   "sidebar.nav.recent": [
     {
       "condition": "always_true",
