@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/philipreese/the-record/compare/v0.20.2...v0.21.0) (2026-06-21)
+
+
+### Features
+
+* **frontend:** Add blog section with rendered markdown posts ([c8ee99c](https://github.com/philipreese/the-record/commit/c8ee99c765fd6fce0bfbdebf60f4196411eaacce))
+
+
+### Documentation
+
+* **spec:** Document Writing section and missing Phase 2 features ([af47c67](https://github.com/philipreese/the-record/commit/af47c67634c35d6967f189c6fbae567172994597))
+
 ## [0.20.2](https://github.com/philipreese/the-record/compare/v0.20.1...v0.20.2) (2026-06-21)
 
 
