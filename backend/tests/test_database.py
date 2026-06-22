@@ -207,7 +207,11 @@ class TestDatabaseQueries(unittest.TestCase):
         # Casing variants of the same track on the same day must be merged.
         # Without func.lower() grouping, "artist a"/"ARTIST A" would be separate
         # buckets and the max would stay at 2 instead of 4.
-        base_ts = self.ts_now - 3600  # same day as ts_now
+        # Anchor to local midday so the extra plays are always the same local
+        # day as ts_now, regardless of what time the suite runs (a relative
+        # offset like ts_now - 3600 crosses midnight when run just after 00:00).
+        midday = self.now.replace(hour=12, minute=0, second=0, microsecond=0)
+        base_ts = int(midday.timestamp())
         extra_plays = [
             ("artist a", "track 1", base_ts - 100, "youtube_music", None, None),
             ("ARTIST A", "Track 1", base_ts - 200, "youtube_music", None, None),
