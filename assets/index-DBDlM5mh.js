@@ -441,11 +441,11 @@ last 888 tracks were the gnarliest, most ambiguous junk in the whole pile, and
 they were not worth another week of my one finite life. Good enough won.
 
 \`\`\`
-  Total plays preserved         55,219
-  Unique tracks identified      20,180
-  Unique artists                 1,825
-  Tracks with full metadata      95.0%   ###################.
-  Tracks missing album AND length  888   .  (4.4%)
+  Total plays preserved            55,219
+  Unique tracks identified         20,180
+  Unique artists                    1,825
+  Tracks with full metadata        19,181   (95.0%)
+  Tracks missing album AND length     888   (4.4%)
 \`\`\`
 
 Out of **20,180** unique tracks, only **888** are still missing both their album
