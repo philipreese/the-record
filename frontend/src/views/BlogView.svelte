@@ -1,5 +1,6 @@
 <script lang="ts">
   import { router } from '../services/router.svelte';
+  import PageHeader from '../components/layout/PageHeader.svelte';
 
   interface PostMeta {
     slug: string;
@@ -41,14 +42,9 @@
     .sort((a, b) => b.date.localeCompare(a.date));
 </script>
 
-<div class="max-w-2xl mx-auto py-8 space-y-12">
-  <header>
-    <h1 class="text-3xl font-serif italic tracking-tight text-theme-text">Writing</h1>
-    <p class="mt-2 text-sm font-mono text-theme-muted">
-      Long-form notes on the project and the data behind it.
-    </p>
-  </header>
+<PageHeader title="writing" subtitle="Long-form notes on the project and the data behind it." />
 
+<div class="max-w-2xl mx-auto py-8 space-y-12">
   <ul class="space-y-8">
     {#each posts as post}
       <li>
