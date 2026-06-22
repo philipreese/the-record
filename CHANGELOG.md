@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1](https://github.com/philipreese/the-record/compare/v0.21.0...v0.21.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **frontend:** Use shared PageHeader on blog pages ([8a9d220](https://github.com/philipreese/the-record/commit/8a9d2201f7988ebd4e4436804f91761e79eb774b))
+
+
+### Tests
+
+* **backend:** Anchor on-repeat peak test to local midday to fix midnight flake ([31cf2a8](https://github.com/philipreese/the-record/commit/31cf2a8152484acc123390bfde456d08196df3d1))
+
 ## [0.21.0](https://github.com/philipreese/the-record/compare/v0.20.2...v0.21.0) (2026-06-21)
 
 
