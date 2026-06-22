@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.4](https://github.com/philipreese/the-record/compare/v0.21.3...v0.21.4) (2026-06-22)
+
+
+### Documentation
+
+* **blog:** Add origin story about the missing YouTube Music API ([cf54b25](https://github.com/philipreese/the-record/commit/cf54b250223053e121dae72c631c32b3598e1b8c))
+* **blog:** Move and tighten the API origin section ([662cc2f](https://github.com/philipreese/the-record/commit/662cc2f4be260b1c6b4088525356db423b4eec3a))
+
+
+### Miscellaneous
+
+* **backend:** Add production DB mirror script ([a5c39d1](https://github.com/philipreese/the-record/commit/a5c39d1c3b99fbc9bcb166e89b4c89c724378fa0))
+
 ## [0.21.3](https://github.com/philipreese/the-record/compare/v0.21.2...v0.21.3) (2026-06-22)
 
 
