@@ -1,6 +1,7 @@
 <script lang="ts">
   import { marked } from 'marked';
   import { router } from '../services/router.svelte';
+  import PageHeader from '../components/layout/PageHeader.svelte';
 
   interface Props {
     slug: string;
@@ -39,14 +40,18 @@
   const date = $derived(entry?.meta.date ?? '');
 </script>
 
-<div class="max-w-2xl mx-auto py-8">
-  <button
-    class="mb-8 text-xs font-mono text-theme-muted hover:text-theme-accent transition-colors duration-200 focus:outline-none cursor-pointer"
-    onclick={() => router.navigate('/blog')}
-  >
-    ← Writing
-  </button>
+<PageHeader title="writing">
+  {#snippet actions(_isShrunk)}
+    <button
+      class="btn-nav-text text-xs uppercase tracking-widest font-mono text-theme-accent hover:text-theme-accent/80 transition-colors"
+      onclick={() => router.navigate('/blog')}
+    >
+      ← all posts
+    </button>
+  {/snippet}
+</PageHeader>
 
+<div class="max-w-2xl mx-auto py-8">
   {#if entry}
     <article>
       <header class="mb-10">
