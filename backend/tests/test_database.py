@@ -7,6 +7,14 @@ from pathlib import Path
 # Adjust path to import backend modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Hermetic tests: neutralize DATABASE_URL before importing project code. Several
+# modules call load_dotenv() at import (app.main, merge_history) and Alembic's
+# env.py does too (via init_db in setUp); a populated local .env would otherwise
+# point the tests — and the schema migrations they run — at PRODUCTION. Empty is
+# treated as SQLite by get_engine()/db_helpers, and load_dotenv's default
+# override=False won't replace an already-set key.
+os.environ["DATABASE_URL"] = ""
+
 import app.repository as database
 import app.db as db
 
@@ -244,6 +252,35 @@ class TestDatabaseQueries(unittest.TestCase):
         play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album B")
         self.assertEqual(play_count, 1)  # 0 Album B + 1 null-album
         self.assertIsNone(duration)
+
+    def test_track_stats_by_recording_mbid(self):
+        # Canonical identity via recording_mbid merges inconsistent artist-credit
+        # variants of the same recording (the #95 bug).
+        mbid = "11111111-1111-1111-1111-111111111111"
+        other_mbid = "22222222-2222-2222-2222-222222222222"
+        self.cursor.executemany(
+            "INSERT INTO listens (artist, title, unix_ts, source, recording_mbid) VALUES (?, ?, ?, ?, ?)",
+            [
+                ("Beartooth & Hardy", "The Better Me", self.ts_now + 1, "listenbrainz_sync", mbid),
+                ("Beartooth", "The Better Me", self.ts_now + 2, "listenbrainz_sync", mbid),
+                # Un-backfilled play (no MBID) matching the string identity
+                ("Beartooth", "The Better Me", self.ts_now + 3, "youtube_music", None),
+                # A different recording that happens to share the title — must NOT count
+                ("Someone Else", "The Better Me", self.ts_now + 4, "listenbrainz_sync", other_mbid),
+            ],
+        )
+        self.conn.commit()
+
+        # By MBID: 2 MBID rows + 1 null-MBID string match = 3
+        count, _ = database.get_track_stats(
+            artist="Beartooth", title="The Better Me", recording_mbid=mbid
+        )
+        self.assertEqual(count, 3)
+
+        # Without MBID: plain (artist, title) match for "Beartooth" only = 2
+        # ("Beartooth & Hardy" excluded by exact string match)
+        count_str, _ = database.get_track_stats(artist="Beartooth", title="The Better Me")
+        self.assertEqual(count_str, 2)
 
     def test_track_stats_batch(self):
         # Batch query matching existing tracks and non-existent track

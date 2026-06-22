@@ -14,6 +14,12 @@ backend_dir = os.path.dirname(tests_dir)
 sys.path.append(backend_dir)
 sys.path.append(os.path.join(backend_dir, "scripts"))
 
+# Hermetic tests: neutralize DATABASE_URL before importing project code, which
+# calls load_dotenv() at import (merge_history here). A populated local .env would
+# otherwise leak the prod DATABASE_URL into the whole test process. Empty = SQLite;
+# load_dotenv's default override=False won't replace an already-set key.
+os.environ["DATABASE_URL"] = ""
+
 from merge_history import (
     strip_watched,
     parse_yt_entry,

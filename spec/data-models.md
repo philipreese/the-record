@@ -15,6 +15,7 @@ interface Listen {
   source: string;       // "listenbrainz" | "listenbrainz_sync" | "youtube" | "google_takeout" | "unknown"
   duration_secs?: number | null;  // populated from LB track_metadata.additional_info.duration_ms; null for pre-LB imports
   album?: string | null;          // populated from LB track_metadata.release_name; null for pre-LB imports (e.g. YT Music)
+  recording_mbid?: string | null; // MusicBrainz Recording ID from LB additional_info.recording_mbid; canonical track identity across artist-credit variants. Null until a Full Reconstruction backfills it
 }
 ```
 

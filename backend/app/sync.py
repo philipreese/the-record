@@ -155,7 +155,8 @@ async def _run_sync(mode: str) -> None:
                             unix_ts=item["unix_ts"],
                             source=item["source"],
                             duration_secs=item.get("duration_secs"),
-                            album=item.get("album")
+                            album=item.get("album"),
+                            recording_mbid=item.get("recording_mbid"),
                         )
                         for item in listens_to_insert
                     ]
@@ -196,6 +197,7 @@ async def _run_sync(mode: str) -> None:
                         if key not in local_keys:
                             additional_info = meta.get("additional_info") or {}
                             duration_secs = _parse_duration(additional_info)
+                            recording_mbid = additional_info.get("recording_mbid")
                             album = meta.get("release_name")
                             if album and isinstance(album, str):
                                 album = album.strip()
@@ -209,7 +211,8 @@ async def _run_sync(mode: str) -> None:
                                 "unix_ts": ts,
                                 "source": "listenbrainz_sync",
                                 "duration_secs": duration_secs,
-                                "album": album
+                                "album": album,
+                                "recording_mbid": recording_mbid,
                             })
                             local_keys.add(key)
 
@@ -255,6 +258,7 @@ async def _run_sync(mode: str) -> None:
                             if key not in local_keys:
                                 additional_info = meta.get("additional_info") or {}
                                 duration_secs = _parse_duration(additional_info)
+                                recording_mbid = additional_info.get("recording_mbid")
                                 album = meta.get("release_name")
                                 if album and isinstance(album, str):
                                     album = album.strip()
@@ -268,7 +272,8 @@ async def _run_sync(mode: str) -> None:
                                     "unix_ts": ts,
                                     "source": "listenbrainz_sync",
                                     "duration_secs": duration_secs,
-                                    "album": album
+                                    "album": album,
+                                    "recording_mbid": recording_mbid,
                                 })
                                 local_keys.add(key)
                                 missing_remaining -= 1
@@ -350,17 +355,17 @@ async def _run_mirror() -> None:
             # 2. Load all local rows: key -> list of (id, duration_secs, album).
             # A list per key handles exact duplicates (same ts/artist/title) correctly —
             # a plain dict silently drops all but one id for duplicate keys.
-            def _load_local() -> dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str]]]]:
+            def _load_local() -> dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str], Optional[str]]]]:
                 session = get_session()
                 try:
                     rows = session.query(
                         Listen.id, Listen.unix_ts, Listen.artist, Listen.title,
-                        Listen.duration_secs, Listen.album,
+                        Listen.duration_secs, Listen.album, Listen.recording_mbid,
                     ).all()
-                    result: dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str]]]] = {}
+                    result: dict[tuple[int, str, str], list[tuple[int, Optional[int], Optional[str], Optional[str]]]] = {}
                     for r in rows:
                         key = (r.unix_ts, r.artist.lower(), r.title.lower())
-                        result.setdefault(key, []).append((r.id, r.duration_secs, r.album))
+                        result.setdefault(key, []).append((r.id, r.duration_secs, r.album, r.recording_mbid))
                     return result
                 finally:
                     session.close()
@@ -372,7 +377,7 @@ async def _run_mirror() -> None:
             # 3. Fetch all LB pages; insert missing rows after each page so the
             # synced_count counter updates live rather than only at the end.
             lb_keys: set[tuple[int, str, str]] = set()
-            lb_metadata: dict[tuple[int, str, str], tuple[Optional[int], Optional[str]]] = {}
+            lb_metadata: dict[tuple[int, str, str], tuple[Optional[int], Optional[str], Optional[str]]] = {}
             seen_new_keys: set[tuple[int, str, str]] = set()
             batch_size = 1000
             current_max_ts: Optional[int] = None
@@ -391,6 +396,7 @@ async def _run_mirror() -> None:
                                 source=item["source"],
                                 duration_secs=item.get("duration_secs"),
                                 album=item.get("album"),
+                                recording_mbid=item.get("recording_mbid"),
                             )
                             for item in chunk
                         ])
@@ -451,6 +457,7 @@ async def _run_mirror() -> None:
 
                     additional_info = meta.get("additional_info") or {}
                     duration_secs = _parse_duration(additional_info)
+                    recording_mbid = additional_info.get("recording_mbid")
                     album = meta.get("release_name")
                     if album and isinstance(album, str):
                         album = album.strip() or None
@@ -459,7 +466,7 @@ async def _run_mirror() -> None:
 
                     key: tuple[int, str, str] = (ts, artist.lower(), title.lower())
                     lb_keys.add(key)
-                    lb_metadata[key] = (duration_secs, album)
+                    lb_metadata[key] = (duration_secs, album, recording_mbid)
 
                     if key not in local_key_set and key not in seen_new_keys:
                         page_new.append({
@@ -469,6 +476,7 @@ async def _run_mirror() -> None:
                             "source": "listenbrainz_sync",
                             "duration_secs": duration_secs,
                             "album": album,
+                            "recording_mbid": recording_mbid,
                         })
                         seen_new_keys.add(key)
 
@@ -483,7 +491,7 @@ async def _run_mirror() -> None:
 
         # 4. Compute surplus IDs and metadata updates now that lb_keys is complete.
         surplus_ids: list[int] = []
-        update_rows: list[tuple[int, Optional[int], Optional[str]]] = []
+        update_rows: list[tuple[int, Optional[int], Optional[str], Optional[str]]] = []
 
         for key, entries in local_key_to_entries.items():
             entries_sorted = sorted(entries, key=lambda e: e[0])  # lowest id = canonical
@@ -492,25 +500,27 @@ async def _run_mirror() -> None:
                 # Keep the canonical row; any extras are exact duplicates → delete.
                 surplus_ids.extend(e[0] for e in entries_sorted[1:])
 
-                # Backfill duration/album on the canonical row if LB has them and we don't.
-                canonical_id, local_dur, local_alb = entries_sorted[0]
-                lb_dur, lb_alb = lb_metadata.get(key, (None, None))
+                # Backfill duration/album/recording_mbid on the canonical row if LB
+                # has them and we don't.
+                canonical_id, local_dur, local_alb, local_mbid = entries_sorted[0]
+                lb_dur, lb_alb, lb_mbid = lb_metadata.get(key, (None, None, None))
                 new_dur = lb_dur if local_dur is None and lb_dur is not None else local_dur
                 new_alb = lb_alb if local_alb is None and lb_alb is not None else local_alb
-                if new_dur != local_dur or new_alb != local_alb:
-                    update_rows.append((canonical_id, new_dur, new_alb))
+                new_mbid = lb_mbid if local_mbid is None and lb_mbid is not None else local_mbid
+                if new_dur != local_dur or new_alb != local_alb or new_mbid != local_mbid:
+                    update_rows.append((canonical_id, new_dur, new_alb, new_mbid))
             else:
                 # Key not on LB → delete all local copies regardless of count.
                 surplus_ids.extend(e[0] for e in entries_sorted)
 
         # 5. Execute metadata updates
         if update_rows:
-            def _update(rows: list[tuple[int, Optional[int], Optional[str]]]) -> None:
+            def _update(rows: list[tuple[int, Optional[int], Optional[str], Optional[str]]]) -> None:
                 session = get_session()
                 try:
-                    for row_id, duration, album in rows:
+                    for row_id, duration, album, recording_mbid in rows:
                         session.query(Listen).filter(Listen.id == row_id).update(
-                            {"duration_secs": duration, "album": album}
+                            {"duration_secs": duration, "album": album, "recording_mbid": recording_mbid}
                         )
                     session.commit()
                 except Exception:

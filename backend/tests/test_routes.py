@@ -9,6 +9,12 @@ tests_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.dirname(tests_dir)
 sys.path.append(backend_dir)
 
+# Hermetic tests: neutralize DATABASE_URL before importing project code, which
+# calls load_dotenv() at import (app.main here). A populated local .env would
+# otherwise point the tests at PRODUCTION. Empty = SQLite; load_dotenv's default
+# override=False won't replace an already-set key.
+os.environ["DATABASE_URL"] = ""
+
 from fastapi import BackgroundTasks
 from fastapi.testclient import TestClient
 
