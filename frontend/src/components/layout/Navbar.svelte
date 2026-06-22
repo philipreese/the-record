@@ -17,6 +17,9 @@
         return 'settings';
       case 'recent':
         return 'journal';
+      case 'blog':
+      case 'blog-post':
+        return 'writing';
       default:
         return '';
     }
