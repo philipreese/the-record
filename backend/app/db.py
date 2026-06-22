@@ -26,11 +26,13 @@ class Listen(Base):
     source = Column(String, nullable=False)
     duration_secs = Column(Integer, nullable=True)
     album = Column(String, nullable=True)
+    recording_mbid = Column(String, nullable=True)
 
     __table_args__ = (
         Index("idx_listens_unix_ts", "unix_ts"),
         Index("idx_listens_artist", "artist"),
         Index("idx_listens_dedup", "artist", "title", "unix_ts"),
+        Index("idx_listens_recording_mbid", "recording_mbid"),
     )
 
 # Internal engine caching to support unit test overrides of DB_PATH

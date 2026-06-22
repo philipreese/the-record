@@ -3,7 +3,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, List, Optional
 import os
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, func, desc, distinct, text, tuple_, or_
+from sqlalchemy import select, func, desc, distinct, text, tuple_, or_, and_
 from app.db import get_engine, Listen
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 
@@ -468,28 +468,52 @@ def get_recent_listens(
             for r in rows
         ]
 
-def get_track_stats(artist: str, title: str, album: Optional[str] = None) -> tuple[int, Optional[int]]:
-    """Get the all-time play count and first available non-null duration for a track."""
+def get_track_stats(
+    artist: str,
+    title: str,
+    album: Optional[str] = None,
+    recording_mbid: Optional[str] = None,
+) -> tuple[int, Optional[int]]:
+    """Get the all-time play count and first available non-null duration for a track.
+
+    When ``recording_mbid`` is supplied, it is used as the canonical track identity:
+    rows carrying that MBID are counted together with any not-yet-backfilled rows
+    that match on (artist, title) but have a null MBID. This merges inconsistent
+    artist-credit variants (e.g. "Beartooth & Hardy" vs "Beartooth"). The ``album``
+    scope is ignored in this case since the MBID already identifies the recording.
+    """
+    string_match = and_(
+        func.lower(Listen.artist) == artist.lower(),
+        func.lower(Listen.title) == title.lower(),
+    )
     with get_engine().connect() as conn:
-        filters = [func.lower(Listen.artist) == artist.lower(), func.lower(Listen.title) == title.lower()]
-        if album is not None:
-            filters.append(or_(Listen.album == album, Listen.album.is_(None)))
-            
+        if recording_mbid:
+            filters = [
+                or_(
+                    Listen.recording_mbid == recording_mbid,
+                    and_(Listen.recording_mbid.is_(None), string_match),
+                )
+            ]
+        else:
+            filters = [string_match]
+            if album is not None:
+                filters.append(or_(Listen.album == album, Listen.album.is_(None)))
+
         play_count = conn.execute(
             select(func.count(Listen.id)).where(*filters)
         ).scalar() or 0
-        
+
         duration = conn.execute(
             select(Listen.duration_secs)
             .where(*filters, Listen.duration_secs.isnot(None))
             .limit(1)
         ).scalar()
-        
+
         return play_count, duration
 
-def get_track_play_count(artist: str, title: str) -> int:
-    """Count all-time plays for a specific artist + title combination."""
-    count, _ = get_track_stats(artist, title)
+def get_track_play_count(artist: str, title: str, recording_mbid: Optional[str] = None) -> int:
+    """Count all-time plays for a specific track, optionally by canonical recording MBID."""
+    count, _ = get_track_stats(artist, title, recording_mbid=recording_mbid)
     return count
 
 def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[dict[str, Any]]:
