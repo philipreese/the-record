@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.2](https://github.com/philipreese/the-record/compare/v0.21.1...v0.21.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **frontend:** Show 'writing' in navbar breadcrumb on blog pages ([b9e1c62](https://github.com/philipreese/the-record/commit/b9e1c625ede7056aaf9fc61f50376a3105679b66))
+
 ## [0.21.1](https://github.com/philipreese/the-record/compare/v0.21.0...v0.21.1) (2026-06-22)
 
 
