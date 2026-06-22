@@ -13,26 +13,6 @@ plays across three music services and more Python scripts than I'd like to admit
 
 ---
 
-## Where this actually started
-
-A coworker made an offhand comment that stuck: one of the genuinely fun things
-about having AI on tap is how easy it makes _playing around_ with the APIs that
-different companies expose. Spin up a script, poke an endpoint, see what comes
-back. So I went looking for something to poke at — and the obvious candidate was
-my own music history. I'd just use the **YouTube Music API** that Google provides.
-
-Except Google doesn't provide one.
-
-Here's the cruel irony: if I lived in the **Spotify** ecosystem, this would be a
-non-story. Spotify hands you your listening history, and wiring it up to both
-**Last.fm** and **ListenBrainz** is close to trivial — people do it in an
-afternoon. But I pay for a **YouTube Music** subscription instead, and that's
-where every one of my plays lives, behind a wall with no official door.
-
-And thus, the journey.
-
----
-
 ## What scrobbling is, and why I cared
 
 Every time you play a song, that's a data point: _this person, listened to this
@@ -65,6 +45,24 @@ The listening history did not come with me. There is no export, no recovery path
 no way to get it back. It's just gone.
 
 I'm still a little mad about it.
+
+---
+
+## Why I thought this would be easy
+
+A coworker said something that stuck: the fun of having AI on tap is how cheap
+it's become to go poking at someone else's data model — find an API, write a
+throwaway script, see what falls out. That got me wondering what my own listening
+history actually looked like.
+
+Surely YouTube Music had an API.
+
+It does not.
+
+This barely exists as a problem for **Spotify** users — Spotify exposes your
+history, the **Last.fm** integrations are mature, **ListenBrainz** imports are
+well-trodden. YouTube Music treats your listening history as Google's data, not
+yours.
 
 ---
 
