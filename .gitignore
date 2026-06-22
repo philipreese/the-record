@@ -223,6 +223,9 @@ MyActivity.json
 backend/merged_history.json
 backend/import_checkpoint.pkl
 
+# Production DB backups (contain full dataset)
+backend/backups/
+
 # pixi environments
 .pixi/*
 !.pixi/config.toml
