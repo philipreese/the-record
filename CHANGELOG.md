@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0](https://github.com/philipreese/the-record/compare/v0.23.0...v0.24.0) (2026-06-23)
+
+
+### Features
+
+* **artist:** Add hover labels to listening history chart; style tweaks ([aa39803](https://github.com/philipreese/the-record/commit/aa39803b6ee6884ffff16ac2f203db8759ff95cd))
+* **artist:** Artist detail view with per-artist stats ([49515a3](https://github.com/philipreese/the-record/commit/49515a3d6b78343d305ccb4172862b5d0b7118c2))
+
 ## [0.23.0](https://github.com/philipreese/the-record/compare/v0.22.2...v0.23.0) (2026-06-23)
 
 
