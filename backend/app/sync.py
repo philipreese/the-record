@@ -49,6 +49,17 @@ def _parse_duration(additional_info: dict) -> Optional[int]:
             pass
     return None
 
+def _extract_recording_mbid(meta: dict) -> Optional[str]:
+    """Resolve a track's MusicBrainz Recording ID from LB track_metadata.
+
+    Prefer LB's own server-side match in mbid_mapping (populated for ~most
+    listens, including import-sourced ones); fall back to a submitter-provided
+    value in additional_info."""
+    mapped = (meta.get("mbid_mapping") or {}).get("recording_mbid")
+    if mapped:
+        return mapped
+    return (meta.get("additional_info") or {}).get("recording_mbid")
+
 async def _run_sync(mode: str) -> None:
     """
     Normal (incremental) sync: two-pass additive approach.
@@ -197,7 +208,7 @@ async def _run_sync(mode: str) -> None:
                         if key not in local_keys:
                             additional_info = meta.get("additional_info") or {}
                             duration_secs = _parse_duration(additional_info)
-                            recording_mbid = additional_info.get("recording_mbid")
+                            recording_mbid = _extract_recording_mbid(meta)
                             album = meta.get("release_name")
                             if album and isinstance(album, str):
                                 album = album.strip()
@@ -258,7 +269,7 @@ async def _run_sync(mode: str) -> None:
                             if key not in local_keys:
                                 additional_info = meta.get("additional_info") or {}
                                 duration_secs = _parse_duration(additional_info)
-                                recording_mbid = additional_info.get("recording_mbid")
+                                recording_mbid = _extract_recording_mbid(meta)
                                 album = meta.get("release_name")
                                 if album and isinstance(album, str):
                                     album = album.strip()
@@ -457,7 +468,7 @@ async def _run_mirror() -> None:
 
                     additional_info = meta.get("additional_info") or {}
                     duration_secs = _parse_duration(additional_info)
-                    recording_mbid = additional_info.get("recording_mbid")
+                    recording_mbid = _extract_recording_mbid(meta)
                     album = meta.get("release_name")
                     if album and isinstance(album, str):
                         album = album.strip() or None

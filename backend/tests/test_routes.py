@@ -219,6 +219,29 @@ class TestTrendRoutes(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
 
 
+class TestExtractRecordingMbid(unittest.TestCase):
+    """recording_mbid resolution prefers LB's mbid_mapping over additional_info (#156)."""
+
+    def test_prefers_mbid_mapping(self) -> None:
+        meta = {
+            "mbid_mapping": {"recording_mbid": "MAPPED"},
+            "additional_info": {"recording_mbid": "SUBMITTED"},
+        }
+        self.assertEqual(sync_worker._extract_recording_mbid(meta), "MAPPED")
+
+    def test_falls_back_to_additional_info(self) -> None:
+        meta = {"additional_info": {"recording_mbid": "SUBMITTED"}}
+        self.assertEqual(sync_worker._extract_recording_mbid(meta), "SUBMITTED")
+
+    def test_empty_mbid_mapping_falls_back(self) -> None:
+        meta = {"mbid_mapping": {}, "additional_info": {"recording_mbid": "SUBMITTED"}}
+        self.assertEqual(sync_worker._extract_recording_mbid(meta), "SUBMITTED")
+
+    def test_none_when_absent(self) -> None:
+        self.assertIsNone(sync_worker._extract_recording_mbid({"additional_info": {}}))
+        self.assertIsNone(sync_worker._extract_recording_mbid({}))
+
+
 if __name__ == "__main__":
     unittest.main()
 
