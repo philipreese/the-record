@@ -770,6 +770,116 @@ def get_top_artist_trends(year: int, limit: int = 5) -> dict[str, Any]:
     return {"year": year, "trends": trends}
 
 
+def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
+    """Get comprehensive listening stats for a specific artist."""
+    artist_filter = func.lower(Listen.artist) == artist.lower()
+    range_filter = get_time_range_filter(time_range)
+
+    filters = [artist_filter]
+    if range_filter is not None:
+        filters.append(range_filter)
+
+    with get_engine().connect() as conn:
+        total_plays = conn.execute(
+            select(func.count(Listen.id)).where(*filters)
+        ).scalar() or 0
+
+        if total_plays == 0:
+            return {
+                "artist": artist,
+                "total_plays": 0,
+                "rank": None,
+                "top_tracks": [],
+                "monthly_trends": [],
+                "peak_day": None,
+                "hourly": {f"{h:02d}": 0 for h in range(24)},
+                "first_listen_ts": None,
+            }
+
+        # All-time rank (ignores time_range)
+        rank_subq = (
+            select(
+                Listen.artist,
+                func.count(Listen.id).label("cnt"),
+                func.rank().over(order_by=desc(func.count(Listen.id))).label("rank"),
+            )
+            .group_by(Listen.artist)
+            .subquery()
+        )
+        rank_row = conn.execute(
+            select(rank_subq.c.rank).where(func.lower(rank_subq.c.artist) == artist.lower())
+        ).first()
+        rank = rank_row.rank if rank_row else None
+
+        # Top 10 tracks in selected time range
+        stmt_tracks = (
+            select(Listen.title, func.count(Listen.id).label("play_count"))
+            .where(*filters)
+            .group_by(Listen.title)
+            .order_by(desc("play_count"))
+            .limit(10)
+        )
+        top_tracks = [
+            {"title": r.title, "play_count": r.play_count}
+            for r in conn.execute(stmt_tracks).all()
+        ]
+
+        # Monthly trends in selected time range
+        month_expr = get_month_expr(Listen.unix_ts)
+        stmt_monthly = (
+            select(month_expr.label("month"), func.count(Listen.id).label("cnt"))
+            .where(*filters)
+            .group_by(month_expr)
+            .order_by("month")
+        )
+        monthly_trends = [
+            {"month": r.month, "count": r.cnt}
+            for r in conn.execute(stmt_monthly).all()
+            if r.month
+        ]
+
+        # Peak day in selected time range
+        date_expr = get_date_expr(Listen.unix_ts)
+        stmt_peak = (
+            select(date_expr.label("day"), func.count(Listen.id).label("cnt"))
+            .where(*filters)
+            .group_by(date_expr)
+            .order_by(desc("cnt"))
+            .limit(1)
+        )
+        day_row = conn.execute(stmt_peak).first()
+        peak_day = {"date": day_row.day, "plays": day_row.cnt} if day_row else None
+
+        # Hourly distribution in selected time range
+        hour_expr = get_hour_expr(Listen.unix_ts)
+        stmt_hourly = (
+            select(hour_expr.label("hour"), func.count(Listen.id).label("cnt"))
+            .where(*filters)
+            .group_by(hour_expr)
+            .order_by("hour")
+        )
+        hourly: dict[str, int] = {f"{h:02d}": 0 for h in range(24)}
+        for r in conn.execute(stmt_hourly).all():
+            if r.hour:
+                hourly[r.hour] = r.cnt
+
+        # First listen timestamp — always all-time
+        first_listen_ts = conn.execute(
+            select(func.min(Listen.unix_ts)).where(func.lower(Listen.artist) == artist.lower())
+        ).scalar()
+
+    return {
+        "artist": artist,
+        "total_plays": total_plays,
+        "rank": rank,
+        "top_tracks": top_tracks,
+        "monthly_trends": monthly_trends,
+        "peak_day": peak_day,
+        "hourly": hourly,
+        "first_listen_ts": first_listen_ts,
+    }
+
+
 def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> dict[str, Any]:
     """Retrieve top tracks of an artist with their monthly breakdowns for a given year."""
     year_str = str(year)

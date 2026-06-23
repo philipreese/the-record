@@ -37,6 +37,7 @@ from app.schemas import (
     TopArtistTrendsResponse,
     ArtistTrendResponse,
     NarrativeResponse,
+    ArtistStatsResponse,
 )
 
 router = APIRouter()
@@ -653,5 +654,17 @@ def read_artist_trend(
     if not clean_artist:
         raise HTTPException(status_code=400, detail="Artist name cannot be empty.")
     return repo.get_artist_track_trends(artist=clean_artist, year=year, limit=limit)
+
+
+@router.get("/artist/stats", response_model=ArtistStatsResponse)
+def read_artist_stats(
+    name: str = Query(..., description="Artist name"),
+    range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range"),
+) -> Any:
+    """Retrieve comprehensive personal listening stats for a specific artist."""
+    clean_name = name.strip()
+    if not clean_name:
+        raise HTTPException(status_code=400, detail="Artist name cannot be empty.")
+    return repo.get_artist_stats(artist=clean_name, time_range=range_param)
 
 

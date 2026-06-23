@@ -465,6 +465,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/artist/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Artist Stats
+         * @description Retrieve comprehensive personal listening stats for a specific artist.
+         */
+        get: operations["read_artist_stats_api_artist_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -484,6 +504,33 @@ export interface components {
             month: string;
             /** Count */
             count: number;
+        };
+        /** ArtistStatsResponse */
+        ArtistStatsResponse: {
+            /** Artist */
+            artist: string;
+            /** Total Plays */
+            total_plays: number;
+            /** Rank */
+            rank?: number | null;
+            /** Top Tracks */
+            top_tracks: components["schemas"]["ArtistTopTrack"][];
+            /** Monthly Trends */
+            monthly_trends: components["schemas"]["ArtistMonthlyTrend"][];
+            peak_day?: components["schemas"]["WrappedPeakDay"] | null;
+            /** Hourly */
+            hourly: {
+                [key: string]: number;
+            };
+            /** First Listen Ts */
+            first_listen_ts?: number | null;
+        };
+        /** ArtistTopTrack */
+        ArtistTopTrack: {
+            /** Title */
+            title: string;
+            /** Play Count */
+            play_count: number;
         };
         /** ArtistTrendResponse */
         ArtistTrendResponse: {
@@ -1440,6 +1487,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArtistTrendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_artist_stats_api_artist_stats_get: {
+        parameters: {
+            query: {
+                /** @description Artist name */
+                name: string;
+                range?: "30" | "90" | "365" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtistStatsResponse"];
                 };
             };
             /** @description Validation Error */
