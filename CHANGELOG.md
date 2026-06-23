@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0](https://github.com/philipreese/the-record/compare/v0.21.4...v0.22.0) (2026-06-23)
+
+
+### Features
+
+* **db:** Store recording_mbid for canonical track identity ([86a676f](https://github.com/philipreese/the-record/commit/86a676f4b77b66361945051f17016a4ceefa7c91))
+
+
+### Documentation
+
+* **blog:** Expand Takeout steps and refine data-cleaning notes ([d5b2889](https://github.com/philipreese/the-record/commit/d5b2889e3beb176375c7874b44fbf76cc049d5da))
+
 ## [0.21.4](https://github.com/philipreese/the-record/compare/v0.21.3...v0.21.4) (2026-06-22)
 
 
