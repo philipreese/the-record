@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 import httpx
 
-from sqlalchemy import func, text, bindparam
+from sqlalchemy import func, text, bindparam, update
 from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens
 from app.utils import clean_artist, clean_title
@@ -527,13 +527,28 @@ async def _run_mirror() -> None:
         # 5. Execute metadata updates
         if update_rows:
             def _update(rows: list[tuple[int, Optional[int], Optional[str], Optional[str]]]) -> None:
+                # ORM bulk update by primary key, chunked and committed per chunk.
+                # A per-row loop here meant ~50k round-trips in one transaction over
+                # the remote Postgres connection, which took 15+ min and risked the
+                # whole thing timing out and rolling back. executemany batches make
+                # it seconds; chunked commits keep locks short and persist progress.
                 session = get_session()
                 try:
-                    for row_id, duration, album, recording_mbid in rows:
-                        session.query(Listen).filter(Listen.id == row_id).update(
-                            {"duration_secs": duration, "album": album, "recording_mbid": recording_mbid}
+                    for i in range(0, len(rows), 5000):
+                        chunk = rows[i:i + 5000]
+                        session.execute(
+                            update(Listen),
+                            [
+                                {
+                                    "id": row_id,
+                                    "duration_secs": duration,
+                                    "album": album,
+                                    "recording_mbid": recording_mbid,
+                                }
+                                for row_id, duration, album, recording_mbid in chunk
+                            ],
                         )
-                    session.commit()
+                        session.commit()
                 except Exception:
                     session.rollback()
                     raise
