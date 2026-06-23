@@ -68,11 +68,9 @@
   let hasMoreArtists = $derived(artistPage < totalArtistPages);
   let hasMoreTracks = $derived(trackPage < totalTrackPages);
 
-  let focusedArtist = $state<string | null>(null);
   let focusedTrack = $state<string | null>(null);
 
   // Track hovered element to trigger progressive focus dimming
-  let hoveredArtist = $state<string | null>(null);
   let hoveredTrack = $state<string | null>(null);
 
   // Capture the music-mood ambient color at mount time so we can restore it when
@@ -206,18 +204,8 @@
   $effect(() => {
     const _range = topRange;
     const _search = debouncedSearch;
-    focusedArtist = null;
     focusedTrack = null;
-    hoveredArtist = null;
     hoveredTrack = null;
-    themeManager.setAmbientColor(preChartsAmbientColor, false);
-  });
-
-  // Clear focus when pagination page changes
-  $effect(() => {
-    const _artistPage = artistPage;
-    focusedArtist = null;
-    hoveredArtist = null;
     themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
 
@@ -228,15 +216,8 @@
     themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
 
-  function toggleArtistFocus(name: string) {
-    if (focusedArtist === name) {
-      focusedArtist = null;
-      themeManager.setAmbientColor(preChartsAmbientColor, false);
-    } else {
-      focusedArtist = name;
-      focusedTrack = null;
-      themeManager.setAmbientColor(stringToColor(name), false);
-    }
+  function navigateToArtist(name: string) {
+    router.navigate(`/artist/${encodeURIComponent(name)}`);
   }
 
   function toggleTrackFocus(title: string, artistName: string) {
@@ -246,7 +227,6 @@
       themeManager.setAmbientColor(preChartsAmbientColor, false);
     } else {
       focusedTrack = key;
-      focusedArtist = null;
       themeManager.setAmbientColor(stringToColor(artistName), false);
     }
   }
@@ -358,20 +338,9 @@
               tabindex="0"
               class="list-row-interactive"
               style="animation-delay: {idx * 40}ms;"
-              class:opacity-35={(hoveredArtist || focusedArtist) &&
-                hoveredArtist !== artist.artist &&
-                focusedArtist !== artist.artist}
-              class:border-theme-accent={focusedArtist === artist.artist}
-              class:bg-theme-accent-soft={focusedArtist === artist.artist}
-              onmouseenter={() => {
-                hoveredArtist = artist.artist;
-              }}
-              onmouseleave={() => {
-                hoveredArtist = null;
-              }}
-              onclick={() => toggleArtistFocus(artist.artist)}
+              onclick={() => navigateToArtist(artist.artist)}
               onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') toggleArtistFocus(artist.artist);
+                if (e.key === 'Enter' || e.key === ' ') navigateToArtist(artist.artist);
               }}
             >
               <div

@@ -137,6 +137,22 @@ class ArtistMonthlyTrend(BaseModel):
     count: int
 
 
+class ArtistTopTrack(BaseModel):
+    title: str
+    play_count: int
+
+
+class ArtistStatsResponse(BaseModel):
+    artist: str
+    total_plays: int
+    rank: Optional[int] = None
+    top_tracks: List[ArtistTopTrack]
+    monthly_trends: List[ArtistMonthlyTrend]
+    peak_day: Optional[WrappedPeakDay] = None
+    hourly: Dict[str, int]
+    first_listen_ts: Optional[int] = None
+
+
 class ArtistTrendSeries(BaseModel):
     artist: str
     play_count: int
