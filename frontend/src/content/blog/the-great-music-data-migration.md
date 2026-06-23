@@ -110,7 +110,7 @@ wrangling, it felt like I'd cracked a safe.
    |        **        |            |  Music Video)"   |
    |                  |            | "Artist - Topic" |
    +------------------+            |  ...55,000 of    |
-                                   |  this hot garbage|
+                                   | this hot garbage |
                                    +------------------+
 ```
 
