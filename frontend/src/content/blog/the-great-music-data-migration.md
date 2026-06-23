@@ -73,11 +73,17 @@ couple of days' worth of Last.fm scrobbles from when I'd briefly tried that rout
 before discovering it couldn't accept historical imports (more on that shortly).
 Getting even that turned out to be its own ordeal.
 
-Google does provide a data export tool called **Takeout**. The process: navigate
-to the export page, check the specific data types you want, submit the request,
-wait anywhere from a few hours to a few days for Google to compile it, receive an
-email, follow a link to a download page, download one or more zip files, extract
-them, and then hunt through the extracted folders for the file you actually wanted.
+Google does provide a data export tool called **Takeout**. The process for getting your data out:
+
+- navigate to the export page
+- check the specific data types you want
+- submit the request
+- wait anywhere from a few hours to a few days for Google to compile it
+- receive an email
+- follow a link to a download page
+- download one or more zip files
+- extract them
+- hunt through the extracted folders for the file you actually wanted.
 
 That part is annoying but manageable. The worse part is that YouTube Music
 Takeout data appears to be silently truncated. Each export goes back to a
@@ -184,8 +190,9 @@ Apparently every song on YouTube arrives carrying six pieces of metadata and thr
 pieces of marketing material.
 
 The result was a dataset that looked complete at first glance while being quietly
-wrong in dozens of ways. Those are the worst data problems, because they survive
-long enough for you to trust them.
+wrong in dozens of ways.
+
+_Those are the worst data problems, because they survive long enough for you to trust them._
 
 ---
 
@@ -346,7 +353,7 @@ the mismatches.
 `Ødyssee` and `ødyssee`. `Ólafur Arnalds` and `ólafur arnalds`. `RÜFÜS DU SOL`
 and `rüfüs du sol`.
 
-SQLite's `LOWER()` function only works on ASCII. It cannot lowercase Ø to ø, or
+SQLite's built-in `NOCASE` collation and `LOWER()` only understand ASCII by default. It cannot lowercase Ø to ø, or
 Ó to ó, or Ü to ü. Every track with a non-ASCII character in the artist name was
 generating a false mismatch. I switched the comparison to Python's `.lower()`,
 which handles Unicode correctly, and the 187 "missing" entries collapsed to 99.
@@ -363,7 +370,9 @@ entries on ListenBrainz with two copies each — the delete queues until the top
 the hour, but the resubmit goes through immediately, so for that window both
 versions existed. I wrote another script to find and remove the extras.
 
-When I submitted the seven missing plays to ListenBrainz, I accidentally
+Finding 445 duplicates after I thought I was done was not a morale-improving moment.
+
+Then, when I submitted the seven missing plays to ListenBrainz, I accidentally
 re-submitted six that were already there, because the script was reading from a
 local cache that predated all the deletes. Six new duplicates, freshly created.
 
