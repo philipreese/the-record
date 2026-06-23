@@ -44,7 +44,7 @@
 
 <PageHeader title="writing" subtitle="Long-form notes on the project and the data behind it." />
 
-<div class="max-w-2xl mx-auto py-8 space-y-12">
+<div class="max-w-4xl mx-auto py-8 space-y-12">
   <ul class="space-y-8">
     {#each posts as post}
       <li>
@@ -56,12 +56,12 @@
             >{post.date}</time
           >
           <h2
-            class="mt-1 text-xl font-serif text-theme-text group-hover:text-theme-accent transition-colors duration-200 leading-snug"
+            class="mt-1 text-2xl font-serif text-theme-text group-hover:text-theme-accent transition-colors duration-200 leading-snug"
           >
             {post.title}
           </h2>
           {#if post.blurb}
-            <p class="mt-2 text-sm text-theme-secondary leading-relaxed">{post.blurb}</p>
+            <p class="mt-2 text-theme-secondary leading-relaxed">{post.blurb}</p>
           {/if}
           <span
             class="mt-3 inline-block text-xs font-mono text-theme-accent opacity-0 group-hover:opacity-100 transition-opacity duration-200"

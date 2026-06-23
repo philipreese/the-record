@@ -10,6 +10,7 @@
       case 'dashboard':
         return 'overview';
       case 'charts':
+      case 'artist':
         return 'charts';
       case 'wrapped':
         return 'reviews';

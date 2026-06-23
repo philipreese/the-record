@@ -56,9 +56,9 @@
     <article>
       <header class="mb-10">
         {#if date}
-          <time class="text-xs font-mono text-theme-muted tracking-widest uppercase">{date}</time>
+          <time class="text-sm font-mono text-theme-muted tracking-widest uppercase">{date}</time>
         {/if}
-        <h1 class="mt-2 text-3xl font-serif italic tracking-tight text-theme-text leading-snug">
+        <h1 class="mt-2 text-4xl font-serif italic tracking-tight text-theme-text leading-snug">
           {title}
         </h1>
       </header>
@@ -76,7 +76,7 @@
 <style>
   .prose-blog :global(h2) {
     font-family: var(--font-serif, Georgia, serif);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-style: italic;
     color: var(--color-text);
     margin-top: 2.5rem;
@@ -86,7 +86,7 @@
 
   .prose-blog :global(h3) {
     font-family: var(--font-serif, Georgia, serif);
-    font-size: 1.15rem;
+    font-size: 1.35rem;
     font-style: italic;
     color: var(--color-text);
     margin-top: 2rem;
@@ -97,7 +97,6 @@
     color: var(--color-secondary);
     line-height: 1.75;
     margin-bottom: 1.25rem;
-    font-size: 0.9375rem;
   }
 
   .prose-blog :global(strong) {

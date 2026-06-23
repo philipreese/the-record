@@ -10,7 +10,6 @@
     type TrackInfo,
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
-  import { themeManager, stringToColor } from '../services/theme.svelte';
   import { router } from '../services/router.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
@@ -69,14 +68,6 @@
   let hasMoreTracks = $derived(trackPage < totalTrackPages);
 
   let focusedTrack = $state<string | null>(null);
-
-  // Track hovered element to trigger progressive focus dimming
-  let hoveredTrack = $state<string | null>(null);
-
-  // Capture the music-mood ambient color at mount time so we can restore it when
-  // clearing chart focus or navigating away. persist=false keeps chart-focus colors
-  // from overwriting the album-art color in localStorage.
-  const preChartsAmbientColor = themeManager.ambientColor;
 
   // Debounce search: write to URL (which drives debouncedSearch $derived) after 300ms
   $effect(() => {
@@ -193,42 +184,20 @@
     });
   });
 
-  $effect(() => {
-    // Restore the pre-Charts ambient color when unmounting (navigating away).
-    return () => {
-      themeManager.setAmbientColor(preChartsAmbientColor, false);
-    };
-  });
-
   // Clear focus when range selection or search changes
   $effect(() => {
     const _range = topRange;
     const _search = debouncedSearch;
     focusedTrack = null;
-    hoveredTrack = null;
-    themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
 
   $effect(() => {
     const _trackPage = trackPage;
     focusedTrack = null;
-    hoveredTrack = null;
-    themeManager.setAmbientColor(preChartsAmbientColor, false);
   });
 
   function navigateToArtist(name: string) {
     router.navigate(`/artist/${encodeURIComponent(name)}`);
-  }
-
-  function toggleTrackFocus(title: string, artistName: string) {
-    const key = `${artistName} - ${title}`;
-    if (focusedTrack === key) {
-      focusedTrack = null;
-      themeManager.setAmbientColor(preChartsAmbientColor, false);
-    } else {
-      focusedTrack = key;
-      themeManager.setAmbientColor(stringToColor(artistName), false);
-    }
   }
 </script>
 
@@ -409,25 +378,11 @@
         <div use:inView={{ once: true }} class="flex flex-col gap-3 reveal-list-container">
           {#each tracks as track, idx}
             <div
-              role="button"
-              tabindex="0"
-              class="list-row-interactive"
+              role="textbox"
+              class="list-row-interactive cursor-default!"
               style="animation-delay: {idx * 40}ms;"
-              class:opacity-35={(hoveredTrack || focusedTrack) &&
-                hoveredTrack !== `${track.artist} - ${track.title}` &&
-                focusedTrack !== `${track.artist} - ${track.title}`}
               class:border-theme-accent={focusedTrack === `${track.artist} - ${track.title}`}
               class:bg-theme-accent-soft={focusedTrack === `${track.artist} - ${track.title}`}
-              onmouseenter={() => {
-                hoveredTrack = `${track.artist} - ${track.title}`;
-              }}
-              onmouseleave={() => {
-                hoveredTrack = null;
-              }}
-              onclick={() => toggleTrackFocus(track.title, track.artist)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') toggleTrackFocus(track.title, track.artist);
-              }}
             >
               <div
                 class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
