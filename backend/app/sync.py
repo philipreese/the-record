@@ -23,6 +23,7 @@ class SyncState:
     mode: str = ""
     batches_fetched: int = 0
     synced_count: int = 0
+    updated_count: int = 0
     deleted_count: int = 0
     lb_total: int = 0
     local_total: int = 0
@@ -556,6 +557,7 @@ async def _run_mirror() -> None:
                     session.close()
 
             await asyncio.to_thread(_update, update_rows)
+            _sync_state.updated_count = len(update_rows)
             logger.info("Mirror: backfilled metadata for %d row(s)", len(update_rows))
 
         # 6. Delete surplus rows in chunks to avoid SQLite's bound-variable limit (~999).

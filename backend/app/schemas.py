@@ -84,6 +84,7 @@ class SyncStatusResponse(BaseModel):
     mode: str
     batches_fetched: int
     synced_count: int
+    updated_count: int
     deleted_count: int
     lb_total: int
     local_total: int

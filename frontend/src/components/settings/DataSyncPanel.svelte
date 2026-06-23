@@ -189,8 +189,8 @@
               </button>
               {#if appCache.lastMirrorResult && !appCache.isSyncing}
                 <p class="text-xs font-mono text-success">
-                  Last mirror: +{appCache.lastMirrorResult.synced} / −{appCache.lastMirrorResult
-                    .deleted}
+                  Last mirror: +{appCache.lastMirrorResult.synced} / ~{appCache.lastMirrorResult
+                    .updated} / −{appCache.lastMirrorResult.deleted}
                 </p>
               {/if}
             </div>
@@ -261,7 +261,7 @@
         {#if !appCache.isSyncing && appCache.syncStatus?.finished && !appCache.syncError}
           <div class="text-xs font-semibold flex items-center gap-1.5 animate-fade-in">
             {#if appCache.syncStatus.mode === 'mirror'}
-              {#if appCache.syncStatus.synced_count > 0 || appCache.syncStatus.deleted_count > 0}
+              {#if appCache.syncStatus.synced_count > 0 || appCache.syncStatus.updated_count > 0 || appCache.syncStatus.deleted_count > 0}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
@@ -277,6 +277,9 @@
                 <span class="text-success">
                   Mirror complete — added {appCache.syncStatus.synced_count} play{appCache
                     .syncStatus.synced_count === 1
+                    ? ''
+                    : 's'}, modified {appCache.syncStatus.updated_count} play{appCache.syncStatus
+                    .updated_count === 1
                     ? ''
                     : 's'}, removed {appCache.syncStatus.deleted_count} play{appCache.syncStatus
                     .deleted_count === 1
