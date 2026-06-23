@@ -76,7 +76,7 @@ class AppCache {
   isSyncing = $state(false);
   syncStatus = $state<SyncStatusInfo | null>(null);
   syncError = $state<string | null>(null);
-  lastMirrorResult = $state<{ synced: number; deleted: number } | null>(null);
+  lastMirrorResult = $state<{ synced: number; updated: number; deleted: number } | null>(null);
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   // True while a cold-start retry is riding out a suspended backend/DB wake.
@@ -318,6 +318,7 @@ class AppCache {
             if (!status.error && status.mode === 'mirror') {
               this.lastMirrorResult = {
                 synced: status.synced_count,
+                updated: status.updated_count,
                 deleted: status.deleted_count,
               };
             }

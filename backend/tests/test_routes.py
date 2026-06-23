@@ -28,6 +28,8 @@ def _reset_sync_state() -> None:
     s.mode = ""
     s.batches_fetched = 0
     s.synced_count = 0
+    s.updated_count = 0
+    s.deleted_count = 0
     s.lb_total = 0
     s.local_total = 0
     s.error = None
@@ -81,6 +83,11 @@ class TestSyncAuth(unittest.TestCase):
     def test_status_endpoint_stays_public(self) -> None:
         res = self.client.get("/api/sync/status")
         self.assertEqual(res.status_code, 200)
+        # added/modified/deleted counts are all exposed
+        body = res.json()
+        self.assertIn("synced_count", body)
+        self.assertIn("updated_count", body)
+        self.assertIn("deleted_count", body)
 
 
 class TestSyncRace(unittest.IsolatedAsyncioTestCase):

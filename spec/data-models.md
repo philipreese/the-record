@@ -116,7 +116,9 @@ interface SyncStatusResponse {
   finished: boolean;
   mode: string;
   batches_fetched: number;
-  synced_count: number;
+  synced_count: number;   // rows inserted
+  updated_count: number;  // rows modified (mirror metadata / recording_mbid backfill)
+  deleted_count: number;  // rows removed (mirror surplus)
   lb_total: number;
   local_total: number;
   error?: string;

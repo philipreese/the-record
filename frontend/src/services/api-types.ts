@@ -633,6 +633,8 @@ export interface components {
             batches_fetched: number;
             /** Synced Count */
             synced_count: number;
+            /** Updated Count */
+            updated_count: number;
             /** Deleted Count */
             deleted_count: number;
             /** Lb Total */

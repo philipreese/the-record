@@ -548,6 +548,7 @@ async def start_sync(
         s.mode = mode
         s.batches_fetched = 0
         s.synced_count = 0
+        s.updated_count = 0
         s.deleted_count = 0
         s.lb_total = 0
         s.local_total = 0
@@ -570,6 +571,7 @@ def get_sync_status() -> Any:
         "mode": s.mode,
         "batches_fetched": s.batches_fetched,
         "synced_count": s.synced_count,
+        "updated_count": s.updated_count,
         "deleted_count": s.deleted_count,
         "lb_total": s.lb_total,
         "local_total": s.local_total,
