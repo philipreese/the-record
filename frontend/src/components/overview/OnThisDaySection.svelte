@@ -93,7 +93,6 @@
   {#if anniversaries.length > 0}
     <div class="reveal-content space-y-2 mb-6">
       {#each anniversaries as ann (ann.artist)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="rounded border border-theme-accent/30 bg-theme-accent-soft/20 px-4 py-3 flex items-center gap-4 hover:border-theme-accent/60 transition-colors cursor-pointer group"
           onclick={() => router.navigate(`/artist/${encodeURIComponent(ann.artist)}`)}
