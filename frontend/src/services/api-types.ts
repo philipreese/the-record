@@ -489,6 +489,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ArtistAnniversary */
+        ArtistAnniversary: {
+            /** Artist */
+            artist: string;
+            /** First Listen Ts */
+            first_listen_ts: number;
+            /** Years */
+            years: number;
+            /** Total Plays */
+            total_plays: number;
+        };
         /** ArtistInfo */
         ArtistInfo: {
             /** Artist */
@@ -524,6 +535,8 @@ export interface components {
             };
             /** First Listen Ts */
             first_listen_ts?: number | null;
+            /** Plays Since Discovery */
+            plays_since_discovery?: number | null;
         };
         /** ArtistTopTrack */
         ArtistTopTrack: {
@@ -618,6 +631,13 @@ export interface components {
             year: number;
             /** Listens */
             listens: components["schemas"]["ListenEntry"][];
+        };
+        /** OnThisDayResponse */
+        OnThisDayResponse: {
+            /** Groups */
+            groups: components["schemas"]["OnThisDayGroup"][];
+            /** Anniversaries */
+            anniversaries: components["schemas"]["ArtistAnniversary"][];
         };
         /** PlayingNowResponse */
         PlayingNowResponse: {
@@ -1329,7 +1349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OnThisDayGroup"][];
+                    "application/json": components["schemas"]["OnThisDayResponse"];
                 };
             };
         };

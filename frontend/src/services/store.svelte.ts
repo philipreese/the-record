@@ -21,7 +21,7 @@ import {
   type PlayingNowInfo,
   type TrackStatsInfo,
 } from './api';
-import type { OnThisDayGroup } from './api';
+import type { OnThisDayGroup, ArtistAnniversary } from './api';
 import { getDominantColor } from '../utils/dominantColor';
 import { themeManager } from './theme.svelte';
 
@@ -56,6 +56,7 @@ class AppCache {
 
   // On This Day Cache
   onThisDay = $state<OnThisDayGroup[]>([]);
+  onThisDayAnniversaries = $state<ArtistAnniversary[]>([]);
 
   // Recent Listens Cache
   recentListens = $state<ListenEntry[]>([]);
@@ -101,6 +102,7 @@ class AppCache {
     this.charts = {};
     this.wrapped = {};
     this.onThisDay = [];
+    this.onThisDayAnniversaries = [];
     this.recentListens = [];
     this.recentScrollOffset = 0;
     this.recentExhausted = false;

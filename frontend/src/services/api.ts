@@ -34,6 +34,8 @@ export type WeeklyBreakdownItem = components['schemas']['WeeklyBreakdownItem'];
 export type TopArtistTrendsResponse = components['schemas']['TopArtistTrendsResponse'];
 export type ArtistTrendResponse = components['schemas']['ArtistTrendResponse'];
 export type ArtistStatsInfo = components['schemas']['ArtistStatsResponse'];
+export type ArtistAnniversary = components['schemas']['ArtistAnniversary'];
+export type OnThisDayResponse = components['schemas']['OnThisDayResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -275,7 +277,7 @@ export async function fetchTrackStatsBatch(
   return data;
 }
 
-export async function fetchOnThisDay(): Promise<OnThisDayGroup[]> {
+export async function fetchOnThisDay(): Promise<OnThisDayResponse> {
   const { data, error } = await client.GET('/api/on-this-day');
   if (error) throw new Error('Failed to fetch on-this-day data');
   return data;

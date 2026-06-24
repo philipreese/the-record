@@ -38,6 +38,8 @@ from app.schemas import (
     ArtistTrendResponse,
     NarrativeResponse,
     ArtistStatsResponse,
+    ArtistAnniversary,
+    OnThisDayResponse,
 )
 
 router = APIRouter()
@@ -579,7 +581,7 @@ def get_sync_status() -> Any:
         "error": s.error,
     }
 
-@router.get("/on-this-day", response_model=List[OnThisDayGroup])
+@router.get("/on-this-day", response_model=OnThisDayResponse)
 def read_on_this_day() -> Any:
     """Retrieve listens for today's calendar date grouped by prior year."""
     from datetime import datetime
