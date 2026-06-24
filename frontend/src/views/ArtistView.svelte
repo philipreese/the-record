@@ -56,7 +56,9 @@
     });
   }
 
-  let logMax = $derived(stats ? Math.log(Math.max(...stats.monthly_trends.map((t) => t.count), 1) + 1) : 1);
+  let logMax = $derived(
+    stats ? Math.log(Math.max(...stats.monthly_trends.map((t) => t.count), 1) + 1) : 1,
+  );
 
   let hoveredBar = $state<{ month: string; count: number } | null>(null);
 
@@ -102,7 +104,9 @@
 
   let sortedTracks = $derived(stats ? sortTracks(stats.top_tracks, trackSort) : []);
   let totalTrackPages = $derived(Math.ceil(sortedTracks.length / PAGE_SIZE));
-  let pagedTracks = $derived(sortedTracks.slice((trackPage - 1) * PAGE_SIZE, trackPage * PAGE_SIZE));
+  let pagedTracks = $derived(
+    sortedTracks.slice((trackPage - 1) * PAGE_SIZE, trackPage * PAGE_SIZE),
+  );
 
   // Reset to page 1 whenever sort or artist data changes
   $effect(() => {
@@ -243,7 +247,12 @@
               >
                 <div
                   class="w-full rounded-sm bg-theme-accent transition-all duration-150"
-                  style="height: {Math.max(logPct, trend.count > 0 ? 2 : 0)}%; opacity: {opacity}; transform: scaleY({isHovered ? 1.15 : 1}); transform-origin: bottom;"
+                  style="height: {Math.max(
+                    logPct,
+                    trend.count > 0 ? 2 : 0,
+                  )}%; opacity: {opacity}; transform: scaleY({isHovered
+                    ? 1.15
+                    : 1}); transform-origin: bottom;"
                 ></div>
               </div>
             {/each}
@@ -311,11 +320,7 @@
         <div
           class="flex items-center justify-between pt-4 border-t border-theme-border-soft font-mono text-xs"
         >
-          <button
-            class="btn-nav-text"
-            disabled={trackPage === 1}
-            onclick={() => trackPage--}
-          >
+          <button class="btn-nav-text" disabled={trackPage === 1} onclick={() => trackPage--}>
             ← Prev
           </button>
           <span class="text-xs uppercase tracking-widest text-theme-muted/50">
