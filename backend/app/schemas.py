@@ -142,6 +142,8 @@ class ArtistTopTrack(BaseModel):
     play_count: int
     first_listen_ts: Optional[int] = None
     last_listen_ts: Optional[int] = None
+    album: Optional[str] = None
+    duration_secs: Optional[int] = None
 
 
 class ArtistStatsResponse(BaseModel):

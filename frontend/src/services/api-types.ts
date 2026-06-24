@@ -548,6 +548,10 @@ export interface components {
             first_listen_ts?: number | null;
             /** Last Listen Ts */
             last_listen_ts?: number | null;
+            /** Album */
+            album?: string | null;
+            /** Duration Secs */
+            duration_secs?: number | null;
         };
         /** ArtistTrendResponse */
         ArtistTrendResponse: {

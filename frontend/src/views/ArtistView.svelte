@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { fetchArtistStats, type ArtistStatsInfo, type TimeRange } from '../services/api';
   import { router } from '../services/router.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
@@ -66,6 +67,8 @@
 
   type TrackSort = 'plays' | 'name' | 'oldest' | 'recent';
   let trackSort = $state<TrackSort>('plays');
+  let trackPage = $state(1);
+  const PAGE_SIZE = 10;
 
   const sortOptions: [TrackSort, string][] = [
     ['plays', 'Plays'],
@@ -73,6 +76,12 @@
     ['oldest', 'Oldest'],
     ['recent', 'Recent'],
   ];
+
+  function formatDuration(secs: number): string {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
 
   function sortTracks(
     tracks: ArtistStatsInfo['top_tracks'],
@@ -92,6 +101,17 @@
   }
 
   let sortedTracks = $derived(stats ? sortTracks(stats.top_tracks, trackSort) : []);
+  let totalTrackPages = $derived(Math.ceil(sortedTracks.length / PAGE_SIZE));
+  let pagedTracks = $derived(sortedTracks.slice((trackPage - 1) * PAGE_SIZE, trackPage * PAGE_SIZE));
+
+  // Reset to page 1 whenever sort or artist data changes
+  $effect(() => {
+    void trackSort;
+    void stats;
+    untrack(() => {
+      trackPage = 1;
+    });
+  });
 </script>
 
 <PageHeader title={artistName}>
@@ -249,23 +269,26 @@
         </div>
       </div>
       <div class="flex flex-col gap-3">
-        {#each sortedTracks as track, idx}
+        {#each pagedTracks as track, idx}
+          {@const globalIdx = (trackPage - 1) * PAGE_SIZE + idx + 1}
+          {@const meta = [
+            track.first_listen_ts ? `first ${formatTs(track.first_listen_ts)}` : null,
+            track.last_listen_ts ? `last ${formatTs(track.last_listen_ts)}` : null,
+            track.album ?? null,
+            track.duration_secs ? formatDuration(track.duration_secs) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           <div class="list-row-interactive pointer-events-none select-text">
             <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
-              {String(idx + 1).padStart(2, '0')}
+              {String(globalIdx).padStart(2, '0')}
             </div>
             <div class="grow min-w-0">
               <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
                 {track.title}
               </div>
-              {#if trackSort === 'oldest' && track.first_listen_ts}
-                <div class="text-xs font-mono text-theme-muted/60 mt-0.5">
-                  first heard {formatTs(track.first_listen_ts)}
-                </div>
-              {:else if trackSort === 'recent' && track.last_listen_ts}
-                <div class="text-xs font-mono text-theme-muted/60 mt-0.5">
-                  last heard {formatTs(track.last_listen_ts)}
-                </div>
+              {#if meta}
+                <div class="text-xs font-mono text-theme-muted/60 mt-0.5 truncate">{meta}</div>
               {/if}
             </div>
             <div class="text-right shrink-0">
@@ -279,6 +302,30 @@
           </div>
         {/each}
       </div>
+
+      {#if totalTrackPages > 1}
+        <div
+          class="flex items-center justify-between pt-4 border-t border-theme-border-soft font-mono text-xs"
+        >
+          <button
+            class="btn-nav-text"
+            disabled={trackPage === 1}
+            onclick={() => trackPage--}
+          >
+            ← Prev
+          </button>
+          <span class="text-xs uppercase tracking-widest text-theme-muted/50">
+            Page {trackPage} of {totalTrackPages}
+          </span>
+          <button
+            class="btn-nav-text"
+            disabled={trackPage === totalTrackPages}
+            onclick={() => trackPage++}
+          >
+            Next →
+          </button>
+        </div>
+      {/if}
     </div>
 
     <!-- Hourly Heat Clock -->
