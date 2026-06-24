@@ -42,14 +42,14 @@ store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the respons
 router.svelte.ts   — Hash-based router (no library); parses #/path?params, exposes typed route + URLSearchParams,
                      navigate() with push/replace policy. URL is the single source of truth for all serializable view state.
     ↓
-Views              — OverviewView, ChartsView, WrappedView, SettingsView, RecentView, NotFoundView
+Views              — one per route (Overview, Charts, Wrapped, Recent, Artist, Blog index/post, Settings, NotFound)
     ↓
-Components
-  layout/          — PageHeader, Navbar, Sidebar, PeriodSelector, LoadingSpinner, ScrollNavButton, SelectDropdown, NarrativeText
-  dashboard/       — Heatmap, HourlyHeatClock, MonthlyBarChart, StreakTracker, StatsGrid,
-                     AnimatedCounter, NowPlaying, WrappedCard, ListenRow, StreamGraph
-  overview/        — HeatmapSection, DiurnalSection, TelemetrySection, RecentScrobblesSection
-  settings/        — ThemeSelector, DataSyncPanel
+Components          — grouped by role (see the file tree for the current set):
+  (root)           — standalone visualizations + modal overlays (heatmaps, hour clock, punchcard, bar/stream charts, day & week detail overlays)
+  layout/          — app chrome + reusable primitives (header, navbar, sidebar, footer, dropdowns, date picker, spinner, NarrativeText — XSS-safe accent rendering)
+  dashboard/       — small composable display pieces (stats grid, animated counter, wrapped card, listen row)
+  overview/        — section blocks assembled onto the Overview page (*Section.svelte)
+  settings/        — settings panels (theme selector, data-sync panel)
 ```
 
 **Source of truth:** [frontend/src/](../frontend/src/)
@@ -65,12 +65,17 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/top-tracks` | `range` (30/90/365/all), `limit` (default 15), `search` (optional), `page` (default 1), `page_size` (optional) | `TopTracksResponse` |
 | GET | `/api/heatmap` | `year` (optional int) | `Record<string, int>` |
 | GET | `/api/trends/hourly` | — | `Record<string, int>` |
+| GET | `/api/trends/punchcard` | — | `Record<string, int>` (day-of-week × hour) |
 | GET | `/api/trends/monthly` | — | `MonthlyTrendInfo[]` |
+| GET | `/api/trends/monthly/{year}/{month}/weekly` | — | `WeeklyBreakdownItem[]` |
 | GET | `/api/trends/streak` | — | `StreakStatsResponse` |
 | GET | `/api/wrapped` | `year` (required), `quarter` (Q1–Q4, optional), `month` (M1–M12, optional) | `WrappedDataResponse` |
 | POST | `/api/sync` | `mode` (normal/mirror, default normal); requires `X-Sync-Token` header | `SyncStartResponse` |
 | GET | `/api/sync/status` | — | `SyncStatusResponse` |
 | GET | `/api/recent` | `limit` (default 50, max 100), `before_ts`, `before_id` (cursor pagination), `anchor_date` (optional YYYY-MM-DD) | `ListenEntry[]` |
+| GET | `/api/day/{date_str}` | path `date_str` (YYYY-MM-DD) | `ListenEntry[]` (chronological) |
+| GET | `/api/on-this-day` | — | `OnThisDayResponse` (prior-year groups + discovery anniversaries) |
+| GET | `/api/export` | `format` (csv/json, default csv), `range` (default all) | streaming file download |
 | GET | `/api/track-stats` | `artist` (required), `title` (required), `album` (optional — includes null-album rows when provided) | `TrackStatsResponse` |
 | POST | `/api/track-stats/batch` | Request body: `TrackBatchRequestItem[]` | `TrackBatchResponseItem[]` |
 | GET | `/api/narrative` | `seed` (optional string — defaults to UTC date for daily stability) | `NarrativeResponse` |
@@ -78,6 +83,7 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/last-played` | — | `PlayingNowResponse` (DB-only, no LB call — fast cold-start pre-population) |
 | GET | `/api/top-artist-trends` | `year` (required int), `limit` (default 5) | `TopArtistTrendsResponse` |
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
+| GET | `/api/artist/stats` | `name` (required), `range` (30/90/365/all, default all) | `ArtistStatsResponse` |
 
 ### Sync authentication
 
