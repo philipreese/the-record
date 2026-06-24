@@ -140,6 +140,8 @@ class ArtistMonthlyTrend(BaseModel):
 class ArtistTopTrack(BaseModel):
     title: str
     play_count: int
+    first_listen_ts: Optional[int] = None
+    last_listen_ts: Optional[int] = None
 
 
 class ArtistStatsResponse(BaseModel):

@@ -544,6 +544,10 @@ export interface components {
             title: string;
             /** Play Count */
             play_count: number;
+            /** First Listen Ts */
+            first_listen_ts?: number | null;
+            /** Last Listen Ts */
+            last_listen_ts?: number | null;
         };
         /** ArtistTrendResponse */
         ArtistTrendResponse: {

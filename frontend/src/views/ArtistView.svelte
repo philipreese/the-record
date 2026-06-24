@@ -55,9 +55,7 @@
     });
   }
 
-  let maxMonthlyCount = $derived(
-    stats ? Math.max(...stats.monthly_trends.map((t) => t.count), 1) : 1,
-  );
+  let logMax = $derived(stats ? Math.log(Math.max(...stats.monthly_trends.map((t) => t.count), 1) + 1) : 1);
 
   let hoveredBar = $state<{ month: string; count: number } | null>(null);
 
@@ -65,6 +63,35 @@
     const [y, m] = ym.split('-').map(Number);
     return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
   }
+
+  type TrackSort = 'plays' | 'name' | 'oldest' | 'recent';
+  let trackSort = $state<TrackSort>('plays');
+
+  const sortOptions: [TrackSort, string][] = [
+    ['plays', 'Plays'],
+    ['name', 'Name'],
+    ['oldest', 'Oldest'],
+    ['recent', 'Recent'],
+  ];
+
+  function sortTracks(
+    tracks: ArtistStatsInfo['top_tracks'],
+    sort: TrackSort,
+  ): ArtistStatsInfo['top_tracks'] {
+    const copy = [...tracks];
+    switch (sort) {
+      case 'plays':
+        return copy.sort((a, b) => b.play_count - a.play_count);
+      case 'name':
+        return copy.sort((a, b) => a.title.localeCompare(b.title));
+      case 'oldest':
+        return copy.sort((a, b) => (a.first_listen_ts ?? 0) - (b.first_listen_ts ?? 0));
+      case 'recent':
+        return copy.sort((a, b) => (b.last_listen_ts ?? 0) - (a.last_listen_ts ?? 0));
+    }
+  }
+
+  let sortedTracks = $derived(stats ? sortTracks(stats.top_tracks, trackSort) : []);
 </script>
 
 <PageHeader title={artistName}>
@@ -180,12 +207,12 @@
           </div>
           <div class="flex items-end gap-0.5 h-28 w-full">
             {#each stats.monthly_trends as trend}
-              {@const pct = (trend.count / maxMonthlyCount) * 100}
+              {@const logPct = (Math.log(trend.count + 1) / logMax) * 100}
               {@const isHovered = hoveredBar?.month === trend.month}
               {@const opacity = isHovered
                 ? 1
                 : trend.count > 0
-                  ? 0.18 + (trend.count / maxMonthlyCount) * 0.82
+                  ? 0.18 + (Math.log(trend.count + 1) / logMax) * 0.82
                   : 0.06}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -196,12 +223,7 @@
               >
                 <div
                   class="w-full rounded-sm bg-theme-accent transition-all duration-150"
-                  style="height: {Math.max(
-                    pct,
-                    trend.count > 0 ? 2 : 0,
-                  )}%; opacity: {opacity}; transform: scaleY({isHovered
-                    ? 1.5
-                    : 1}); transform-origin: bottom;"
+                  style="height: {Math.max(logPct, trend.count > 0 ? 2 : 0)}%; opacity: {opacity}; transform: scaleY({isHovered ? 1.15 : 1}); transform-origin: bottom;"
                 ></div>
               </div>
             {/each}
@@ -210,11 +232,24 @@
       </div>
     {/if}
 
-    <!-- Top Tracks -->
+    <!-- Tracks -->
     <div class="flex flex-col gap-4">
-      <h2 class="editorial-text-h2 pb-2 border-b border-theme-border-soft">Top Tracks</h2>
+      <div class="flex items-center justify-between pb-2 border-b border-theme-border-soft">
+        <h2 class="editorial-text-h2">Tracks</h2>
+        <div class="nav-selector gap-3 md:gap-6">
+          {#each sortOptions as [val, label]}
+            <button
+              class="nav-selector-item text-xs py-0.5"
+              class:active={trackSort === val}
+              onclick={() => (trackSort = val)}
+            >
+              {label}
+            </button>
+          {/each}
+        </div>
+      </div>
       <div class="flex flex-col gap-3">
-        {#each stats.top_tracks as track, idx}
+        {#each sortedTracks as track, idx}
           <div class="list-row-interactive pointer-events-none select-text">
             <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
               {String(idx + 1).padStart(2, '0')}
@@ -223,6 +258,15 @@
               <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
                 {track.title}
               </div>
+              {#if trackSort === 'oldest' && track.first_listen_ts}
+                <div class="text-xs font-mono text-theme-muted/60 mt-0.5">
+                  first heard {formatTs(track.first_listen_ts)}
+                </div>
+              {:else if trackSort === 'recent' && track.last_listen_ts}
+                <div class="text-xs font-mono text-theme-muted/60 mt-0.5">
+                  last heard {formatTs(track.last_listen_ts)}
+                </div>
+              {/if}
             </div>
             <div class="text-right shrink-0">
               <div class="text-lg font-mono font-light text-theme-text">
