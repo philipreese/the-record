@@ -272,8 +272,12 @@
         {#each pagedTracks as track, idx}
           {@const globalIdx = (trackPage - 1) * PAGE_SIZE + idx + 1}
           {@const meta = [
-            track.first_listen_ts ? `first ${formatTs(track.first_listen_ts)}` : null,
-            track.last_listen_ts ? `last ${formatTs(track.last_listen_ts)}` : null,
+            trackSort === 'oldest' && track.first_listen_ts
+              ? `first ${formatTs(track.first_listen_ts)}`
+              : null,
+            trackSort === 'recent' && track.last_listen_ts
+              ? `last ${formatTs(track.last_listen_ts)}`
+              : null,
             track.album ?? null,
             track.duration_secs ? formatDuration(track.duration_secs) : null,
           ]
