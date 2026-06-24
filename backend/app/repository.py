@@ -853,16 +853,25 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
         ).first()
         rank = rank_row.rank if rank_row else None
 
-        # Top 10 tracks in selected time range
+        # All tracks in selected time range with first/last listen timestamps
         stmt_tracks = (
-            select(Listen.title, func.count(Listen.id).label("play_count"))
+            select(
+                Listen.title,
+                func.count(Listen.id).label("play_count"),
+                func.min(Listen.unix_ts).label("first_ts"),
+                func.max(Listen.unix_ts).label("last_ts"),
+            )
             .where(*filters)
             .group_by(Listen.title)
             .order_by(desc("play_count"))
-            .limit(10)
         )
         top_tracks = [
-            {"title": r.title, "play_count": r.play_count}
+            {
+                "title": r.title,
+                "play_count": r.play_count,
+                "first_listen_ts": r.first_ts,
+                "last_listen_ts": r.last_ts,
+            }
             for r in conn.execute(stmt_tracks).all()
         ]
 
