@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0](https://github.com/philipreese/the-record/compare/v0.24.0...v0.25.0) (2026-06-24)
+
+
+### Features
+
+* **artist:** Full track list with sort controls and log-scale chart ([b738a64](https://github.com/philipreese/the-record/commit/b738a64134a25758bd955d72b8479cc621cfb7ba))
+* **artist:** Paginated track list with album, duration, and full timestamps ([c95e9dd](https://github.com/philipreese/the-record/commit/c95e9dd1d31e7e9bc06533011dedc8fa2ad4d7a8))
+* **discovery:** Discovery timeline and artist anniversaries ([ad77154](https://github.com/philipreese/the-record/commit/ad77154504a2c9b216a6acf4726367d408ab3577))
+
+
+### Bug Fixes
+
+* **artist:** Show dates in track secondary line only for relevant sort modes ([75ea98c](https://github.com/philipreese/the-record/commit/75ea98c5721d9b0fd4100e0e5279b4e5f9ace193))
+* **lint:** LF line endings on ArtistView for CI prettier check ([d4cbd04](https://github.com/philipreese/the-record/commit/d4cbd048acafa9946150299fa6051b7e4ec42949))
+* **lint:** Remove orphaned svelte-ignore comment in OnThisDaySection ([6ffb9c1](https://github.com/philipreese/the-record/commit/6ffb9c1b7f33c4906a6a386977a92e07c644cfe7))
+
 ## [0.24.0](https://github.com/philipreese/the-record/compare/v0.23.0...v0.24.0) (2026-06-23)
 
 
