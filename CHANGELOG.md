@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.3](https://github.com/philipreese/the-record/compare/v0.25.2...v0.25.3) (2026-06-24)
+
+
+### Tests
+
+* **sync:** Cover LB retry/backoff and 429 handling with respx mocks ([7db8826](https://github.com/philipreese/the-record/commit/7db8826d945e8e83325a8662b90d866d4b72d3b4))
+
+
+### Miscellaneous
+
+* **deps:** Regenerate pixi.lock after adding respx ([2d17d2e](https://github.com/philipreese/the-record/commit/2d17d2e40b49f60bf317da65f8ad2d61d5a9e12f))
+
 ## [0.25.2](https://github.com/philipreese/the-record/compare/v0.25.1...v0.25.2) (2026-06-24)
 
 
