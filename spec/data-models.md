@@ -21,109 +21,29 @@ interface Listen {
 
 **Source of truth:** [backend/app/db.py](../backend/app/db.py)
 
-## Pydantic response schemas
+## Pydantic request/response schemas
+
+Every endpoint's request and response model is defined in one place — read it there rather than
+duplicating each field here.
 
 **Source of truth:** [backend/app/schemas.py](../backend/app/schemas.py)
 
-```typescript
-interface StatsSummaryResponse {
-  total_listens: number;
-  unique_artists: number;
-  unique_tracks: number;
-  days_active: number;
-  avg_per_day: number;
-  top_source: string;
-  db_type?: string;     // "sqlite" or "postgresql"
-  first_year?: number;
-}
+The current surface, grouped by area:
 
-interface ArtistInfo {
-  artist: string;
-  play_count: number;
-}
+- **Summary & charts** — `StatsSummaryResponse`; `TopArtistsResponse` / `TopTracksResponse` (each wraps `items` + `total_count` for pagination) with `ArtistInfo` / `TrackInfo`; `MonthlyTrendInfo`; `WeeklyBreakdownItem`; `StreakStatsResponse`
+- **Listens** — `ListenEntry` (the API shape of a `Listen`); `TrackStatsResponse`; `TrackBatchRequestItem` / `TrackBatchResponseItem`
+- **Wrapped** — `WrappedDataResponse` and its parts (`WrappedArtist`, `WrappedTrack`, `WrappedPeakDay`, `OnRepeatPeak`)
+- **Artist Explorer** — `ArtistStatsResponse` (totals, rank, `top_tracks`, `monthly_trends`, `peak_day`, `hourly`, discovery); `TopArtistTrendsResponse` / `ArtistTrendResponse` with `ArtistTrendSeries` / `TrackTrendSeries`
+- **On This Day** — `OnThisDayResponse` (prior-year `groups` + `anniversaries`), `OnThisDayGroup`, `ArtistAnniversary`
+- **Now playing** — `PlayingNowResponse` (live status with a `last_played` DB fallback), `LastPlayedEntry`
+- **Sync** — `SyncStartResponse`, `SyncStatusResponse`
+- **Narrative** — `NarrativeResponse`
 
-interface TrackInfo {
-  artist: string;
-  title: string;
-  play_count: number;
-}
+Invariants worth knowing:
 
-interface MonthlyTrendInfo {
-  month: string;    // "YYYY-MM"
-  count: number;
-}
-
-interface StreakStatsResponse {
-  current_streak: number;   // consecutive days up to today
-  longest_streak: number;
-}
-
-interface WrappedArtist {
-  name: string;
-  plays: number;
-}
-
-interface WrappedTrack {
-  artist: string;
-  title: string;
-  plays: number;
-}
-
-interface WrappedPeakDay {
-  date: string;   // "YYYY-MM-DD"
-  plays: number;
-}
-
-interface WrappedDataResponse {
-  total_plays: number;
-  top_artist?: WrappedArtist;
-  top_track?: WrappedTrack;
-  peak_day?: WrappedPeakDay;
-  minutes_listened: number;
-}
-
-interface TrackStatsResponse {
-  play_count: number;
-  duration_secs?: number | null;   // null for rows where LB did not provide duration
-}
-
-interface TrackBatchRequestItem {
-  artist: string;
-  title: string;
-}
-
-interface TrackBatchResponseItem {
-  artist: string;
-  title: string;
-  play_count: number;
-  duration_secs?: number | null;
-}
-
-
-interface NarrativeResponse {
-  plain: Record<string, string>;  // keys whose text has no accent markers
-  rich: Record<string, string>;   // keys whose text contains [[...]] accent markers — use NarrativeText
-}
-
-interface SyncStartResponse {
-  status: string;       // "started" | "already_running"
-  mode?: string;
-  message?: string;
-}
-
-interface SyncStatusResponse {
-  running: boolean;
-  finished: boolean;
-  mode: string;
-  batches_fetched: number;
-  synced_count: number;   // rows inserted
-  updated_count: number;  // rows modified (mirror metadata / recording_mbid backfill)
-  deleted_count: number;  // rows removed (mirror surplus)
-  lb_total: number;
-  local_total: number;
-  error?: string;
-}
-```
+- `NarrativeResponse` splits keys into `plain` (no accent markers) and `rich` (`[[...]]` markers — render via `NarrativeText`, never `{@html}`).
+- `SyncStatusResponse` counts are distinct: `synced_count` = rows inserted, `updated_count` = rows modified (mirror metadata / `recording_mbid` backfill), `deleted_count` = mirror surplus removed.
+- `duration_secs` / `album` / `recording_mbid` are nullable for pre-LB imports (see the `Listen` entity above).
 
 ## Environment config
 
