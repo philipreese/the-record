@@ -151,6 +151,19 @@ class ArtistStatsResponse(BaseModel):
     peak_day: Optional[WrappedPeakDay] = None
     hourly: Dict[str, int]
     first_listen_ts: Optional[int] = None
+    plays_since_discovery: Optional[int] = None
+
+
+class ArtistAnniversary(BaseModel):
+    artist: str
+    first_listen_ts: int
+    years: int
+    total_plays: int
+
+
+class OnThisDayResponse(BaseModel):
+    groups: List[OnThisDayGroup]
+    anniversaries: List[ArtistAnniversary]
 
 
 class ArtistTrendSeries(BaseModel):

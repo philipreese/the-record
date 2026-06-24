@@ -566,7 +566,47 @@ def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[dict[str, Any]]:
         
     return result
 
-def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
+def get_on_this_day_anniversaries(month: int, day: int) -> list[dict[str, Any]]:
+    """Find artists whose first-ever listen anniversary falls on the given month/day (excluding current year)."""
+    current_year = datetime.now().year
+
+    with get_engine().connect() as conn:
+        first_ts_subq = (
+            select(
+                Listen.artist,
+                func.min(Listen.unix_ts).label("first_ts"),
+                func.count(Listen.id).label("total_plays"),
+            )
+            .group_by(Listen.artist)
+            .subquery()
+        )
+        month_expr = get_month_num_expr(first_ts_subq.c.first_ts)
+        day_expr = get_day_num_expr(first_ts_subq.c.first_ts)
+        stmt = (
+            select(
+                first_ts_subq.c.artist,
+                first_ts_subq.c.first_ts,
+                first_ts_subq.c.total_plays,
+            )
+            .where(month_expr == month, day_expr == day)
+            .order_by(desc(first_ts_subq.c.total_plays))
+        )
+        rows = conn.execute(stmt).all()
+
+    result = []
+    for r in rows:
+        dt = datetime.fromtimestamp(r.first_ts, tz=timezone.utc)
+        if dt.year < current_year:
+            result.append({
+                "artist": r.artist,
+                "first_listen_ts": r.first_ts,
+                "years": current_year - dt.year,
+                "total_plays": r.total_plays,
+            })
+    return result
+
+
+def get_on_this_day(month: int, day: int) -> dict[str, Any]:
     """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
     month_expr = get_month_num_expr(Listen.unix_ts)
     day_expr = get_day_num_expr(Listen.unix_ts)
@@ -600,7 +640,9 @@ def get_on_this_day(month: int, day: int) -> list[dict[str, Any]]:
                 "album": r.album
             }
         )
-    return [{"year": int(k), "listens": v} for k, v in groups.items()]
+    group_list = [{"year": int(k), "listens": v} for k, v in groups.items()]
+    anniversaries = get_on_this_day_anniversaries(month, day)
+    return {"groups": group_list, "anniversaries": anniversaries}
 
 def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
     """Return all listen rows (or a time-filtered subset) sorted by unix_ts ascending."""
@@ -863,10 +905,13 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
             if r.hour:
                 hourly[r.hour] = r.cnt
 
-        # First listen timestamp — always all-time
-        first_listen_ts = conn.execute(
-            select(func.min(Listen.unix_ts)).where(func.lower(Listen.artist) == artist.lower())
-        ).scalar()
+        # First listen timestamp and all-time plays — always all-time, ignores time_range
+        all_time_row = conn.execute(
+            select(func.min(Listen.unix_ts), func.count(Listen.id))
+            .where(func.lower(Listen.artist) == artist.lower())
+        ).first()
+        first_listen_ts = all_time_row[0] if all_time_row else None
+        plays_since_discovery = all_time_row[1] if all_time_row else 0
 
     return {
         "artist": artist,
@@ -877,6 +922,7 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
         "peak_day": peak_day,
         "hourly": hourly,
         "first_listen_ts": first_listen_ts,
+        "plays_since_discovery": plays_since_discovery,
     }
 
 

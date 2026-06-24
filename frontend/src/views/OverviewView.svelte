@@ -163,7 +163,8 @@
       appCache.hourlyTrends = hourlyRes;
       appCache.punchcardData = punchcardRes;
       appCache.monthlyTrends = monthlyRes;
-      appCache.onThisDay = onThisDayRes;
+      appCache.onThisDay = onThisDayRes.groups;
+      appCache.onThisDayAnniversaries = onThisDayRes.anniversaries;
       appCache.statsLoaded = true;
 
       if (appCache.recentListens.length === 0) {
@@ -318,8 +319,8 @@
     </div>
   </div>
 
-  {#if appCache.onThisDay.length > 0}
-    <OnThisDaySection groups={appCache.onThisDay} />
+  {#if appCache.onThisDay.length > 0 || appCache.onThisDayAnniversaries.length > 0}
+    <OnThisDaySection groups={appCache.onThisDay} anniversaries={appCache.onThisDayAnniversaries} />
   {/if}
 
   <div class="mt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
@@ -327,7 +328,9 @@
       recentListens={appCache.recentListens}
       loading={loadingStats}
       onViewAll={() => router.navigate('/recent')}
-      sectionNumber={appCache.onThisDay.length > 0 ? '05' : '04'}
+      sectionNumber={appCache.onThisDay.length > 0 || appCache.onThisDayAnniversaries.length > 0
+        ? '05'
+        : '04'}
     />
 
     <!-- Now Playing / Last Played column -->
@@ -340,7 +343,9 @@
   <TelemetrySection
     loading={loadingStats}
     stats={currentStats}
-    sectionNumber={appCache.onThisDay.length > 0 ? '06' : '05'}
+    sectionNumber={appCache.onThisDay.length > 0 || appCache.onThisDayAnniversaries.length > 0
+      ? '06'
+      : '05'}
   />
 </div>
 

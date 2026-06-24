@@ -1,14 +1,22 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { inView } from '../../utils/inView';
-  import { fetchTrackStats, type OnThisDayGroup, type ListenEntry } from '../../services/api';
+  import {
+    fetchTrackStats,
+    type OnThisDayGroup,
+    type ArtistAnniversary,
+    type ListenEntry,
+  } from '../../services/api';
   import { appCache } from '../../services/store.svelte';
+  import { router } from '../../services/router.svelte';
   import ListenRow from '../dashboard/ListenRow.svelte';
 
   let {
     groups,
+    anniversaries = [],
   }: {
     groups: OnThisDayGroup[];
+    anniversaries?: ArtistAnniversary[];
   } = $props();
 
   const currentYear = new Date().getFullYear();
@@ -17,6 +25,14 @@
   function yearsAgo(year: number): string {
     const n = currentYear - year;
     return n === 1 ? '1 year ago' : `${n} years ago`;
+  }
+
+  function formatFirstHeard(ts: number): string {
+    return new Date(ts * 1000).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
 
   let expandedYears = $state<Set<number>>(new Set());
@@ -73,6 +89,42 @@
       )}
     </h2>
   </div>
+
+  {#if anniversaries.length > 0}
+    <div class="reveal-content space-y-2 mb-6">
+      {#each anniversaries as ann (ann.artist)}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="rounded border border-theme-accent/30 bg-theme-accent-soft/20 px-4 py-3 flex items-center gap-4 hover:border-theme-accent/60 transition-colors cursor-pointer group"
+          onclick={() => router.navigate(`/artist/${encodeURIComponent(ann.artist)}`)}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ')
+              router.navigate(`/artist/${encodeURIComponent(ann.artist)}`);
+          }}
+          role="button"
+          tabindex="0"
+        >
+          <div class="shrink-0 text-theme-accent text-xs font-mono tabular-nums">
+            {ann.years}y
+          </div>
+          <div class="grow min-w-0">
+            <div
+              class="text-sm font-light tracking-wide text-theme-text group-hover:text-theme-accent transition-colors truncate"
+            >
+              {ann.artist}
+            </div>
+            <div class="text-xs font-mono text-theme-muted mt-0.5">
+              first heard {formatFirstHeard(ann.first_listen_ts)} &bull;
+              {ann.total_plays.toLocaleString()} plays total
+            </div>
+          </div>
+          <div class="shrink-0 text-xs font-mono text-theme-accent/70 uppercase tracking-widest">
+            anniversary
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <div class="reveal-content space-y-2">
     {#each groups as group (group.year)}
