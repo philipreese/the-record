@@ -1,9 +1,11 @@
 import asyncio
 import csv
+import hmac
 import io
 import json
 import logging
 import os
+from collections import OrderedDict
 
 from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -112,11 +114,7 @@ def read_narrative(
     """Retrieve dynamic narrative strings for the UI."""
     stats = repo.get_stats_summary()
     streak = repo.get_streak_stats()
-    
-    stats_dict = stats.model_dump() if hasattr(stats, "model_dump") else (stats.dict() if hasattr(stats, "dict") else stats)
-    streak_dict = streak.model_dump() if hasattr(streak, "model_dump") else (streak.dict() if hasattr(streak, "dict") else streak)
-    
-    return generate_narrative(stats_dict, streak_dict, seed)
+    return generate_narrative(stats, streak, seed)
 
 
 @router.get("/wrapped", response_model=WrappedDataResponse)
@@ -154,20 +152,51 @@ def read_track_stats(
     play_count, duration = repo.get_track_stats(artist=artist, title=title, album=album_val)
     return {"play_count": play_count, "duration_secs": duration}
 
+# Upper bound on the batch endpoint: each pair expands into an OR/AND clause in the
+# query, so an unbounded list would build a pathological statement. The UI only ever
+# requests stats for the listens currently on screen, well under this cap.
+_MAX_BATCH_TRACKS = 500
+
+
 @router.post("/track-stats/batch", response_model=List[TrackBatchResponseItem])
 def read_track_stats_batch(
     tracks: List[TrackBatchRequestItem]
 ) -> Any:
     """Retrieve all-time play count and first available non-null duration for a list of tracks."""
+    if len(tracks) > _MAX_BATCH_TRACKS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Too many tracks in one batch (max {_MAX_BATCH_TRACKS}).",
+        )
     track_dicts = [{"artist": t.artist, "title": t.title} for t in tracks]
     return repo.get_track_stats_batch(track_dicts)
+
+
+class _BoundedCache(OrderedDict):
+    """Insertion-ordered dict that evicts the oldest entry once it exceeds ``maxsize``.
+
+    Keeps the per-process art caches from growing without bound over a long-running
+    process (one entry per distinct track otherwise lives forever).
+    """
+
+    def __init__(self, maxsize: int) -> None:
+        super().__init__()
+        self._maxsize = maxsize
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        if key in self:
+            super().__delitem__(key)
+        super().__setitem__(key, value)
+        while len(self) > self._maxsize:
+            self.popitem(last=False)
 
 
 # Per-process cache so we only pay the MB/CAA lookup cost once per track per session.
 # Both successful and failed lookups (after _MAX_ART_ATTEMPTS) are stored to prevent
 # hitting rate limits and causing slow HTTP cascades on consecutive polls.
-_cover_art_cache: dict[tuple[str, str], Optional[str]] = {}
-_cover_art_attempts: dict[tuple[str, str], int] = {}
+_ART_CACHE_MAX = 2048
+_cover_art_cache: "OrderedDict[tuple[str, str], Optional[str]]" = _BoundedCache(_ART_CACHE_MAX)
+_cover_art_attempts: "OrderedDict[tuple[str, str], int]" = _BoundedCache(_ART_CACHE_MAX)
 _MAX_ART_ATTEMPTS = 3
 # Tracks keys currently being resolved in background to prevent duplicate tasks.
 _art_in_flight: set[tuple[str, str]] = set()
@@ -537,7 +566,7 @@ async def start_sync(
     sync_token = os.getenv("SYNC_TOKEN")
     if not sync_token:
         raise HTTPException(status_code=503, detail="Sync endpoint is not configured.")
-    if x_sync_token != sync_token:
+    if not x_sync_token or not hmac.compare_digest(x_sync_token, sync_token):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Sync-Token.")
 
     async with sync_worker._sync_lock:

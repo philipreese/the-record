@@ -160,6 +160,15 @@ class TestTrackStatsRoute(unittest.TestCase):
             {"artist": "Mitski", "title": "Nobody"},
         ])
 
+    @mock.patch("app.routes.repo.get_track_stats_batch")
+    def test_track_stats_batch_rejects_oversized_payload(self, mock_get_stats_batch) -> None:
+        from app.routes import _MAX_BATCH_TRACKS
+
+        payload = [{"artist": f"A{i}", "title": f"T{i}"} for i in range(_MAX_BATCH_TRACKS + 1)]
+        res = self.client.post("/api/track-stats/batch", json=payload)
+        self.assertEqual(res.status_code, 422)
+        mock_get_stats_batch.assert_not_called()
+
 
 class TestTrendRoutes(unittest.TestCase):
     def setUp(self) -> None:
