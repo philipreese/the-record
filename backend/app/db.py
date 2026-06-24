@@ -79,13 +79,6 @@ def get_session():
         _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=eng)
     return _SessionLocal()
 
-def get_db_connection():
-    """
-    Return a raw connection from the engine to maintain backward-compatibility
-    for codebase areas that directly interact with connection/cursor API.
-    """
-    return get_engine().raw_connection()
-
 def get_db_session():
     """Yield a database session context for SQLAlchemy ORM operations."""
     session = get_session()

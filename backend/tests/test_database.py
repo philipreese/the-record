@@ -15,52 +15,48 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # override=False won't replace an already-set key.
 os.environ["DATABASE_URL"] = ""
 
+from sqlalchemy import text
+
 import app.repository as database
 import app.db as db
 
 class TestDatabaseQueries(unittest.TestCase):
     def setUp(self):
-        # Override the database path to use a temporary file for tests
         self.test_db_path = "test_history.db"
         db.DB_PATH = self.test_db_path
         db.init_db()
-        
-        self.conn = db.get_db_connection()
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("DELETE FROM listens")
-        
-        # Populate in-memory database with test data
-        # Let's seed plays relative to current date to test ranges
+
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM listens"))
+
         self.now = datetime.now()
-        
-        # Setup timestamps
+
         self.ts_now = int(self.now.timestamp())
         self.ts_yesterday = int((self.now - timedelta(days=1)).timestamp())
         self.ts_2_days_ago = int((self.now - timedelta(days=2)).timestamp())
         self.ts_10_days_ago = int((self.now - timedelta(days=10)).timestamp())
         self.ts_100_days_ago = int((self.now - timedelta(days=100)).timestamp())
-        
-        # We will insert a mix of scrobbles with duration and album fields
-        test_plays = [
-            ("Artist A", "Track 1", self.ts_now, "youtube_music", 180, "Album A"),
-            ("Artist A", "Track 1", self.ts_now - 10, "youtube_music", None, "Album A"),  # same day
-            ("Artist A", "Track 2", self.ts_yesterday, "last_fm", 240, "Album B"),
-            ("Artist A", "Track 1", self.ts_100_days_ago, "last_fm", None, None),
-            ("Artist B", "Track 3", self.ts_yesterday - 60, "youtube_music", 200, None),
-            ("Artist B", "Track 4", self.ts_10_days_ago, "last_fm", None, "Album C"),
-            ("Artist C", "Track 5", self.ts_2_days_ago, "youtube_music", 300, "Album D"),
-        ]
-        
-        self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album) VALUES (?, ?, ?, ?, ?, ?)",
-            test_plays
+
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album)"
+                " VALUES (:artist, :title, :unix_ts, :source, :duration_secs, :album)"
+            ),
+            [
+                {"artist": "Artist A", "title": "Track 1", "unix_ts": self.ts_now, "source": "youtube_music", "duration_secs": 180, "album": "Album A"},
+                {"artist": "Artist A", "title": "Track 1", "unix_ts": self.ts_now - 10, "source": "youtube_music", "duration_secs": None, "album": "Album A"},
+                {"artist": "Artist A", "title": "Track 2", "unix_ts": self.ts_yesterday, "source": "last_fm", "duration_secs": 240, "album": "Album B"},
+                {"artist": "Artist A", "title": "Track 1", "unix_ts": self.ts_100_days_ago, "source": "last_fm", "duration_secs": None, "album": None},
+                {"artist": "Artist B", "title": "Track 3", "unix_ts": self.ts_yesterday - 60, "source": "youtube_music", "duration_secs": 200, "album": None},
+                {"artist": "Artist B", "title": "Track 4", "unix_ts": self.ts_10_days_ago, "source": "last_fm", "duration_secs": None, "album": "Album C"},
+                {"artist": "Artist C", "title": "Track 5", "unix_ts": self.ts_2_days_ago, "source": "youtube_music", "duration_secs": 300, "album": "Album D"},
+            ],
         )
         self.conn.commit()
 
     def tearDown(self):
         self.conn.close()
         db.get_engine().dispose()
-        # Clean up database file
         if os.path.exists(self.test_db_path):
             try:
                 os.remove(self.test_db_path)
@@ -89,7 +85,7 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(top[1]["artist"], "Artist B")
         self.assertEqual(top[1]["play_count"], 2)
         self.assertEqual(top[1]["rank"], 2)
-        
+
         # Last 30 days (should exclude the play 100 days ago)
         # Plays remaining: now (2), yesterday (2), 2 days ago (1), 10 days ago (1). Total = 6 plays.
         # Artist A has 3 plays within 30 days. Artist B has 2. Artist C has 1.
@@ -158,11 +154,10 @@ class TestDatabaseQueries(unittest.TestCase):
     def test_heatmap_data(self):
         current_year = self.now.year
         heatmap = database.get_heatmap_data(year=current_year)
-        
-        # Test that heatmap contains active days
+
         today_str = self.now.strftime("%Y-%m-%d")
         yesterday_str = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
-        
+
         self.assertIn(today_str, heatmap)
         self.assertEqual(heatmap[today_str], 2)
         self.assertIn(yesterday_str, heatmap)
@@ -171,7 +166,6 @@ class TestDatabaseQueries(unittest.TestCase):
     def test_hourly_trends(self):
         trends = database.get_hourly_trends()
         self.assertEqual(len(trends), 24)
-        # The sum of all counts should be equal to the total scrobbles
         self.assertEqual(sum(trends.values()), 7)
 
     def test_monthly_trends(self):
@@ -220,13 +214,15 @@ class TestDatabaseQueries(unittest.TestCase):
         # offset like ts_now - 3600 crosses midnight when run just after 00:00).
         midday = self.now.replace(hour=12, minute=0, second=0, microsecond=0)
         base_ts = int(midday.timestamp())
-        extra_plays = [
-            ("artist a", "track 1", base_ts - 100, "youtube_music", None, None),
-            ("ARTIST A", "Track 1", base_ts - 200, "youtube_music", None, None),
-        ]
-        self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album) VALUES (?, ?, ?, ?, ?, ?)",
-            extra_plays,
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source, duration_secs, album)"
+                " VALUES (:artist, :title, :unix_ts, :source, :duration_secs, :album)"
+            ),
+            [
+                {"artist": "artist a", "title": "track 1", "unix_ts": base_ts - 100, "source": "youtube_music", "duration_secs": None, "album": None},
+                {"artist": "ARTIST A", "title": "Track 1", "unix_ts": base_ts - 200, "source": "youtube_music", "duration_secs": None, "album": None},
+            ],
         )
         self.conn.commit()
 
@@ -243,7 +239,7 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(play_count, 3)
         self.assertEqual(duration, 180)  # first non-null duration
 
-        # With album parameter: includes null-album rows (unknown album ≠ different song)
+        # With album parameter: includes null-album rows (unknown album != different song)
         play_count, duration = database.get_track_stats(artist="Artist A", title="Track 1", album="Album A")
         self.assertEqual(play_count, 3)  # 2 Album A + 1 null-album
         self.assertEqual(duration, 180)
@@ -258,15 +254,16 @@ class TestDatabaseQueries(unittest.TestCase):
         # variants of the same recording (the #95 bug).
         mbid = "11111111-1111-1111-1111-111111111111"
         other_mbid = "22222222-2222-2222-2222-222222222222"
-        self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source, recording_mbid) VALUES (?, ?, ?, ?, ?)",
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source, recording_mbid)"
+                " VALUES (:artist, :title, :unix_ts, :source, :recording_mbid)"
+            ),
             [
-                ("Beartooth & Hardy", "The Better Me", self.ts_now + 1, "listenbrainz_sync", mbid),
-                ("Beartooth", "The Better Me", self.ts_now + 2, "listenbrainz_sync", mbid),
-                # Un-backfilled play (no MBID) matching the string identity
-                ("Beartooth", "The Better Me", self.ts_now + 3, "youtube_music", None),
-                # A different recording that happens to share the title — must NOT count
-                ("Someone Else", "The Better Me", self.ts_now + 4, "listenbrainz_sync", other_mbid),
+                {"artist": "Beartooth & Hardy", "title": "The Better Me", "unix_ts": self.ts_now + 1, "source": "listenbrainz_sync", "recording_mbid": mbid},
+                {"artist": "Beartooth", "title": "The Better Me", "unix_ts": self.ts_now + 2, "source": "listenbrainz_sync", "recording_mbid": mbid},
+                {"artist": "Beartooth", "title": "The Better Me", "unix_ts": self.ts_now + 3, "source": "youtube_music", "recording_mbid": None},
+                {"artist": "Someone Else", "title": "The Better Me", "unix_ts": self.ts_now + 4, "source": "listenbrainz_sync", "recording_mbid": other_mbid},
             ],
         )
         self.conn.commit()
@@ -283,7 +280,6 @@ class TestDatabaseQueries(unittest.TestCase):
         self.assertEqual(count_str, 2)
 
     def test_track_stats_batch(self):
-        # Batch query matching existing tracks and non-existent track
         tracks = [
             {"artist": "Artist A", "title": "Track 1"},
             {"artist": "artist a", "title": "track 2"},  # test lower casing
@@ -291,34 +287,30 @@ class TestDatabaseQueries(unittest.TestCase):
         ]
         res = database.get_track_stats_batch(tracks)
         self.assertEqual(len(res), 3)
-        
-        # Check first track (Artist A - Track 1)
+
         self.assertEqual(res[0]["artist"], "Artist A")
         self.assertEqual(res[0]["title"], "Track 1")
         self.assertEqual(res[0]["play_count"], 3)
         self.assertEqual(res[0]["duration_secs"], 180)
-        
-        # Check second track (artist a - track 2)
+
         self.assertEqual(res[1]["artist"], "artist a")
         self.assertEqual(res[1]["title"], "track 2")
         self.assertEqual(res[1]["play_count"], 1)
         self.assertEqual(res[1]["duration_secs"], 240)
-        
-        # Check third track (NonExistent - Track)
+
         self.assertEqual(res[2]["artist"], "NonExistent")
         self.assertEqual(res[2]["title"], "Track")
         self.assertEqual(res[2]["play_count"], 0)
         self.assertIsNone(res[2]["duration_secs"])
 
-
     def test_recent_listens_with_anchor_date(self):
         yesterday_date_str = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
         listens = database.get_recent_listens(limit=10, anchor_date=yesterday_date_str)
         self.assertEqual(len(listens), 5)
-        # Verify no items are from today (which are self.ts_now and self.ts_now - 10)
         for item in listens:
             self.assertNotEqual(item["unix_ts"], self.ts_now)
             self.assertNotEqual(item["unix_ts"], self.ts_now - 10)
+
 
 class TestDeduplicateCaseInsensitive(unittest.TestCase):
     """Verify that deduplicate_listens() merges rows differing only in casing."""
@@ -329,9 +321,8 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         db._engine = None
         db._SessionLocal = None
         db.init_db()
-        self.conn = db.get_db_connection()
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("DELETE FROM listens")
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM listens"))
         self.conn.commit()
 
     def tearDown(self):
@@ -346,12 +337,11 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
                 pass
 
     def test_merges_rows_differing_only_in_casing_within_60s(self):
-        # Two rows: same track, casing differs, timestamps within 60 seconds.
-        self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+        self.conn.execute(
+            text("INSERT INTO listens (artist, title, unix_ts, source) VALUES (:artist, :title, :unix_ts, :source)"),
             [
-                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
-                ("Boards of Canada", "The Past is Dead", 1_000_030, "listenbrainz_sync"),
+                {"artist": "Boards of Canada", "title": "The Past Is Dead", "unix_ts": 1_000_000, "source": "youtube_music"},
+                {"artist": "Boards of Canada", "title": "The Past is Dead", "unix_ts": 1_000_030, "source": "listenbrainz_sync"},
             ],
         )
         self.conn.commit()
@@ -359,17 +349,16 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         deleted = database.deduplicate_listens()
         self.assertEqual(deleted, 1)
 
-        self.cursor.execute("SELECT COUNT(*) FROM listens")
-        row = self.cursor.fetchone()
+        row = db.get_engine().connect().execute(text("SELECT COUNT(*) FROM listens")).fetchone()
         assert row is not None
         self.assertEqual(row[0], 1)
 
     def test_does_not_merge_rows_beyond_60s(self):
-        self.cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
+        self.conn.execute(
+            text("INSERT INTO listens (artist, title, unix_ts, source) VALUES (:artist, :title, :unix_ts, :source)"),
             [
-                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
-                ("Boards of Canada", "The Past is Dead", 1_000_061, "listenbrainz_sync"),
+                {"artist": "Boards of Canada", "title": "The Past Is Dead", "unix_ts": 1_000_000, "source": "youtube_music"},
+                {"artist": "Boards of Canada", "title": "The Past is Dead", "unix_ts": 1_000_061, "source": "listenbrainz_sync"},
             ],
         )
         self.conn.commit()
@@ -377,8 +366,7 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         deleted = database.deduplicate_listens()
         self.assertEqual(deleted, 0)
 
-        self.cursor.execute("SELECT COUNT(*) FROM listens")
-        row = self.cursor.fetchone()
+        row = db.get_engine().connect().execute(text("SELECT COUNT(*) FROM listens")).fetchone()
         assert row is not None
         self.assertEqual(row[0], 2)
 
@@ -400,23 +388,21 @@ class TestCasingNormalisationMigration(unittest.TestCase):
         cfg.set_main_option("script_location", str(backend_dir / "migrations"))
         command.upgrade(cfg, "004")
 
-        conn = db.get_db_connection()
-        cursor = conn.cursor()
-        cursor.executemany(
-            "INSERT INTO listens (artist, title, unix_ts, source) VALUES (?, ?, ?, ?)",
-            [
-                # Casing conflict: YT import vs LB sync for the same listen
-                ("Boards of Canada", "The Past Is Dead", 1_000_000, "youtube_music"),
-                ("Boards of Canada", "The Past is Dead", 1_000_000, "listenbrainz_sync"),
-                # True duplicate (same casing, same listen) — should also be removed
-                ("Boards of Canada", "Roygbiv", 2_000_000, "listenbrainz_sync"),
-                ("Boards of Canada", "Roygbiv", 2_000_000, "listenbrainz_sync"),
-                # Unique listen — untouched
-                ("Boards of Canada", "Aquarius", 3_000_000, "listenbrainz_sync"),
-            ],
-        )
-        conn.commit()
-        conn.close()
+        with db.get_engine().connect() as conn:
+            conn.execute(
+                text("INSERT INTO listens (artist, title, unix_ts, source) VALUES (:artist, :title, :unix_ts, :source)"),
+                [
+                    # Casing conflict: YT import vs LB sync for the same listen
+                    {"artist": "Boards of Canada", "title": "The Past Is Dead", "unix_ts": 1_000_000, "source": "youtube_music"},
+                    {"artist": "Boards of Canada", "title": "The Past is Dead", "unix_ts": 1_000_000, "source": "listenbrainz_sync"},
+                    # True duplicate (same casing, same listen) — should also be removed
+                    {"artist": "Boards of Canada", "title": "Roygbiv", "unix_ts": 2_000_000, "source": "listenbrainz_sync"},
+                    {"artist": "Boards of Canada", "title": "Roygbiv", "unix_ts": 2_000_000, "source": "listenbrainz_sync"},
+                    # Unique listen — untouched
+                    {"artist": "Boards of Canada", "title": "Aquarius", "unix_ts": 3_000_000, "source": "listenbrainz_sync"},
+                ],
+            )
+            conn.commit()
 
         self.cfg = cfg
 
@@ -435,20 +421,14 @@ class TestCasingNormalisationMigration(unittest.TestCase):
 
         command.upgrade(self.cfg, "005")
 
-        conn = db.get_db_connection()
-        cursor = conn.cursor()
+        with db.get_engine().connect() as conn:
+            count_row = conn.execute(text("SELECT COUNT(*) FROM listens")).fetchone()
+            assert count_row is not None
+            self.assertEqual(count_row[0], 3)
 
-        cursor.execute("SELECT COUNT(*) FROM listens")
-        count_row = cursor.fetchone()
-        assert count_row is not None
-        self.assertEqual(count_row[0], 3)
-
-        cursor.execute("SELECT title FROM listens WHERE unix_ts = 1000000")
-        title_row = cursor.fetchone()
-        assert title_row is not None
-        self.assertEqual(title_row[0], "The Past is Dead")
-
-        conn.close()
+            title_row = conn.execute(text("SELECT title FROM listens WHERE unix_ts = 1000000")).fetchone()
+            assert title_row is not None
+            self.assertEqual(title_row[0], "The Past is Dead")
 
 
 if __name__ == "__main__":
