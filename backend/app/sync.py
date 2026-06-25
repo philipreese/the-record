@@ -11,7 +11,7 @@ import httpx
 
 from sqlalchemy import func, text, bindparam, update
 from app.db import get_session, get_engine, Listen
-from app.repository import deduplicate_listens
+from app.repository import deduplicate_listens, apply_artist_corrections
 from app.utils import clean_artist, clean_title
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
@@ -311,6 +311,10 @@ async def _run_sync(mode: str) -> None:
                 if deleted_dupes > 0:
                     logger.info("Post-sync cleanup: removed %d duplicate play(s)", deleted_dupes)
 
+            corrected = await asyncio.to_thread(apply_artist_corrections)
+            if corrected > 0:
+                logger.info("Post-sync cleanup: corrected artist name on %d play(s)", corrected)
+
             logger.info(
                 "Done — fetched %d batch(es), inserted %d new play(s)",
                 _sync_state.batches_fetched,
@@ -578,6 +582,10 @@ async def _run_mirror() -> None:
             logger.info("Mirror: deleted %d surplus local row(s)", len(surplus_ids))
         else:
             logger.info("Mirror: no surplus rows — local DB matches ListenBrainz")
+
+        corrected = await asyncio.to_thread(apply_artist_corrections)
+        if corrected > 0:
+            logger.info("Mirror: corrected artist name on %d play(s)", corrected)
 
         logger.info(
             "Mirror done — %d batch(es), +%d inserted, -%d deleted",

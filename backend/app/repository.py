@@ -748,6 +748,33 @@ def deduplicate_listens() -> int:
         return res.rowcount
 
 
+def apply_artist_corrections() -> int:
+    """Bulk-update listens whose artist name matches a row in artist_corrections.
+
+    Returns the number of rows updated. Safe to call after every sync — the
+    corrections table survives mirror syncs, so cleaned data is always restored.
+    """
+    with get_engine().begin() as conn:
+        if IS_POSTGRES:
+            result = conn.execute(text("""
+                UPDATE listens
+                SET artist = ac.correct_name
+                FROM artist_corrections ac
+                WHERE LOWER(listens.artist) = LOWER(ac.wrong_name)
+            """))
+        else:
+            result = conn.execute(text("""
+                UPDATE listens
+                SET artist = (
+                    SELECT correct_name FROM artist_corrections
+                    WHERE LOWER(wrong_name) = LOWER(listens.artist)
+                    LIMIT 1
+                )
+                WHERE LOWER(artist) IN (SELECT LOWER(wrong_name) FROM artist_corrections)
+            """))
+        return result.rowcount
+
+
 def get_top_artist_trends(year: int, limit: int = 5) -> TopArtistTrendsResponse:
     """Retrieve top artists with their monthly breakdowns for a given year."""
     year_str = str(year)
