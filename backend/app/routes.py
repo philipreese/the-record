@@ -7,7 +7,7 @@ import logging
 import os
 from collections import OrderedDict
 
-from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path
+from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from typing import Any, List, Literal, Optional, Dict
 
@@ -17,6 +17,7 @@ import app.repository as repo
 import app.sync as sync_worker
 import httpx
 from app.narrative import generate_narrative
+from app.ws import manager as ws_manager
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
@@ -699,3 +700,16 @@ def read_artist_stats(
     return repo.get_artist_stats(artist=clean_name, time_range=range_param)
 
 
+
+
+@router.websocket("/ws/sync")
+async def sync_ws(websocket: WebSocket) -> None:
+    """WebSocket endpoint that pushes sync lifecycle events to connected clients."""
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception:
+        ws_manager.disconnect(websocket)
