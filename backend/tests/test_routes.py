@@ -273,6 +273,84 @@ class TestPlayingNowBroadcaster(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["artist"], "Radiohead")
 
 
+class TestArtistGraphQL(unittest.TestCase):
+    """GraphQL /api/graphql artist query (#193)."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.graphql_schema.repo.get_artist_stats")
+    def test_artist_query_returns_data(self, mock_stats) -> None:
+        from app.schemas import (
+            ArtistMonthlyTrend,
+            ArtistStatsResponse,
+            ArtistTopTrack,
+            WrappedPeakDay,
+        )
+
+        mock_stats.return_value = ArtistStatsResponse(
+            artist="Radiohead",
+            total_plays=100,
+            rank=1,
+            top_tracks=[
+                ArtistTopTrack(title="Creep", play_count=50, album="Pablo Honey"),
+                ArtistTopTrack(title="Karma Police", play_count=30, album="OK Computer"),
+            ],
+            monthly_trends=[ArtistMonthlyTrend(month="2024-01", count=50)],
+            peak_day=WrappedPeakDay(date="2024-01-15", plays=12),
+            hourly={f"{h:02d}": 0 for h in range(24)},
+            first_listen_ts=1000000,
+            plays_since_discovery=100,
+        )
+
+        query = """
+        {
+          artist(name: "Radiohead") {
+            artist
+            totalPlays
+            rank
+            topAlbums { name playCount }
+            monthlyTrends { month count }
+            peakDay { date plays }
+          }
+        }
+        """
+        res = self.client.post("/api/graphql", json={"query": query})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()["data"]["artist"]
+        self.assertEqual(data["artist"], "Radiohead")
+        self.assertEqual(data["totalPlays"], 100)
+        self.assertEqual(data["rank"], 1)
+        # top_albums derived from tracks
+        album_names = [a["name"] for a in data["topAlbums"]]
+        self.assertIn("Pablo Honey", album_names)
+        self.assertIn("OK Computer", album_names)
+        self.assertEqual(data["peakDay"]["date"], "2024-01-15")
+
+    @mock.patch("app.graphql_schema.repo.get_artist_stats")
+    def test_unknown_artist_returns_null(self, mock_stats) -> None:
+        from app.schemas import ArtistStatsResponse
+
+        mock_stats.return_value = ArtistStatsResponse(
+            artist="Unknown",
+            total_plays=0,
+            rank=None,
+            top_tracks=[],
+            monthly_trends=[],
+            peak_day=None,
+            hourly={f"{h:02d}": 0 for h in range(24)},
+        )
+
+        res = self.client.post("/api/graphql", json={"query": '{ artist(name: "Unknown") { artist } }'})
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNone(res.json()["data"]["artist"])
+
+    def test_graphiql_available(self) -> None:
+        res = self.client.get("/api/graphql", headers={"Accept": "text/html"})
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("text/html", res.headers["content-type"])
+
+
 class TestSyncWebSocket(unittest.TestCase):
     """WebSocket /api/ws/sync endpoint connectivity (#192)."""
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { fetchArtistStats, type ArtistStatsInfo, type TimeRange } from '../services/api';
+  import type { TimeRange } from '../services/api';
+  import { fetchArtistStatsGql, type ArtistStatsWithAlbums } from '../services/artist-graphql';
   import { router } from '../services/router.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
@@ -8,7 +9,7 @@
   let artistName = $derived(router.route.type === 'artist' ? router.route.name : '');
   let timeRange = $derived<TimeRange>((router.params.get('range') as TimeRange) ?? 'all');
 
-  let stats = $state<ArtistStatsInfo | null>(null);
+  let stats = $state<ArtistStatsWithAlbums | null>(null);
   let loading = $state(false);
   let error = $state<string | null>(null);
 
@@ -27,7 +28,7 @@
     loading = true;
     error = null;
 
-    fetchArtistStats(name, range)
+    fetchArtistStatsGql(name, range)
       .then((data) => {
         stats = data;
       })
@@ -86,9 +87,9 @@
   }
 
   function sortTracks(
-    tracks: ArtistStatsInfo['top_tracks'],
+    tracks: ArtistStatsWithAlbums['top_tracks'],
     sort: TrackSort,
-  ): ArtistStatsInfo['top_tracks'] {
+  ): ArtistStatsWithAlbums['top_tracks'] {
     const copy = [...tracks];
     switch (sort) {
       case 'plays':
@@ -336,6 +337,37 @@
         </div>
       {/if}
     </div>
+
+    <!-- Top Albums -->
+    {#if stats.top_albums && stats.top_albums.length > 0}
+      <div class="flex flex-col gap-4">
+        <h2 class="editorial-text-h2 pb-2 border-b border-theme-border-soft">Albums</h2>
+        <div class="flex flex-col gap-3">
+          {#each stats.top_albums as album, idx}
+            <div class="list-row-interactive pointer-events-none select-text">
+              <div
+                class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
+              >
+                {String(idx + 1).padStart(2, '0')}
+              </div>
+              <div class="grow min-w-0">
+                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
+                  {album.name}
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-lg font-mono font-light text-theme-text">
+                  {album.playCount.toLocaleString()}
+                </div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
+                  plays
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <!-- Hourly Heat Clock -->
     <div class="flex flex-col gap-4">
