@@ -24,10 +24,10 @@ repository.py      — All SQL queries; returns typed Pydantic schema instances 
     ↓
 db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
-sync.py            — ListenBrainz sync worker (async, background)
+sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs
 narrative.py       — Template loading, condition evaluation, {token} interpolation; accepts StatsSummaryResponse/StreakStatsResponse, returns NarrativeResponse
 schemas.py         — Pydantic request/response models shared across routes.py, repository.py, and narrative.py
-migrations/        — Alembic env + versioned migration scripts
+migrations/        — Alembic env + versioned migration scripts; artist_corrections table seeded here (see data-models.md for the workflow)
 ```
 
 **Source of truth:** [backend/app/](../backend/app/)

@@ -108,6 +108,18 @@ For auto-merge of the Release PR to work, these must be enabled in the repositor
 1. **Settings → General → Allow auto-merge** — enables the feature globally
 2. **Settings → Branches → Branch protection for `main`** — require the **CI / test** status check to pass before merging
 
+## Data quality
+
+Scrobblers submit artist names verbatim from the source (YouTube Music, Last.fm, etc.), which often differs from the canonical MusicBrainz name. Because ListenBrainz is the source of truth and a mirror sync can overwrite any manual SQL fix, corrections are maintained in the `artist_corrections` table and re-applied automatically after every sync.
+
+**Workflow for a new mismatch:**
+
+1. Verify the canonical name on [MusicBrainz](https://musicbrainz.org).
+2. Create a new Alembic migration — see [data-models.md](data-models.md#adding-a-new-correction) for the template.
+3. Run `pixi run alembic upgrade head` locally; the same migration runs on prod at next deploy startup.
+
+**Do not** add rows to an already-applied migration and **do not** issue a bare `UPDATE listens` without a matching `INSERT INTO artist_corrections` — a future mirror sync will undo the fix.
+
 ## Code conventions
 
 | Concern       | Rule                                                                     |
