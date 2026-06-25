@@ -26,6 +26,7 @@ db.py              — SQLAlchemy engine/session setup, Listen model, init_db (r
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
 sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs; broadcasts sync_started/sync_complete/sync_error via ws.py
 ws.py              — WebSocket ConnectionManager singleton; tracks active connections, broadcasts JSON events; broadcast_sync_event() helper used by sync.py
+playing_now_sse.py — PlayingNowBroadcaster singleton; background task polls LB every 15 s and pushes PlayingNowResponse to all connected SSE clients via asyncio.Queue per client
 narrative.py       — Template loading, condition evaluation, {token} interpolation; accepts StatsSummaryResponse/StreakStatsResponse, returns NarrativeResponse
 schemas.py         — Pydantic request/response models shared across routes.py, repository.py, and narrative.py
 migrations/        — Alembic env + versioned migration scripts; artist_corrections table seeded here (see data-models.md for the workflow)
@@ -38,9 +39,10 @@ migrations/        — Alembic env + versioned migration scripts; artist_correct
 ```
 api.ts             — openapi-fetch typed client over api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
 sync-socket.ts     — SyncSocket class; WebSocket client for /api/ws/sync with exponential-backoff auto-reconnect (1s→30s cap)
+playing-now-sse.ts — PlayingNowSSE class; EventSource client for /api/playing-now/stream (browser handles reconnect natively)
     ↓
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
-                     20s visibility-locked playing-now polling, and WebSocket sync event handling (poll every 2s as fallback)
+                     SSE-driven playing-now updates (15 s server-side push), and WebSocket sync event handling (poll every 2s as fallback)
 router.svelte.ts   — Hash-based router (no library); parses #/path?params, exposes typed route + URLSearchParams,
                      navigate() with push/replace policy. URL is the single source of truth for all serializable view state.
     ↓
@@ -87,13 +89,16 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
 | GET | `/api/artist/stats` | `name` (required), `range` (30/90/365/all, default all) | `ArtistStatsResponse` |
 
-### WebSocket endpoints
+### Real-time endpoints
 
-| Path | Protocol | Events pushed |
+| Path | Protocol | Push pattern |
 |---|---|---|
+| `/api/playing-now/stream` | SSE (`text/event-stream`) | `data: <PlayingNowResponse JSON>\n\n` every 15 s |
 | `/api/ws/sync` | WebSocket (`ws://` / `wss://`) | `sync_started`, `sync_complete`, `sync_error` (JSON `{type, mode, inserted?, deleted?, message?}`) |
 
-Clients connect once on page load (via `SyncSocket`) and receive push events for the duration of the session. The connection manager drops dead connections silently on next broadcast.
+**SSE** — `EventSource` connects on page load; browser reconnects automatically on failure. Server polls LB once per 15 s and fans the result out to all connected clients via per-client `asyncio.Queue`. New clients receive the cached last result immediately on connect.
+
+**WebSocket** — `SyncSocket` connects on page load with exponential-backoff reconnect. The connection manager drops dead connections silently on next broadcast.
 
 ### Sync authentication
 

@@ -235,6 +235,44 @@ class TestTrendRoutes(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
 
 
+class TestPlayingNowBroadcaster(unittest.IsolatedAsyncioTestCase):
+    """PlayingNowBroadcaster push and initial-state delivery (#195)."""
+
+    async def test_subscribe_receives_cached_state_immediately(self) -> None:
+        from app.playing_now_sse import PlayingNowBroadcaster
+
+        broadcaster = PlayingNowBroadcaster()
+        broadcaster._last = {"is_playing": False}
+
+        gen = broadcaster.subscribe()
+        chunk = await gen.__anext__()
+        self.assertIn('"is_playing": false', chunk)
+        await gen.aclose()
+
+    async def test_subscribe_receives_broadcast(self) -> None:
+        import json
+        from app.playing_now_sse import PlayingNowBroadcaster
+
+        broadcaster = PlayingNowBroadcaster()
+        gen = broadcaster.subscribe()
+
+        # The generator only registers its queue after the first __anext__() call.
+        # Use create_task so pushing runs concurrently after the generator reaches q.get().
+        async def feed() -> None:
+            await asyncio.sleep(0)  # yield once so the generator can register its queue
+            for q in list(broadcaster._queues):
+                q.put_nowait({"is_playing": True, "artist": "Radiohead", "title": "Creep"})
+
+        feed_task = asyncio.create_task(feed())
+        chunk = await gen.__anext__()
+        await feed_task
+        await gen.aclose()
+
+        data = json.loads(chunk.removeprefix("data: ").strip())
+        self.assertTrue(data["is_playing"])
+        self.assertEqual(data["artist"], "Radiohead")
+
+
 class TestSyncWebSocket(unittest.TestCase):
     """WebSocket /api/ws/sync endpoint connectivity (#192)."""
 

@@ -47,8 +47,9 @@ sys.path.append(PROJECT_ROOT)
 from app.corrections import sync_artist_corrections
 from app.db import bootstrap_db_from_json
 from app.lb_client import close_lb_client
+from app.playing_now_sse import broadcaster as pn_broadcaster
 from app.repository import apply_artist_corrections
-from app.routes import router
+from app.routes import get_playing_now, router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -56,6 +57,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     bootstrap_db_from_json()
     sync_artist_corrections()
     apply_artist_corrections()
+
+    async def _fetch_playing_now() -> dict:
+        result = await get_playing_now()
+        return result.model_dump()
+
+    pn_broadcaster.start(_fetch_playing_now)
     yield
     await close_lb_client()
 
