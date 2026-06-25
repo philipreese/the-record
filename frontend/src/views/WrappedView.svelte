@@ -13,15 +13,13 @@
   import PeriodSelector from '../components/layout/PeriodSelector.svelte';
   import WrappedCard from '../components/dashboard/WrappedCard.svelte';
 
-  const yearOptions = [
-    { value: 2026, label: '2026' },
-    { value: 2025, label: '2025' },
-    { value: 2024, label: '2024' },
-    { value: 2023, label: '2023' },
-    { value: 2022, label: '2022' },
-    { value: 2021, label: '2021' },
-    { value: 2020, label: '2020' },
-  ];
+  let currentYear = $derived(new Date().getFullYear());
+  let firstListenYear = $derived(appCache.stats?.first_year || currentYear);
+  let yearOptions = $derived(
+    Array.from({ length: currentYear - firstListenYear + 1 }, (_, i) => currentYear - i).map(
+      (y) => ({ value: y, label: String(y) }),
+    ),
+  );
 
   const quarterOptions = [
     { value: 'Q1' as WrappedQuarter, label: 'Q1 (Jan-Mar)' },
@@ -48,7 +46,7 @@
   let wrappedPeriod = $state<'year' | 'quarter' | 'month'>(
     (router.params.get('period') as 'year' | 'quarter' | 'month') ?? 'year',
   );
-  let wrappedYear = $state(parseInt(router.params.get('year') ?? '2026', 10));
+  let wrappedYear = $state(parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10));
   let wrappedQuarter = $state<WrappedQuarter>((router.params.get('q') as WrappedQuarter) ?? 'Q1');
   let wrappedMonth = $state<WrappedMonth>((router.params.get('m') as WrappedMonth) ?? 'M1');
   let loadingWrapped = $state(false);
@@ -58,7 +56,7 @@
   $effect(() => {
     const p = router.params;
     const period = (p.get('period') as 'year' | 'quarter' | 'month') ?? 'year';
-    const year = parseInt(p.get('year') ?? '2026', 10);
+    const year = parseInt(p.get('year') ?? String(new Date().getFullYear()), 10);
     const q = (p.get('q') as WrappedQuarter) ?? 'Q1';
     const m = (p.get('m') as WrappedMonth) ?? 'M1';
     untrack(() => {
