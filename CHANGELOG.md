@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.1](https://github.com/philipreese/the-record/compare/v0.26.0...v0.26.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* **lint:** Prettier formatting in WrappedView year options ([bf55b00](https://github.com/philipreese/the-record/commit/bf55b0076adaf3b6dabd93cdc2ccda9b3a27bad8))
+
+
+### Miscellaneous
+
+* **frontend:** Derive Wrapped year range from first_year stat ([60da2a9](https://github.com/philipreese/the-record/commit/60da2a987a625add59f9cebc02098dcab82505a1))
+
 ## [0.26.0](https://github.com/philipreese/the-record/compare/v0.25.5...v0.26.0) (2026-06-25)
 
 
