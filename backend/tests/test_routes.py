@@ -235,6 +235,47 @@ class TestTrendRoutes(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
 
 
+class TestSyncWebSocket(unittest.TestCase):
+    """WebSocket /api/ws/sync endpoint connectivity (#192)."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    def test_ws_endpoint_accepts_connections(self) -> None:
+        with self.client.websocket_connect("/api/ws/sync"):
+            pass
+
+
+class TestConnectionManager(unittest.IsolatedAsyncioTestCase):
+    """ConnectionManager broadcast and dead-connection cleanup (#192)."""
+
+    async def test_broadcast_delivers_to_connected_client(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+        from app.ws import ConnectionManager
+
+        mgr = ConnectionManager()
+        mock_ws = MagicMock()
+        mock_ws.send_json = AsyncMock()
+
+        mgr._connections.append(mock_ws)
+        await mgr.broadcast({"type": "sync_started", "mode": "normal"})
+
+        mock_ws.send_json.assert_called_once_with({"type": "sync_started", "mode": "normal"})
+
+    async def test_broadcast_drops_dead_connections(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+        from app.ws import ConnectionManager
+
+        mgr = ConnectionManager()
+        dead_ws = MagicMock()
+        dead_ws.send_json = AsyncMock(side_effect=Exception("connection lost"))
+
+        mgr._connections.append(dead_ws)
+        await mgr.broadcast({"type": "sync_complete"})
+
+        self.assertEqual(len(mgr._connections), 0)
+
+
 class TestExtractRecordingMbid(unittest.TestCase):
     """recording_mbid resolution prefers LB's mbid_mapping over additional_info (#156)."""
 
