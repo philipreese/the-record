@@ -32,3 +32,4 @@ pylast = ">=7.0.2, <8"
 python-dotenv = ">=1.2.2, <2"
 pyrefly = "*"
 respx = ">=0.20.0"
+strawberry-graphql = {version = ">=0.200.0", extras = ["fastapi"]}

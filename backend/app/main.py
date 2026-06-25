@@ -46,6 +46,7 @@ sys.path.append(PROJECT_ROOT)
 
 from app.corrections import sync_artist_corrections
 from app.db import bootstrap_db_from_json
+from app.graphql_schema import gql_router
 from app.lb_client import close_lb_client
 from app.playing_now_sse import broadcaster as pn_broadcaster
 from app.repository import apply_artist_corrections
@@ -87,3 +88,4 @@ async def add_no_cache_headers(request: Request, call_next):
 
 # Include routes under the /api prefix
 app.include_router(router, prefix="/api")
+app.include_router(gql_router, prefix="/api/graphql")

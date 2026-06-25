@@ -27,6 +27,7 @@ db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for 
 sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs; broadcasts sync_started/sync_complete/sync_error via ws.py
 ws.py              — WebSocket ConnectionManager singleton; tracks active connections, broadcasts JSON events; broadcast_sync_event() helper used by sync.py
 playing_now_sse.py — PlayingNowBroadcaster singleton; background task polls LB every 15 s and pushes PlayingNowResponse to all connected SSE clients via asyncio.Queue per client
+graphql_schema.py — Strawberry schema + resolvers; single `artist` query wraps get_artist_stats() and derives topAlbums from tracks; mounted at /api/graphql
 narrative.py       — Template loading, condition evaluation, {token} interpolation; accepts StatsSummaryResponse/StreakStatsResponse, returns NarrativeResponse
 schemas.py         — Pydantic request/response models shared across routes.py, repository.py, and narrative.py
 migrations/        — Alembic env + versioned migration scripts; artist_corrections table seeded here (see data-models.md for the workflow)
@@ -40,6 +41,7 @@ migrations/        — Alembic env + versioned migration scripts; artist_correct
 api.ts             — openapi-fetch typed client over api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
 sync-socket.ts     — SyncSocket class; WebSocket client for /api/ws/sync with exponential-backoff auto-reconnect (1s→30s cap)
 playing-now-sse.ts — PlayingNowSSE class; EventSource client for /api/playing-now/stream (browser handles reconnect natively)
+artist-graphql.ts — fetch-based GraphQL client for /api/graphql; maps camelCase response → ArtistStatsWithAlbums (ArtistStatsInfo + top_albums[])
     ↓
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
                      SSE-driven playing-now updates (15 s server-side push), and WebSocket sync event handling (poll every 2s as fallback)
@@ -88,6 +90,25 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/top-artist-trends` | `year` (required int), `limit` (default 5) | `TopArtistTrendsResponse` |
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
 | GET | `/api/artist/stats` | `name` (required), `range` (30/90/365/all, default all) | `ArtistStatsResponse` |
+
+### GraphQL endpoint
+
+`POST /api/graphql` — Strawberry schema scoped to the Artist Explorer. Replaces the REST `/api/artist/stats` call from `ArtistView.svelte` with a single typed query that also exposes `topAlbums` (derived server-side from track data — not available via REST).
+
+`GET /api/graphql` — GraphiQL IDE (browser).
+
+```graphql
+query ArtistStats($name: String!, $timeRange: String) {
+  artist(name: $name, timeRange: $timeRange) {
+    artist totalPlays rank firstListenTs playsSinceDiscovery
+    topTracks  { title playCount album durationSecs firstListenTs lastListenTs }
+    topAlbums  { name playCount }
+    monthlyTrends { month count }
+    peakDay    { date plays }
+    hourly     { hour count }
+  }
+}
+```
 
 ### Real-time endpoints
 
