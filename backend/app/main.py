@@ -1,33 +1,12 @@
 import logging
 import os
-import socket
 import sys
-import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
-# In-memory DNS cache with TTL to avoid repeated IPv6 timeout delays on Windows.
-# Filters to AF_INET (IPv4) when available; falls back to full results otherwise.
-_DNS_TTL = 300
-_dns_cache: dict = {}
-_original_getaddrinfo = socket.getaddrinfo
-
-def _cached_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-    key = (host, port, family, type, proto, flags)
-    cached = _dns_cache.get(key)
-    if cached and time.monotonic() - cached[1] < _DNS_TTL:
-        return cached[0]
-    res = _original_getaddrinfo(host, port, family, type, proto, flags)
-    ipv4 = [r for r in res if r[0] == socket.AF_INET]
-    result = ipv4 if ipv4 else res
-    _dns_cache[key] = (result, time.monotonic())
-    return result
-
-socket.getaddrinfo = _cached_getaddrinfo
 
 # Adjust path to import backend modules
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
