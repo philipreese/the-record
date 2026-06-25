@@ -2,18 +2,19 @@ import json
 import os
 import random
 from datetime import datetime, timezone
+from app.schemas import NarrativeResponse, StatsSummaryResponse, StreakStatsResponse
 
 def load_templates():
     file_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'narrative_templates.json')
     with open(file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def evaluate_condition(cond, stats, streak):
+def evaluate_condition(cond: str, stats: StatsSummaryResponse, streak: StreakStatsResponse) -> bool:
     if cond == "always_true":
         return True
-    
-    current_streak = streak.get("current_streak", 0)
-    avg_per_day = stats.get("avg_per_day", 0)
+
+    current_streak = streak.current_streak
+    avg_per_day = stats.avg_per_day
     
     if cond == "streak_over_30":
         return current_streak >= 30
@@ -37,20 +38,20 @@ def safe_interpolate(text, vars_dict):
         text = text.replace(f"{{{k}}}", str(v))
     return text
 
-def generate_narrative(stats, streak, seed=None):
+def generate_narrative(stats: StatsSummaryResponse, streak: StreakStatsResponse, seed: str | None = None) -> NarrativeResponse:
     templates = load_templates()
-    
+
     if not seed:
         seed = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-        
+
     rng = random.Random(seed)
-    
+
     vars_dict = {
-        "days_active": stats.get("days_active", 0),
-        "avg_per_day": stats.get("avg_per_day", 0),
-        "top_source": stats.get("top_source", "").replace("_", " ").title(),
-        "current_streak": streak.get("current_streak", 0),
-        "total_listens": stats.get("total_listens", 0)
+        "days_active": stats.days_active,
+        "avg_per_day": stats.avg_per_day,
+        "top_source": stats.top_source.replace("_", " ").title(),
+        "current_streak": streak.current_streak,
+        "total_listens": stats.total_listens,
     }
     
     result = {}
@@ -85,4 +86,4 @@ def generate_narrative(stats, streak, seed=None):
         else:
             plain[key] = value
 
-    return {"plain": plain, "rich": rich}
+    return NarrativeResponse(plain=plain, rich=rich)

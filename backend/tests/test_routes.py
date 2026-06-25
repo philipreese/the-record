@@ -108,7 +108,7 @@ class TestSyncRace(unittest.IsolatedAsyncioTestCase):
                 mode="normal",
                 x_sync_token="secret",
             )
-            return res["status"]
+            return res.status
 
         with mock.patch.dict(os.environ, {"SYNC_TOKEN": "secret"}), \
                 mock.patch.object(sync_worker, "_run_sync"):

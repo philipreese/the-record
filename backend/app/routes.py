@@ -47,7 +47,7 @@ from app.schemas import (
 router = APIRouter()
 
 @router.get("/stats", response_model=StatsSummaryResponse)
-def read_stats() -> Any:
+def read_stats() -> StatsSummaryResponse:
     """Retrieve high-level listening history metrics."""
     return repo.get_stats_summary()
 @router.get("/top-artists", response_model=TopArtistsResponse)
@@ -57,7 +57,7 @@ def read_top_artists(
     search: Optional[str] = Query(None, description="Filter by artist name (case-insensitive substring)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: Optional[int] = Query(None, ge=1, le=100, description="Page size (overrides limit if set)"),
-) -> Any:
+) -> TopArtistsResponse:
     """Retrieve top artists for a specified time range."""
     actual_limit = page_size if page_size is not None else limit
     clean_search = search.strip() if search else None
@@ -72,7 +72,7 @@ def read_top_tracks(
     search: Optional[str] = Query(None, description="Filter by track or artist name (case-insensitive substring)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: Optional[int] = Query(None, ge=1, le=100, description="Page size (overrides limit if set)"),
-) -> Any:
+) -> TopTracksResponse:
     """Retrieve top tracks for a specified time range."""
     actual_limit = page_size if page_size is not None else limit
     clean_search = search.strip() if search else None
@@ -83,34 +83,34 @@ def read_top_tracks(
 @router.get("/heatmap", response_model=Dict[str, int])
 def read_heatmap(
     year: Optional[int] = Query(None, ge=2000, le=2100, description="The calendar year to display"),
-) -> Any:
+) -> dict[str, int]:
     """Retrieve daily play counts for a calendar heatmap visualization."""
     return repo.get_heatmap_data(year=year)
 
 @router.get("/trends/hourly", response_model=Dict[str, int])
-def read_hourly_trends() -> Any:
+def read_hourly_trends() -> dict[str, int]:
     """Retrieve play counts grouped by the hour of the day."""
     return repo.get_hourly_trends()
 
 @router.get("/trends/punchcard", response_model=Dict[str, int])
-def read_punchcard() -> Any:
+def read_punchcard() -> dict[str, int]:
     """Retrieve play counts grouped by day-of-week and hour (keys: '{dow}_{HH}', dow 0=Sun)."""
     return repo.get_punchcard_data()
 
 @router.get("/trends/monthly", response_model=List[MonthlyTrendInfo])
-def read_monthly_trends() -> Any:
+def read_monthly_trends() -> list[MonthlyTrendInfo]:
     """Retrieve play counts grouped by month (chronological)."""
     return repo.get_monthly_trends()
 
 @router.get("/trends/streak", response_model=StreakStatsResponse)
-def read_streak() -> Any:
+def read_streak() -> StreakStatsResponse:
     """Retrieve active and historical daily listening streaks."""
     return repo.get_streak_stats()
 
 @router.get("/narrative", response_model=NarrativeResponse)
 def read_narrative(
     seed: Optional[str] = Query(None, description="Optional seed for daily stable randomization"),
-) -> Any:
+) -> NarrativeResponse:
     """Retrieve dynamic narrative strings for the UI."""
     stats = repo.get_stats_summary()
     streak = repo.get_streak_stats()
@@ -122,7 +122,7 @@ def read_wrapped(
     year: Optional[int] = Query(None, ge=2000, le=2100, description="Filter by year (e.g. 2025)"),
     quarter: Optional[Literal["Q1", "Q2", "Q3", "Q4"]] = Query(None, description="Filter by quarter: Q1, Q2, Q3, Q4"),
     month: Optional[Literal["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"]] = Query(None, description="Filter by month: M1 to M12"),
-) -> Any:
+) -> WrappedDataResponse:
     """Retrieve aggregated review stats for custom time intervals (Spotify Wrapped style)."""
     if not year:
         raise HTTPException(
@@ -137,7 +137,7 @@ def read_recent(
     before_ts: Optional[int] = Query(None, description="Cursor: unix_ts of the last item from the previous page"),
     before_id: Optional[int] = Query(None, description="Cursor: id of the last item from the previous page"),
     anchor_date: Optional[str] = Query(None, description="Anchor date: seek to first listen on or before YYYY-MM-DD"),
-) -> Any:
+) -> list[ListenEntry]:
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
     return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id, anchor_date=anchor_date)
 
@@ -146,11 +146,11 @@ def read_track_stats(
     artist: str = Query(..., description="Artist name"),
     title: str = Query(..., description="Track title"),
     album: Optional[str] = Query(None, description="Optional album name to scope the count"),
-) -> Any:
+) -> TrackStatsResponse:
     """Retrieve all-time play count (and duration when available) for a specific track."""
     album_val = album.strip() if album and album.strip() else None
     play_count, duration = repo.get_track_stats(artist=artist, title=title, album=album_val)
-    return {"play_count": play_count, "duration_secs": duration}
+    return TrackStatsResponse(play_count=play_count, duration_secs=duration)
 
 # Upper bound on the batch endpoint: each pair expands into an OR/AND clause in the
 # query, so an unbounded list would build a pathological statement. The UI only ever
@@ -161,7 +161,7 @@ _MAX_BATCH_TRACKS = 500
 @router.post("/track-stats/batch", response_model=List[TrackBatchResponseItem])
 def read_track_stats_batch(
     tracks: List[TrackBatchRequestItem]
-) -> Any:
+) -> list[TrackBatchResponseItem]:
     """Retrieve all-time play count and first available non-null duration for a list of tracks."""
     if len(tracks) > _MAX_BATCH_TRACKS:
         raise HTTPException(
@@ -430,7 +430,7 @@ def _schedule_art(coro) -> None:
 
 
 @router.get("/playing-now", response_model=PlayingNowResponse)
-async def get_playing_now() -> Any:
+async def get_playing_now() -> PlayingNowResponse:
     """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
     from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
 
@@ -441,7 +441,7 @@ async def get_playing_now() -> Any:
         r = rows[0]
         return PlayingNowResponse(
             is_playing=False,
-            last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+            last_played=LastPlayedEntry(artist=r.artist, title=r.title, unix_ts=r.unix_ts),
         )
 
     lb_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/playing-now"
@@ -467,27 +467,27 @@ async def get_playing_now() -> Any:
 
             # Fast-path cache check: if we already have a resolved or suppressed art result
             # for this track, avoid calling ListenBrainz listens endpoint and CAA/MB.
-            cache_key = _art_key(r["artist"], r["title"])
+            cache_key = _art_key(r.artist, r.title)
             if cache_key in _cover_art_cache:
                 return PlayingNowResponse(
                     is_playing=False,
                     last_played=LastPlayedEntry(
-                        artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"],
+                        artist=r.artist, title=r.title, unix_ts=r.unix_ts,
                         cover_art_url=_cover_art_cache[cache_key],
                     ),
                 )
             # Cache miss: kick off background enrichment + art resolution and return
             # immediately. The next poll (20s) will hit the cache.
-            bg_key = _art_key(r["artist"], r["title"])
+            bg_key = _art_key(r.artist, r.title)
             if bg_key not in _art_in_flight:
                 _art_in_flight.add(bg_key)
                 _schedule_art(_bg_resolve_last_played_art(
-                    r["artist"], r["title"], LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
+                    r.artist, r.title, LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
                 ))
             return PlayingNowResponse(
                 is_playing=False,
                 last_played=LastPlayedEntry(
-                    artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"], cover_art_url=None
+                    artist=r.artist, title=r.title, unix_ts=r.unix_ts, cover_art_url=None
                 ),
             )
 
@@ -524,17 +524,17 @@ async def get_playing_now() -> Any:
         if not rows:
             return PlayingNowResponse(is_playing=False)
         r = rows[0]
-        cached_art = _cover_art_cache.get(_art_key(r["artist"], r["title"]))
+        cached_art = _cover_art_cache.get(_art_key(r.artist, r.title))
         return PlayingNowResponse(
             is_playing=False,
             last_played=LastPlayedEntry(
-                artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"],
+                artist=r.artist, title=r.title, unix_ts=r.unix_ts,
                 cover_art_url=cached_art,
             ),
         )
 
 @router.get("/last-played", response_model=PlayingNowResponse)
-def get_last_played() -> Any:
+def get_last_played() -> PlayingNowResponse:
     """Return the most recent listen from the local DB with no LB network call — fast cold-start pre-population."""
     rows = repo.get_recent_listens(limit=1)
     if not rows:
@@ -542,7 +542,7 @@ def get_last_played() -> Any:
     r = rows[0]
     return PlayingNowResponse(
         is_playing=False,
-        last_played=LastPlayedEntry(artist=r["artist"], title=r["title"], unix_ts=r["unix_ts"]),
+        last_played=LastPlayedEntry(artist=r.artist, title=r.title, unix_ts=r.unix_ts),
     )
 
 @router.post("/sync", response_model=SyncStartResponse)
@@ -558,7 +558,7 @@ async def start_sync(
         ),
     ),
     x_sync_token: Optional[str] = Header(None),
-) -> Any:
+) -> SyncStartResponse:
     """
     Kick off a background sync with ListenBrainz and return immediately.
     Poll GET /api/sync/status for progress and results.
@@ -571,10 +571,10 @@ async def start_sync(
 
     async with sync_worker._sync_lock:
         if sync_worker._sync_state.running:
-            return {
-                "status": "already_running",
-                "message": "A sync is already in progress. Poll /api/sync/status for updates.",
-            }
+            return SyncStartResponse(
+                status="already_running",
+                message="A sync is already in progress. Poll /api/sync/status for updates.",
+            )
         s = sync_worker._sync_state
         s.running = True
         s.mode = mode
@@ -591,27 +591,27 @@ async def start_sync(
         background_tasks.add_task(sync_worker._run_mirror)
     else:
         background_tasks.add_task(sync_worker._run_sync, mode)
-    return {"status": "started", "mode": mode}
+    return SyncStartResponse(status="started", mode=mode)
 
 @router.get("/sync/status", response_model=SyncStatusResponse)
-def get_sync_status() -> Any:
+def get_sync_status() -> SyncStatusResponse:
     """Return the current state of the background sync job."""
     s = sync_worker._sync_state
-    return {
-        "running": s.running,
-        "finished": s.finished,
-        "mode": s.mode,
-        "batches_fetched": s.batches_fetched,
-        "synced_count": s.synced_count,
-        "updated_count": s.updated_count,
-        "deleted_count": s.deleted_count,
-        "lb_total": s.lb_total,
-        "local_total": s.local_total,
-        "error": s.error,
-    }
+    return SyncStatusResponse(
+        running=s.running,
+        finished=s.finished,
+        mode=s.mode,
+        batches_fetched=s.batches_fetched,
+        synced_count=s.synced_count,
+        updated_count=s.updated_count,
+        deleted_count=s.deleted_count,
+        lb_total=s.lb_total,
+        local_total=s.local_total,
+        error=s.error,
+    )
 
 @router.get("/on-this-day", response_model=OnThisDayResponse)
-def read_on_this_day() -> Any:
+def read_on_this_day() -> OnThisDayResponse:
     """Retrieve listens for today's calendar date grouped by prior year."""
     from datetime import datetime
     today = datetime.now()
@@ -651,7 +651,7 @@ def export_listens(
 @router.get("/day/{date_str}", response_model=List[ListenEntry])
 def read_day_listens(
     date_str: str = Path(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="Calendar date (YYYY-MM-DD) in local timezone"),
-) -> Any:
+) -> list[ListenEntry]:
     """Retrieve all listens for a specific calendar date, in chronological order."""
     return repo.get_listens_by_day(date_str)
 
@@ -660,7 +660,7 @@ def read_day_listens(
 def read_monthly_weekly_breakdown(
     year: int = Path(..., ge=2000, le=2100),
     month: int = Path(..., ge=1, le=12),
-) -> Any:
+) -> list[WeeklyBreakdownItem]:
     """Retrieve play counts grouped by week-of-month for a given year and month."""
     return repo.get_weekly_breakdown(year, month)
 
@@ -669,7 +669,7 @@ def read_monthly_weekly_breakdown(
 def read_top_artist_trends(
     year: int = Query(..., ge=2000, le=2100, description="The calendar year to display"),
     limit: int = Query(5, ge=1, le=20, description="Max artists to return"),
-) -> Any:
+) -> TopArtistTrendsResponse:
     """Retrieve top N artists with their monthly breakdowns for a specified year."""
     return repo.get_top_artist_trends(year=year, limit=limit)
 
@@ -679,7 +679,7 @@ def read_artist_trend(
     artist: str = Query(..., description="Artist name"),
     year: int = Query(..., ge=2000, le=2100, description="The calendar year to display"),
     limit: int = Query(5, ge=1, le=20, description="Max tracks to return"),
-) -> Any:
+) -> ArtistTrendResponse:
     """Retrieve top N tracks of an artist with their monthly breakdowns for a specified year."""
     clean_artist = artist.strip()
     if not clean_artist:
@@ -691,7 +691,7 @@ def read_artist_trend(
 def read_artist_stats(
     name: str = Query(..., description="Artist name"),
     range_param: Literal["30", "90", "365", "all"] = Query("all", alias="range"),
-) -> Any:
+) -> ArtistStatsResponse:
     """Retrieve comprehensive personal listening stats for a specific artist."""
     clean_name = name.strip()
     if not clean_name:
