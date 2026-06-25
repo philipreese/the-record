@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0](https://github.com/philipreese/the-record/compare/v0.28.0...v0.29.0) (2026-06-25)
+
+
+### Features
+
+* **graphql:** GraphQL endpoint for Artist Explorer data ([ae96f03](https://github.com/philipreese/the-record/commit/ae96f03bcfe8cb9685cff77660f47daae80fbc3e))
+
+
+### Code Refactoring
+
+* **graphql:** Use Strawberry Pydantic integration for leaf types ([8e2f079](https://github.com/philipreese/the-record/commit/8e2f07945d18779cda205329fe4a7bf6e28f613d))
+
 ## [0.28.0](https://github.com/philipreese/the-record/compare/v0.27.0...v0.28.0) (2026-06-25)
 
 
