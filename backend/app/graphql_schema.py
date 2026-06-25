@@ -3,20 +3,33 @@ from __future__ import annotations
 from typing import Optional
 
 import strawberry
+import strawberry.experimental.pydantic as spydantic
 from strawberry.fastapi import GraphQLRouter
 
 import app.repository as repo
+from app.schemas import ArtistMonthlyTrend, ArtistTopTrack, WrappedPeakDay
 
 
-@strawberry.type
+# Strawberry types derived from Pydantic models — no duplicate field declarations.
+# from_pydantic() is injected by @spydantic.type at runtime; pyrefly: ignore suppresses
+# the missing-attribute error on the three call sites below.
+
+@spydantic.type(model=ArtistTopTrack, all_fields=True)
 class ArtistTrack:
-    title: str
-    play_count: int
-    album: Optional[str]
-    duration_secs: Optional[int]
-    first_listen_ts: Optional[int]
-    last_listen_ts: Optional[int]
+    pass
 
+
+@spydantic.type(model=ArtistMonthlyTrend, all_fields=True)
+class MonthlyTrend:
+    pass
+
+
+@spydantic.type(model=WrappedPeakDay, all_fields=True)
+class PeakDay:
+    pass
+
+
+# Manual types — no corresponding Pydantic model.
 
 @strawberry.type
 class ArtistAlbum:
@@ -25,22 +38,13 @@ class ArtistAlbum:
 
 
 @strawberry.type
-class MonthlyTrend:
-    month: str
-    count: int
-
-
-@strawberry.type
 class HourlyCount:
     hour: str
     count: int
 
 
-@strawberry.type
-class PeakDay:
-    date: str
-    plays: int
-
+# Top-level result type — manual because it adds topAlbums (not in ArtistStatsResponse)
+# and converts hourly dict → list.
 
 @strawberry.type
 class ArtistStats:
@@ -80,28 +84,11 @@ class Query:
             rank=stats.rank,
             first_listen_ts=stats.first_listen_ts,
             plays_since_discovery=stats.plays_since_discovery,
-            top_tracks=[
-                ArtistTrack(
-                    title=t.title,
-                    play_count=t.play_count,
-                    album=t.album,
-                    duration_secs=t.duration_secs,
-                    first_listen_ts=t.first_listen_ts,
-                    last_listen_ts=t.last_listen_ts,
-                )
-                for t in stats.top_tracks
-            ],
+            top_tracks=[ArtistTrack.from_pydantic(t) for t in stats.top_tracks],  # pyrefly: ignore[missing-attribute]
             top_albums=top_albums,
-            monthly_trends=[
-                MonthlyTrend(month=m.month, count=m.count)
-                for m in stats.monthly_trends
-            ],
-            peak_day=PeakDay(date=stats.peak_day.date, plays=stats.peak_day.plays)
-            if stats.peak_day
-            else None,
-            hourly=[
-                HourlyCount(hour=h, count=c) for h, c in stats.hourly.items()
-            ],
+            monthly_trends=[MonthlyTrend.from_pydantic(m) for m in stats.monthly_trends],  # pyrefly: ignore[missing-attribute]
+            peak_day=PeakDay.from_pydantic(stats.peak_day) if stats.peak_day else None,  # pyrefly: ignore[missing-attribute]
+            hourly=[HourlyCount(hour=h, count=c) for h, c in stats.hourly.items()],
         )
 
 
