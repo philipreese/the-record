@@ -6,6 +6,34 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_, or_, and_
 from app.db import get_engine, Listen
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
+from app.schemas import (
+    ArtistAnniversary,
+    ArtistInfo,
+    ArtistMonthlyTrend,
+    ArtistStatsResponse,
+    ArtistTopTrack,
+    ArtistTrendResponse,
+    ArtistTrendSeries,
+    ListenEntry,
+    MonthlyTrendInfo,
+    OnRepeatPeak,
+    OnThisDayGroup,
+    OnThisDayResponse,
+    StatsSummaryResponse,
+    StreakStatsResponse,
+    TopArtistsResponse,
+    TopArtistTrendsResponse,
+    TopTracksResponse,
+    TrackBatchResponseItem,
+    TrackInfo,
+    TrackMonthlyTrend,
+    TrackTrendSeries,
+    WeeklyBreakdownItem,
+    WrappedArtist,
+    WrappedDataResponse,
+    WrappedPeakDay,
+    WrappedTrack,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,31 +47,31 @@ def get_current_local_date() -> date:
             pass
     return datetime.now().date()
 
-def get_stats_summary() -> dict[str, Any]:
+def get_stats_summary() -> StatsSummaryResponse:
     """Calculate overall statistics from the scrobble database."""
     with get_engine().connect() as conn:
         # Total count
         total_listens = conn.execute(select(func.count(Listen.id))).scalar() or 0
-        
+
         db_type = "PostgreSQL (Neon)" if IS_POSTGRES else "SQLite (Local)"
-        
+
         if total_listens == 0:
-            return {
-                "total_listens": 0, "unique_artists": 0, "unique_tracks": 0,
-                "days_active": 0, "avg_per_day": 0.0, "top_source": "None",
-                "db_type": db_type
-            }
-            
+            return StatsSummaryResponse(
+                total_listens=0, unique_artists=0, unique_tracks=0,
+                days_active=0, avg_per_day=0.0, top_source="None",
+                db_type=db_type,
+            )
+
         # Unique artists
         unique_artists = conn.execute(select(func.count(distinct(Listen.artist)))).scalar() or 0
-        
+
         # Unique tracks
         unique_tracks = conn.execute(select(func.count(distinct(Listen.artist + " - " + Listen.title)))).scalar() or 0
-        
+
         # Days active
         date_exp = get_date_expr(Listen.unix_ts)
         days_active = conn.execute(select(func.count(distinct(date_exp)))).scalar() or 0
-        
+
         # Top source
         stmt_source = select(Listen.source, func.count(Listen.id).label("cnt"))\
             .group_by(Listen.source)\
@@ -51,24 +79,24 @@ def get_stats_summary() -> dict[str, Any]:
             .limit(1)
         source_row = conn.execute(stmt_source).first()
         top_source = source_row.source if source_row else "unknown"
-        
+
         # Average per day
         avg_per_day = round(total_listens / days_active, 1) if days_active > 0 else 0
 
         # Oldest year
         min_ts = conn.execute(select(func.min(Listen.unix_ts))).scalar()
         first_year = datetime.fromtimestamp(min_ts, tz=timezone.utc).year if min_ts else datetime.now().year
-        
-        return {
-            "total_listens": total_listens,
-            "unique_artists": unique_artists,
-            "unique_tracks": unique_tracks,
-            "days_active": days_active,
-            "avg_per_day": avg_per_day,
-            "top_source": top_source,
-            "db_type": db_type,
-            "first_year": first_year
-        }
+
+        return StatsSummaryResponse(
+            total_listens=total_listens,
+            unique_artists=unique_artists,
+            unique_tracks=unique_tracks,
+            days_active=days_active,
+            avg_per_day=avg_per_day,
+            top_source=top_source,
+            db_type=db_type,
+            first_year=first_year,
+        )
 
 def get_time_range_filter(time_range_days: str):
     """Generate SQLAlchemy filter condition for a day-based time range."""
@@ -85,7 +113,7 @@ def get_top_artists(
     limit: int = 15,
     page: int = 1,
     search: Optional[str] = None
-) -> dict[str, Any]:
+) -> TopArtistsResponse:
     """Retrieve top artists with absolute rank, search filtering, pagination, and total count."""
     offset = (page - 1) * limit
     with get_engine().connect() as conn:
@@ -117,18 +145,15 @@ def get_top_artists(
         stmt = stmt.order_by(subq.c.rank, subq.c.artist).limit(limit).offset(offset)
         
         rows = conn.execute(stmt).all()
-        items = [
-            {"artist": r.artist, "play_count": r.play_count, "rank": r.rank}
-            for r in rows
-        ]
-        return {"items": items, "total_count": total_count}
+        items = [ArtistInfo(artist=r.artist, play_count=r.play_count, rank=r.rank) for r in rows]
+        return TopArtistsResponse(items=items, total_count=total_count)
 
 def get_top_tracks(
     time_range: str = "all",
     limit: int = 15,
     page: int = 1,
     search: Optional[str] = None
-) -> dict[str, Any]:
+) -> TopTracksResponse:
     """Retrieve top tracks with absolute rank, search filtering, pagination, and total count."""
     offset = (page - 1) * limit
     with get_engine().connect() as conn:
@@ -171,11 +196,8 @@ def get_top_tracks(
         stmt = stmt.order_by(subq.c.rank, subq.c.artist, subq.c.title).limit(limit).offset(offset)
         
         rows = conn.execute(stmt).all()
-        items = [
-            {"artist": r.artist, "title": r.title, "play_count": r.play_count, "rank": r.rank}
-            for r in rows
-        ]
-        return {"items": items, "total_count": total_count}
+        items = [TrackInfo(artist=r.artist, title=r.title, play_count=r.play_count, rank=r.rank) for r in rows]
+        return TopTracksResponse(items=items, total_count=total_count)
 
 
 def get_heatmap_data(year: int | str | None = None) -> dict[str, int]:
@@ -230,7 +252,7 @@ def get_punchcard_data() -> dict[str, int]:
                 trends[f"{int(r.dow)}_{r.hour}"] = r.cnt
         return trends
 
-def get_monthly_trends() -> list[dict[str, Any]]:
+def get_monthly_trends() -> list[MonthlyTrendInfo]:
     """Retrieve play counts grouped by month (YYYY-MM) in local time."""
     month_expr = get_month_expr(Listen.unix_ts)
     
@@ -240,9 +262,9 @@ def get_monthly_trends() -> list[dict[str, Any]]:
             .order_by("month")
             
         rows = conn.execute(stmt).all()
-        return [{"month": r.month, "count": r.cnt} for r in rows if r.month]
+        return [MonthlyTrendInfo(month=r.month, count=r.cnt) for r in rows if r.month]
 
-def get_streak_stats() -> dict[str, int]:
+def get_streak_stats() -> StreakStatsResponse:
     """Calculate the current active streak and all-time longest consecutive listening streak (in days)."""
     date_expr = get_date_expr(Listen.unix_ts)
     
@@ -254,7 +276,7 @@ def get_streak_stats() -> dict[str, int]:
         days = [datetime.strptime(r.day, "%Y-%m-%d").date() for r in rows if r.day]
     
     if not days:
-        return {"current_streak": 0, "longest_streak": 0}
+        return StreakStatsResponse(current_streak=0, longest_streak=0)
         
     longest = 0
     current = 0
@@ -299,12 +321,9 @@ def get_streak_stats() -> dict[str, int]:
                     break
             current_streak = current_run
             
-    return {
-        "current_streak": current_streak,
-        "longest_streak": max(longest, current_streak)
-    }
+    return StreakStatsResponse(current_streak=current_streak, longest_streak=max(longest, current_streak))
 
-def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None) -> dict[str, Any]:
+def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | None = None) -> WrappedDataResponse:
     """
     Retrieve highly detailed spotify-wrapped style metrics for custom periods.
     Supports years, quarters (Q1-Q4), specific months (M1-M12).
@@ -340,10 +359,10 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         total_plays = conn.execute(stmt_count).scalar() or 0
         
         if total_plays == 0:
-            return {
-                "total_plays": 0, "top_artist": None, "top_track": None,
-                "peak_day": None, "minutes_listened": 0, "on_repeat_peak": None,
-            }
+            return WrappedDataResponse(
+                total_plays=0, top_artist=None, top_track=None,
+                peak_day=None, minutes_listened=0, on_repeat_peak=None,
+            )
             
         # B. Top Artist
         stmt_artist = select(Listen.artist, func.count(Listen.id).label("cnt"))\
@@ -352,8 +371,8 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
             .order_by(desc("cnt"))\
             .limit(1)
         artist_row = conn.execute(stmt_artist).first()
-        top_artist = {"name": artist_row.artist, "plays": artist_row.cnt} if artist_row else None
-        
+        top_artist = WrappedArtist(name=artist_row.artist, plays=artist_row.cnt) if artist_row else None
+
         # C. Top Track
         stmt_track = select(Listen.artist, Listen.title, func.count(Listen.id).label("cnt"))\
             .where(*filters)\
@@ -361,8 +380,8 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
             .order_by(desc("cnt"))\
             .limit(1)
         track_row = conn.execute(stmt_track).first()
-        top_track = {"artist": track_row.artist, "title": track_row.title, "plays": track_row.cnt} if track_row else None
-        
+        top_track = WrappedTrack(artist=track_row.artist, title=track_row.title, plays=track_row.cnt) if track_row else None
+
         # D. Peak Listening Day
         date_expr = get_date_expr(Listen.unix_ts)
         stmt_peak = select(date_expr.label("day"), func.count(Listen.id).label("cnt"))\
@@ -371,8 +390,8 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
             .order_by(desc("cnt"))\
             .limit(1)
         day_row = conn.execute(stmt_peak).first()
-        peak_day = {"date": day_row.day, "plays": day_row.cnt} if day_row else None
-        
+        peak_day = WrappedPeakDay(date=day_row.day, plays=day_row.cnt) if day_row else None
+
         # E. Minutes Listened (true duration sum falling back to 3.5-min estimate for nulls)
         stmt_duration = select(func.sum(func.coalesce(Listen.duration_secs, 210))).where(*filters)
         total_seconds = conn.execute(stmt_duration).scalar() or 0
@@ -395,31 +414,31 @@ def get_wrapped_data(year: int | None, quarter: str | None = None, month: str | 
         )
         on_repeat_row = conn.execute(stmt_on_repeat).first()
         on_repeat_peak = (
-            {
-                "artist": on_repeat_row.artist,
-                "title": on_repeat_row.title,
-                "date": on_repeat_row.day,
-                "count": on_repeat_row.cnt,
-            }
+            OnRepeatPeak(
+                artist=on_repeat_row.artist,
+                title=on_repeat_row.title,
+                date=on_repeat_row.day,
+                count=on_repeat_row.cnt,
+            )
             if on_repeat_row
             else None
         )
 
-        return {
-            "total_plays": total_plays,
-            "top_artist": top_artist,
-            "top_track": top_track,
-            "peak_day": peak_day,
-            "minutes_listened": minutes_listened,
-            "on_repeat_peak": on_repeat_peak,
-        }
+        return WrappedDataResponse(
+            total_plays=total_plays,
+            top_artist=top_artist,
+            top_track=top_track,
+            peak_day=peak_day,
+            minutes_listened=minutes_listened,
+            on_repeat_peak=on_repeat_peak,
+        )
 
 def get_recent_listens(
     limit: int = 50,
     before_ts: int | None = None,
     before_id: int | None = None,
     anchor_date: Optional[str] = None,
-) -> list[dict[str, Any]]:
+) -> list[ListenEntry]:
     """Retrieve recent listens in reverse-chronological order using cursor-based keyset pagination.
 
     Pass before_ts and before_id (from the last item of the previous page) to get the next page.
@@ -456,15 +475,8 @@ def get_recent_listens(
         stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
         rows = conn.execute(stmt).all()
         return [
-            {
-                "id": r.id,
-                "artist": r.artist,
-                "title": r.title,
-                "unix_ts": r.unix_ts,
-                "source": r.source,
-                "duration_secs": r.duration_secs,
-                "album": r.album
-            }
+            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                        source=r.source, duration_secs=r.duration_secs, album=r.album)
             for r in rows
         ]
 
@@ -516,7 +528,7 @@ def get_track_play_count(artist: str, title: str, recording_mbid: Optional[str] 
     count, _ = get_track_stats(artist, title, recording_mbid=recording_mbid)
     return count
 
-def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[dict[str, Any]]:
+def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[TrackBatchResponseItem]:
     """Get the all-time play count and first available non-null duration for a list of tracks in a single batch query."""
     if not tracks:
         return []
@@ -557,16 +569,14 @@ def get_track_stats_batch(tracks: list[dict[str, str]]) -> list[dict[str, Any]]:
     for t in tracks:
         key = (t["artist"].lower(), t["title"].lower())
         play_count, duration = counts_map.get(key, (0, None))
-        result.append({
-            "artist": t["artist"],
-            "title": t["title"],
-            "play_count": play_count,
-            "duration_secs": duration
-        })
-        
+        result.append(TrackBatchResponseItem(
+            artist=t["artist"], title=t["title"],
+            play_count=play_count, duration_secs=duration,
+        ))
+
     return result
 
-def get_on_this_day_anniversaries(month: int, day: int) -> list[dict[str, Any]]:
+def get_on_this_day_anniversaries(month: int, day: int) -> list[ArtistAnniversary]:
     """Find artists whose first-ever listen anniversary falls on the given month/day (excluding current year)."""
     current_year = datetime.now().year
 
@@ -597,16 +607,16 @@ def get_on_this_day_anniversaries(month: int, day: int) -> list[dict[str, Any]]:
     for r in rows:
         dt = datetime.fromtimestamp(r.first_ts, tz=timezone.utc)
         if dt.year < current_year:
-            result.append({
-                "artist": r.artist,
-                "first_listen_ts": r.first_ts,
-                "years": current_year - dt.year,
-                "total_plays": r.total_plays,
-            })
+            result.append(ArtistAnniversary(
+                artist=r.artist,
+                first_listen_ts=r.first_ts,
+                years=current_year - dt.year,
+                total_plays=r.total_plays,
+            ))
     return result
 
 
-def get_on_this_day(month: int, day: int) -> dict[str, Any]:
+def get_on_this_day(month: int, day: int) -> OnThisDayResponse:
     """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
     month_expr = get_month_num_expr(Listen.unix_ts)
     day_expr = get_day_num_expr(Listen.unix_ts)
@@ -625,24 +635,17 @@ def get_on_this_day(month: int, day: int) -> dict[str, Any]:
         )
         rows = conn.execute(stmt).all()
 
-    groups: dict[str, list[dict[str, Any]]] = {}
+    groups: dict[str, list[ListenEntry]] = {}
     for r in rows:
         if int(r.year) == current_year:
             continue
         groups.setdefault(str(r.year), []).append(
-            {
-                "id": r.id,
-                "artist": r.artist,
-                "title": r.title,
-                "unix_ts": r.unix_ts,
-                "source": r.source,
-                "duration_secs": r.duration_secs,
-                "album": r.album
-            }
+            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                        source=r.source, duration_secs=r.duration_secs, album=r.album)
         )
-    group_list = [{"year": int(k), "listens": v} for k, v in groups.items()]
+    group_list = [OnThisDayGroup(year=int(k), listens=v) for k, v in groups.items()]
     anniversaries = get_on_this_day_anniversaries(month, day)
-    return {"groups": group_list, "anniversaries": anniversaries}
+    return OnThisDayResponse(groups=group_list, anniversaries=anniversaries)
 
 def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
     """Return all listen rows (or a time-filtered subset) sorted by unix_ts ascending."""
@@ -675,7 +678,7 @@ def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
     ]
 
 
-def get_listens_by_day(date_str: str) -> list[dict[str, Any]]:
+def get_listens_by_day(date_str: str) -> list[ListenEntry]:
     """Return all listens for a local-timezone calendar date (YYYY-MM-DD) in chronological order."""
     date_expr = get_date_expr(Listen.unix_ts)
     with get_engine().connect() as conn:
@@ -694,20 +697,13 @@ def get_listens_by_day(date_str: str) -> list[dict[str, Any]]:
         )
         rows = conn.execute(stmt).all()
         return [
-            {
-                "id": r.id,
-                "artist": r.artist,
-                "title": r.title,
-                "unix_ts": r.unix_ts,
-                "source": r.source,
-                "duration_secs": r.duration_secs,
-                "album": r.album,
-            }
+            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                        source=r.source, duration_secs=r.duration_secs, album=r.album)
             for r in rows
         ]
 
 
-def get_weekly_breakdown(year: int, month: int) -> list[dict[str, int]]:
+def get_weekly_breakdown(year: int, month: int) -> list[WeeklyBreakdownItem]:
     """Return play counts grouped by week-of-month (1–5) for a given year and month."""
     month_str = f"{year}-{month:02d}"
     month_expr = get_month_expr(Listen.unix_ts)
@@ -727,7 +723,7 @@ def get_weekly_breakdown(year: int, month: int) -> list[dict[str, int]]:
         week_num = (int(r.day_num) - 1) // 7 + 1
         weeks[week_num] = weeks.get(week_num, 0) + r.cnt
 
-    return [{"week": w, "count": weeks[w]} for w in sorted(weeks.keys())]
+    return [WeeklyBreakdownItem(week=w, count=weeks[w]) for w in sorted(weeks.keys())]
 
 
 def deduplicate_listens() -> int:
@@ -752,7 +748,7 @@ def deduplicate_listens() -> int:
         return res.rowcount
 
 
-def get_top_artist_trends(year: int, limit: int = 5) -> dict[str, Any]:
+def get_top_artist_trends(year: int, limit: int = 5) -> TopArtistTrendsResponse:
     """Retrieve top artists with their monthly breakdowns for a given year."""
     year_str = str(year)
     year_expr = get_year_expr(Listen.unix_ts)
@@ -769,7 +765,7 @@ def get_top_artist_trends(year: int, limit: int = 5) -> dict[str, Any]:
         )
         top_rows = conn.execute(stmt_top).all()
         if not top_rows:
-            return {"year": year, "trends": []}
+            return TopArtistTrendsResponse(year=year, trends=[])
 
         top_artists = [r.artist for r in top_rows]
         artist_play_counts = {r.artist: r.play_count for r in top_rows}
@@ -799,20 +795,17 @@ def get_top_artist_trends(year: int, limit: int = 5) -> dict[str, Any]:
 
     trends = []
     for artist in top_artists:
-        monthly_counts = [
-            {"month": m, "count": artist_data[artist][m]}
-            for m in months
-        ]
-        trends.append({
-            "artist": artist,
-            "play_count": artist_play_counts[artist],
-            "monthly_counts": monthly_counts
-        })
+        monthly_counts = [ArtistMonthlyTrend(month=m, count=artist_data[artist][m]) for m in months]
+        trends.append(ArtistTrendSeries(
+            artist=artist,
+            play_count=artist_play_counts[artist],
+            monthly_counts=monthly_counts,
+        ))
 
-    return {"year": year, "trends": trends}
+    return TopArtistTrendsResponse(year=year, trends=trends)
 
 
-def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
+def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsResponse:
     """Get comprehensive listening stats for a specific artist."""
     artist_filter = func.lower(Listen.artist) == artist.lower()
     range_filter = get_time_range_filter(time_range)
@@ -827,16 +820,16 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
         ).scalar() or 0
 
         if total_plays == 0:
-            return {
-                "artist": artist,
-                "total_plays": 0,
-                "rank": None,
-                "top_tracks": [],
-                "monthly_trends": [],
-                "peak_day": None,
-                "hourly": {f"{h:02d}": 0 for h in range(24)},
-                "first_listen_ts": None,
-            }
+            return ArtistStatsResponse(
+                artist=artist,
+                total_plays=0,
+                rank=None,
+                top_tracks=[],
+                monthly_trends=[],
+                peak_day=None,
+                hourly={f"{h:02d}": 0 for h in range(24)},
+                first_listen_ts=None,
+            )
 
         # All-time rank (ignores time_range)
         rank_subq = (
@@ -868,14 +861,11 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
             .order_by(desc("play_count"))
         )
         top_tracks = [
-            {
-                "title": r.title,
-                "play_count": r.play_count,
-                "first_listen_ts": r.first_ts,
-                "last_listen_ts": r.last_ts,
-                "album": r.album,
-                "duration_secs": r.duration_secs,
-            }
+            ArtistTopTrack(
+                title=r.title, play_count=r.play_count,
+                first_listen_ts=r.first_ts, last_listen_ts=r.last_ts,
+                album=r.album, duration_secs=r.duration_secs,
+            )
             for r in conn.execute(stmt_tracks).all()
         ]
 
@@ -888,7 +878,7 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
             .order_by("month")
         )
         monthly_trends = [
-            {"month": r.month, "count": r.cnt}
+            ArtistMonthlyTrend(month=r.month, count=r.cnt)
             for r in conn.execute(stmt_monthly).all()
             if r.month
         ]
@@ -903,7 +893,7 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
             .limit(1)
         )
         day_row = conn.execute(stmt_peak).first()
-        peak_day = {"date": day_row.day, "plays": day_row.cnt} if day_row else None
+        peak_day = WrappedPeakDay(date=day_row.day, plays=day_row.cnt) if day_row else None
 
         # Hourly distribution in selected time range
         hour_expr = get_hour_expr(Listen.unix_ts)
@@ -926,20 +916,20 @@ def get_artist_stats(artist: str, time_range: str = "all") -> dict[str, Any]:
         first_listen_ts = all_time_row[0] if all_time_row else None
         plays_since_discovery = all_time_row[1] if all_time_row else 0
 
-    return {
-        "artist": artist,
-        "total_plays": total_plays,
-        "rank": rank,
-        "top_tracks": top_tracks,
-        "monthly_trends": monthly_trends,
-        "peak_day": peak_day,
-        "hourly": hourly,
-        "first_listen_ts": first_listen_ts,
-        "plays_since_discovery": plays_since_discovery,
-    }
+    return ArtistStatsResponse(
+        artist=artist,
+        total_plays=total_plays,
+        rank=rank,
+        top_tracks=top_tracks,
+        monthly_trends=monthly_trends,
+        peak_day=peak_day,
+        hourly=hourly,
+        first_listen_ts=first_listen_ts,
+        plays_since_discovery=plays_since_discovery,
+    )
 
 
-def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> dict[str, Any]:
+def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> ArtistTrendResponse:
     """Retrieve top tracks of an artist with their monthly breakdowns for a given year."""
     year_str = str(year)
     year_expr = get_year_expr(Listen.unix_ts)
@@ -956,7 +946,7 @@ def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> dict[str,
         )
         top_rows = conn.execute(stmt_top).all()
         if not top_rows:
-            return {"artist": artist, "year": year, "trends": []}
+            return ArtistTrendResponse(artist=artist, year=year, trends=[])
 
         top_tracks = [r.title for r in top_rows]
         track_play_counts = {r.title: r.play_count for r in top_rows}
@@ -990,15 +980,12 @@ def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> dict[str,
 
     trends = []
     for title in top_tracks:
-        monthly_counts = [
-            {"month": m, "count": track_data[title][m]}
-            for m in months
-        ]
-        trends.append({
-            "track": title,
-            "play_count": track_play_counts[title],
-            "monthly_counts": monthly_counts
-        })
+        monthly_counts = [TrackMonthlyTrend(month=m, count=track_data[title][m]) for m in months]
+        trends.append(TrackTrendSeries(
+            track=title,
+            play_count=track_play_counts[title],
+            monthly_counts=monthly_counts,
+        ))
 
-    return {"artist": artist, "year": year, "trends": trends}
+    return ArtistTrendResponse(artist=artist, year=year, trends=trends)
 

@@ -65,91 +65,91 @@ class TestDatabaseQueries(unittest.TestCase):
 
     def test_stats_summary(self):
         stats = database.get_stats_summary()
-        self.assertEqual(stats["total_listens"], 7)
-        self.assertEqual(stats["unique_artists"], 3)  # A, B, C
-        self.assertEqual(stats["unique_tracks"], 5)   # A-1, A-2, B-3, B-4, C-5
-        self.assertEqual(stats["top_source"], "youtube_music")
+        self.assertEqual(stats.total_listens, 7)
+        self.assertEqual(stats.unique_artists, 3)  # A, B, C
+        self.assertEqual(stats.unique_tracks, 5)   # A-1, A-2, B-3, B-4, C-5
+        self.assertEqual(stats.top_source, "youtube_music")
         # 5 distinct days of scrobbles: now (includes 2 plays), yesterday (includes 2 plays), 2 days ago, 10 days ago, 100 days ago
-        self.assertEqual(stats["days_active"], 5)
-        self.assertEqual(stats["avg_per_day"], 1.4)  # 7 / 5 = 1.4
+        self.assertEqual(stats.days_active, 5)
+        self.assertEqual(stats.avg_per_day, 1.4)  # 7 / 5 = 1.4
 
     def test_top_artists(self):
         # All time
         top_data = database.get_top_artists(time_range="all", limit=5)
-        top = top_data["items"]
-        self.assertEqual(top_data["total_count"], 3)
+        top = top_data.items
+        self.assertEqual(top_data.total_count, 3)
         self.assertEqual(len(top), 3)
-        self.assertEqual(top[0]["artist"], "Artist A")
-        self.assertEqual(top[0]["play_count"], 4)
-        self.assertEqual(top[0]["rank"], 1)
-        self.assertEqual(top[1]["artist"], "Artist B")
-        self.assertEqual(top[1]["play_count"], 2)
-        self.assertEqual(top[1]["rank"], 2)
+        self.assertEqual(top[0].artist, "Artist A")
+        self.assertEqual(top[0].play_count, 4)
+        self.assertEqual(top[0].rank, 1)
+        self.assertEqual(top[1].artist, "Artist B")
+        self.assertEqual(top[1].play_count, 2)
+        self.assertEqual(top[1].rank, 2)
 
         # Last 30 days (should exclude the play 100 days ago)
         # Plays remaining: now (2), yesterday (2), 2 days ago (1), 10 days ago (1). Total = 6 plays.
         # Artist A has 3 plays within 30 days. Artist B has 2. Artist C has 1.
         top_30d_data = database.get_top_artists(time_range="30", limit=5)
-        top_30d = top_30d_data["items"]
-        self.assertEqual(top_30d_data["total_count"], 3)
+        top_30d = top_30d_data.items
+        self.assertEqual(top_30d_data.total_count, 3)
         self.assertEqual(len(top_30d), 3)
-        self.assertEqual(top_30d[0]["artist"], "Artist A")
-        self.assertEqual(top_30d[0]["play_count"], 3)
-        self.assertEqual(top_30d[0]["rank"], 1)
+        self.assertEqual(top_30d[0].artist, "Artist A")
+        self.assertEqual(top_30d[0].play_count, 3)
+        self.assertEqual(top_30d[0].rank, 1)
 
         # Test Search
         top_search_data = database.get_top_artists(time_range="all", limit=5, search="Artist B")
-        top_search = top_search_data["items"]
-        self.assertEqual(top_search_data["total_count"], 1)
+        top_search = top_search_data.items
+        self.assertEqual(top_search_data.total_count, 1)
         self.assertEqual(len(top_search), 1)
-        self.assertEqual(top_search[0]["artist"], "Artist B")
-        self.assertEqual(top_search[0]["rank"], 2)  # true absolute rank is 2 overall
+        self.assertEqual(top_search[0].artist, "Artist B")
+        self.assertEqual(top_search[0].rank, 2)  # true absolute rank is 2 overall
 
         # Test Pagination (Page 2, limit 1)
         top_page_2_data = database.get_top_artists(time_range="all", limit=1, page=2)
-        top_page_2 = top_page_2_data["items"]
-        self.assertEqual(top_page_2_data["total_count"], 3)
+        top_page_2 = top_page_2_data.items
+        self.assertEqual(top_page_2_data.total_count, 3)
         self.assertEqual(len(top_page_2), 1)
-        self.assertEqual(top_page_2[0]["artist"], "Artist B")
-        self.assertEqual(top_page_2[0]["rank"], 2)
+        self.assertEqual(top_page_2[0].artist, "Artist B")
+        self.assertEqual(top_page_2[0].rank, 2)
 
     def test_top_tracks(self):
         top_data = database.get_top_tracks(time_range="all", limit=5)
-        top = top_data["items"]
-        self.assertEqual(top_data["total_count"], 5)
+        top = top_data.items
+        self.assertEqual(top_data.total_count, 5)
         self.assertEqual(len(top), 5)
         # Track 1 has 3 plays
-        self.assertEqual(top[0]["title"], "Track 1")
-        self.assertEqual(top[0]["play_count"], 3)
-        self.assertEqual(top[0]["rank"], 1)
+        self.assertEqual(top[0].title, "Track 1")
+        self.assertEqual(top[0].play_count, 3)
+        self.assertEqual(top[0].rank, 1)
 
         # Test Search by artist or title
         top_search_title_data = database.get_top_tracks(time_range="all", limit=5, search="Track 3")
-        top_search_title = top_search_title_data["items"]
-        self.assertEqual(top_search_title_data["total_count"], 1)
+        top_search_title = top_search_title_data.items
+        self.assertEqual(top_search_title_data.total_count, 1)
         self.assertEqual(len(top_search_title), 1)
-        self.assertEqual(top_search_title[0]["title"], "Track 3")
-        self.assertEqual(top_search_title[0]["rank"], 2)  # Tied at rank 2
+        self.assertEqual(top_search_title[0].title, "Track 3")
+        self.assertEqual(top_search_title[0].rank, 2)  # Tied at rank 2
 
         top_search_artist_data = database.get_top_tracks(time_range="all", limit=5, search="Artist C")
-        top_search_artist = top_search_artist_data["items"]
-        self.assertEqual(top_search_artist_data["total_count"], 1)
+        top_search_artist = top_search_artist_data.items
+        self.assertEqual(top_search_artist_data.total_count, 1)
         self.assertEqual(len(top_search_artist), 1)
-        self.assertEqual(top_search_artist[0]["title"], "Track 5")
-        self.assertEqual(top_search_artist[0]["rank"], 2)
+        self.assertEqual(top_search_artist[0].title, "Track 5")
+        self.assertEqual(top_search_artist[0].rank, 2)
 
         # Test Pagination (Page 2, limit 2)
         top_page_2_data = database.get_top_tracks(time_range="all", limit=2, page=2)
-        top_page_2 = top_page_2_data["items"]
-        self.assertEqual(top_page_2_data["total_count"], 5)
+        top_page_2 = top_page_2_data.items
+        self.assertEqual(top_page_2_data.total_count, 5)
         self.assertEqual(len(top_page_2), 2)
         # Verify pagination ordering:
         # Rank 1: Artist A Track 1
         # Rank 2: Artist A Track 2, Artist B Track 3, Artist B Track 4, Artist C Track 5 (sorted by artist, title)
         # Page 1 (limit 2): Artist A Track 1, Artist A Track 2
         # Page 2 (limit 2): Artist B Track 3, Artist B Track 4
-        self.assertEqual(top_page_2[0]["title"], "Track 3")
-        self.assertEqual(top_page_2[1]["title"], "Track 4")
+        self.assertEqual(top_page_2[0].title, "Track 3")
+        self.assertEqual(top_page_2[1].title, "Track 4")
 
     def test_heatmap_data(self):
         current_year = self.now.year
@@ -171,24 +171,26 @@ class TestDatabaseQueries(unittest.TestCase):
     def test_monthly_trends(self):
         trends = database.get_monthly_trends()
         self.assertTrue(len(trends) >= 1)
-        self.assertEqual(sum(t["count"] for t in trends), 7)
+        self.assertEqual(sum(t.count for t in trends), 7)
 
     def test_streak_stats(self):
         # We have listening on: now, now-1, now-2. That forms a 3-day consecutive streak.
         # now-10 is a gap. now-100 is a gap.
         streaks = database.get_streak_stats()
-        self.assertEqual(streaks["current_streak"], 3)
-        self.assertTrue(streaks["longest_streak"] >= 3)
+        self.assertEqual(streaks.current_streak, 3)
+        self.assertTrue(streaks.longest_streak >= 3)
 
     def test_wrapped_data(self):
         current_year = self.now.year
         wrapped = database.get_wrapped_data(year=current_year)
 
-        self.assertEqual(wrapped["total_plays"], 7)
-        self.assertEqual(wrapped["top_artist"]["name"], "Artist A")
-        self.assertEqual(wrapped["top_artist"]["plays"], 4)
-        self.assertEqual(wrapped["top_track"]["title"], "Track 1")
-        self.assertEqual(wrapped["top_track"]["plays"], 3)
+        self.assertEqual(wrapped.total_plays, 7)
+        self.assertIsNotNone(wrapped.top_artist)
+        self.assertEqual(wrapped.top_artist.name, "Artist A")
+        self.assertEqual(wrapped.top_artist.plays, 4)
+        self.assertIsNotNone(wrapped.top_track)
+        self.assertEqual(wrapped.top_track.title, "Track 1")
+        self.assertEqual(wrapped.top_track.plays, 3)
         # Expected duration seconds:
         # - Artist A, Track 1 (now) -> 180s
         # - Artist A, Track 1 (now - 10) -> None -> 210s
@@ -199,11 +201,11 @@ class TestDatabaseQueries(unittest.TestCase):
         # - Artist C, Track 5 (2_days_ago) -> 300s
         # Total = 180 + 210 + 240 + 210 + 200 + 210 + 300 = 1550 seconds
         # Minutes = round(1550 / 60) = 26
-        self.assertEqual(wrapped["minutes_listened"], 26)
+        self.assertEqual(wrapped.minutes_listened, 26)
         # On-repeat peak: Track 1 has 2 plays today (ts_now and ts_now-10)
-        self.assertIsNotNone(wrapped["on_repeat_peak"])
-        self.assertEqual(wrapped["on_repeat_peak"]["title"].lower(), "track 1")
-        self.assertEqual(wrapped["on_repeat_peak"]["count"], 2)
+        self.assertIsNotNone(wrapped.on_repeat_peak)
+        self.assertEqual(wrapped.on_repeat_peak.title.lower(), "track 1")
+        self.assertEqual(wrapped.on_repeat_peak.count, 2)
 
     def test_on_repeat_peak_case_insensitive(self):
         # Casing variants of the same track on the same day must be merged.
@@ -228,10 +230,10 @@ class TestDatabaseQueries(unittest.TestCase):
 
         current_year = self.now.year
         wrapped = database.get_wrapped_data(year=current_year)
-        peak = wrapped["on_repeat_peak"]
+        peak = wrapped.on_repeat_peak
         self.assertIsNotNone(peak)
         # 2 from setUp (ts_now, ts_now-10) + 2 casing variants, all on the same day
-        self.assertEqual(peak["count"], 4)
+        self.assertEqual(peak.count, 4)
 
     def test_track_stats(self):
         # Without album parameter
@@ -288,28 +290,28 @@ class TestDatabaseQueries(unittest.TestCase):
         res = database.get_track_stats_batch(tracks)
         self.assertEqual(len(res), 3)
 
-        self.assertEqual(res[0]["artist"], "Artist A")
-        self.assertEqual(res[0]["title"], "Track 1")
-        self.assertEqual(res[0]["play_count"], 3)
-        self.assertEqual(res[0]["duration_secs"], 180)
+        self.assertEqual(res[0].artist, "Artist A")
+        self.assertEqual(res[0].title, "Track 1")
+        self.assertEqual(res[0].play_count, 3)
+        self.assertEqual(res[0].duration_secs, 180)
 
-        self.assertEqual(res[1]["artist"], "artist a")
-        self.assertEqual(res[1]["title"], "track 2")
-        self.assertEqual(res[1]["play_count"], 1)
-        self.assertEqual(res[1]["duration_secs"], 240)
+        self.assertEqual(res[1].artist, "artist a")
+        self.assertEqual(res[1].title, "track 2")
+        self.assertEqual(res[1].play_count, 1)
+        self.assertEqual(res[1].duration_secs, 240)
 
-        self.assertEqual(res[2]["artist"], "NonExistent")
-        self.assertEqual(res[2]["title"], "Track")
-        self.assertEqual(res[2]["play_count"], 0)
-        self.assertIsNone(res[2]["duration_secs"])
+        self.assertEqual(res[2].artist, "NonExistent")
+        self.assertEqual(res[2].title, "Track")
+        self.assertEqual(res[2].play_count, 0)
+        self.assertIsNone(res[2].duration_secs)
 
     def test_recent_listens_with_anchor_date(self):
         yesterday_date_str = (self.now - timedelta(days=1)).strftime("%Y-%m-%d")
         listens = database.get_recent_listens(limit=10, anchor_date=yesterday_date_str)
         self.assertEqual(len(listens), 5)
         for item in listens:
-            self.assertNotEqual(item["unix_ts"], self.ts_now)
-            self.assertNotEqual(item["unix_ts"], self.ts_now - 10)
+            self.assertNotEqual(item.unix_ts, self.ts_now)
+            self.assertNotEqual(item.unix_ts, self.ts_now - 10)
 
 
 class TestDeduplicateCaseInsensitive(unittest.TestCase):
