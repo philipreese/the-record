@@ -112,7 +112,7 @@ For auto-merge of the Release PR to work, these must be enabled in the repositor
 
 | Concern       | Rule                                                                     |
 | ------------- | ------------------------------------------------------------------------ |
-| Python typing | All functions annotated; no bare `Any` without justification             |
+| Python typing | All functions annotated; no bare `Any` without justification. Repository functions return typed Pydantic schema instances — not `dict[str, Any]` — so the full type chain (DB → repo → handler) is statically verified by pyrefly. |
 | TypeScript    | No `any`; types generated from OpenAPI via `pixi run generate-api-types` |
 | Secrets       | Store in `.env`; never hardcode; `.env` is gitignored                    |
 | Tests         | Run via `pixi run test`; no network calls in unit tests                  |
