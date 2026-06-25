@@ -46,7 +46,9 @@
   let wrappedPeriod = $state<'year' | 'quarter' | 'month'>(
     (router.params.get('period') as 'year' | 'quarter' | 'month') ?? 'year',
   );
-  let wrappedYear = $state(parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10));
+  let wrappedYear = $state(
+    parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
+  );
   let wrappedQuarter = $state<WrappedQuarter>((router.params.get('q') as WrappedQuarter) ?? 'Q1');
   let wrappedMonth = $state<WrappedMonth>((router.params.get('m') as WrappedMonth) ?? 'M1');
   let loadingWrapped = $state(false);
