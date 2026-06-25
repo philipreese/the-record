@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0](https://github.com/philipreese/the-record/compare/v0.25.5...v0.26.0) (2026-06-25)
+
+
+### Features
+
+* **data:** Add artist_corrections table to normalize scrobbler metadata ([d8ec0ad](https://github.com/philipreese/the-record/commit/d8ec0ada036e30709ac7d7b9abc23df30420e5c4))
+
+
+### Code Refactoring
+
+* **data:** Manage artist corrections via code dict, not migrations ([d9b0daf](https://github.com/philipreese/the-record/commit/d9b0dafd08a09b4d37125779bd14b02ada263a5b))
+
+
+### Documentation
+
+* **spec:** Document artist_corrections table and data quality workflow ([4d7ae62](https://github.com/philipreese/the-record/commit/4d7ae6295676e5a86fda0c7a184f10e60240d30e))
+
 ## [0.25.5](https://github.com/philipreese/the-record/compare/v0.25.4...v0.25.5) (2026-06-25)
 
 
