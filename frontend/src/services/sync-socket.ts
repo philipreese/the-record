@@ -17,9 +17,11 @@ export class SyncSocket {
   private _attempt = 0;
   private _closed = false;
   private _onEvent: SyncEventHandler;
+  private _onOpen: (() => void) | null;
 
-  constructor(onEvent: SyncEventHandler) {
+  constructor(onEvent: SyncEventHandler, onOpen?: () => void) {
     this._onEvent = onEvent;
+    this._onOpen = onOpen ?? null;
   }
 
   connect(): void {
@@ -59,6 +61,7 @@ export class SyncSocket {
 
     ws.onopen = () => {
       this._attempt = 0;
+      this._onOpen?.();
     };
   }
 }
