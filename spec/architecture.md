@@ -25,6 +25,7 @@ repository.py      — All SQL queries; returns typed Pydantic schema instances 
 db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
 sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs; broadcasts sync_started/sync_complete/sync_error via ws.py
+lb_client.py       — Shared httpx.AsyncClient for all LB API calls; connection-pooled to avoid per-request TLS handshakes; transport uses local_address="0.0.0.0" to scope IPv4 preference to httpx (avoids Windows IPv6 timeout delays without a global socket patch)
 ws.py              — WebSocket ConnectionManager singleton; tracks active connections, broadcasts JSON events; broadcast_sync_event() helper used by sync.py
 playing_now_sse.py — PlayingNowBroadcaster singleton; background task polls LB every 15 s and pushes PlayingNowResponse to all connected SSE clients via asyncio.Queue per client
 graphql_schema.py — Strawberry schema + resolvers; single `artist` query wraps get_artist_stats() and derives topAlbums from tracks; mounted at /api/graphql
@@ -162,6 +163,30 @@ A soft background sync fires automatically on page load once the WebSocket conne
 In both cases the frontend posts to `POST /api/sync`. The backend pushes `sync_started` and `sync_complete` (or `sync_error`) events over `/api/ws/sync`. On receiving `sync_complete`, the store fetches the final status from `GET /api/sync/status` and runs the post-sync cache refresh.
 
 `GET /api/sync/status` is also polled every 2 seconds as a fallback for environments where the WebSocket is unavailable. On `finished: true`, the poll loop is cleared and the same refresh path runs.
+
+## Protocol selection rationale
+
+| Protocol | Endpoint | Why |
+|---|---|---|
+| REST | All `/api/*` routes | Stateless, cacheable GET responses, works everywhere; right default for CRUD and query endpoints |
+| SSE | `/api/playing-now/stream` | Server pushes data, client never sends messages back; browser handles reconnect automatically; simpler than WebSocket for one-way push |
+| WebSocket | `/api/ws/sync` | Sync is a conversation — server must push `sync_complete` after an indeterminate delay; bidirectional allows future client→server events |
+| GraphQL | `/api/graphql` | Artist Explorer needs a flexible query shape and exposes `topAlbums` not available via REST; single round trip replaces potential multi-fetch |
+
+## Production deployment
+
+In production the app runs behind a reverse proxy (Render's load balancer, or nginx on a VPS) that handles TLS termination. Plain HTTP flows internally to Uvicorn.
+
+```
+Internet (HTTPS/443) → Reverse proxy (TLS termination) → Uvicorn (HTTP/8000)
+```
+
+Key considerations:
+- **Static files** — in a VPS/nginx deployment, serve the compiled Svelte build directly from nginx (`/frontend/dist/`) to avoid routing static requests through Python
+- **SSE buffering** — nginx buffers responses by default; the `X-Accel-Buffering: no` header on `/api/playing-now/stream` disables this so events flush immediately to clients
+- **WebSocket proxying** — nginx must forward `Upgrade` and `Connection` headers for the `/api/ws/sync` route
+
+The Dockerfile exposes Uvicorn directly on port 8000 — TLS is handled upstream by the hosting provider.
 
 ## Dev tasks
 
