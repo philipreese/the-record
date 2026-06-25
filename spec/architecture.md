@@ -18,13 +18,14 @@
 ## Backend layer map
 
 ```
-routes.py          — HTTP handlers with typed return annotations (→ SchemaType); request validation, background task dispatch
+routes.py          — HTTP handlers with typed return annotations (→ SchemaType); request validation, background task dispatch; WebSocket route /api/ws/sync
     ↓
 repository.py      — All SQL queries; returns typed Pydantic schema instances (not raw dicts)
     ↓
 db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
-sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs
+sync.py            — ListenBrainz sync worker (async, background); calls apply_artist_corrections() after every sync so corrections survive mirror syncs; broadcasts sync_started/sync_complete/sync_error via ws.py
+ws.py              — WebSocket ConnectionManager singleton; tracks active connections, broadcasts JSON events; broadcast_sync_event() helper used by sync.py
 narrative.py       — Template loading, condition evaluation, {token} interpolation; accepts StatsSummaryResponse/StreakStatsResponse, returns NarrativeResponse
 schemas.py         — Pydantic request/response models shared across routes.py, repository.py, and narrative.py
 migrations/        — Alembic env + versioned migration scripts; artist_corrections table seeded here (see data-models.md for the workflow)
@@ -36,9 +37,10 @@ migrations/        — Alembic env + versioned migration scripts; artist_correct
 
 ```
 api.ts             — openapi-fetch typed client over api-types.ts; retries idempotent GETs (6×2s) through cold starts and backend restarts
+sync-socket.ts     — SyncSocket class; WebSocket client for /api/ws/sync with exponential-backoff auto-reconnect (1s→30s cap)
     ↓
 store.svelte.ts    — AppCache class (Svelte 5 runes: $state); owns the response cache, sync orchestration + invalidation,
-                     and 20s visibility-locked playing-now polling (with baseline data recovery on reconnect)
+                     20s visibility-locked playing-now polling, and WebSocket sync event handling (poll every 2s as fallback)
 router.svelte.ts   — Hash-based router (no library); parses #/path?params, exposes typed route + URLSearchParams,
                      navigate() with push/replace policy. URL is the single source of truth for all serializable view state.
     ↓
@@ -85,6 +87,14 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
 | GET | `/api/artist/stats` | `name` (required), `range` (30/90/365/all, default all) | `ArtistStatsResponse` |
 
+### WebSocket endpoints
+
+| Path | Protocol | Events pushed |
+|---|---|---|
+| `/api/ws/sync` | WebSocket (`ws://` / `wss://`) | `sync_started`, `sync_complete`, `sync_error` (JSON `{type, mode, inserted?, deleted?, message?}`) |
+
+Clients connect once on page load (via `SyncSocket`) and receive push events for the duration of the session. The connection manager drops dead connections silently on next broadcast.
+
 ### Sync authentication
 
 `POST /api/sync` is the only mutating route and is protected by a shared secret:
@@ -119,9 +129,13 @@ Mirror sync does **not** run `deduplicate_listens()` — LB is the authority on 
 - Transient connection errors (`RemoteProtocolError`, `ReadTimeout`, `ConnectError`): up to 5 retries with backoff `[5, 15, 30, 60, 120]` seconds
 - HTTP 429: sync halts and sets `error` state with retry-after hint
 
-### API polling
+### Sync completion delivery
 
-A soft background sync fires automatically on page load. Users can also trigger syncs manually from the Settings view. In both cases the frontend posts to `POST /api/sync`, then polls `GET /api/sync/status` every 2 seconds via `AppCache.runSync()`. On `finished: true`, cache is invalidated so all views refetch fresh data.
+A soft background sync fires automatically on page load once the WebSocket connection is established (so `sync_complete` is guaranteed to arrive). Users can also trigger syncs manually from the Settings view.
+
+In both cases the frontend posts to `POST /api/sync`. The backend pushes `sync_started` and `sync_complete` (or `sync_error`) events over `/api/ws/sync`. On receiving `sync_complete`, the store fetches the final status from `GET /api/sync/status` and runs the post-sync cache refresh.
+
+`GET /api/sync/status` is also polled every 2 seconds as a fallback for environments where the WebSocket is unavailable. On `finished: true`, the poll loop is cleared and the same refresh path runs.
 
 ## Dev tasks
 
