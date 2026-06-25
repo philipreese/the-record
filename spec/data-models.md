@@ -21,6 +21,37 @@ interface Listen {
 
 **Source of truth:** [backend/app/db.py](../backend/app/db.py)
 
+## ArtistCorrections (database entity)
+
+Stores known artist name mismatches introduced by scrobblers that submit metadata verbatim from the source (e.g. YouTube Music often omits punctuation). After every sync, `apply_artist_corrections()` in `repository.py` bulk-updates any `listens` rows whose `artist` matches a `wrong_name` entry.
+
+```typescript
+interface ArtistCorrection {
+  id: number;            // auto-increment primary key
+  wrong_name: string;    // UNIQUE — the string as submitted by the scrobbler
+  correct_name: string;  // canonical MusicBrainz / official name
+  created_at: Date;
+}
+```
+
+**Source of truth:** `artist_corrections` table; seeded and updated via Alembic migrations.
+
+### Adding a new correction
+
+1. Create a new Alembic migration (e.g. `009_add_artist_correction_foo.py`):
+   ```python
+   def upgrade() -> None:
+       op.execute("INSERT INTO artist_corrections (wrong_name, correct_name) VALUES ('Wrong Name', 'Correct Name')")
+       op.execute("UPDATE listens SET artist = 'Correct Name' WHERE artist = 'Wrong Name'")
+
+   def downgrade() -> None:
+       op.execute("UPDATE listens SET artist = 'Wrong Name' WHERE artist = 'Correct Name'")
+       op.execute("DELETE FROM artist_corrections WHERE wrong_name = 'Wrong Name'")
+   ```
+2. Run `pixi run alembic upgrade head` locally, then deploy — Alembic applies it to prod on startup.
+
+**Do not** add `INSERT` rows to an already-applied migration — Alembic tracks the current revision and will not re-run it.
+
 ## Pydantic request/response schemas
 
 Every endpoint's request and response model is defined in one place — read it there rather than
