@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0](https://github.com/philipreese/the-record/compare/v0.26.1...v0.27.0) (2026-06-25)
+
+
+### Features
+
+* **sync:** WebSocket endpoint for real-time sync events ([bd0f0d7](https://github.com/philipreese/the-record/commit/bd0f0d7e4d7225c13cce86cfc73e573c6a702c52))
+
+
+### Bug Fixes
+
+* **sync:** Connect WebSocket before triggering startup sync, proxy WS in Vite ([6c9a2f8](https://github.com/philipreese/the-record/commit/6c9a2f8d94996c381bec86087ff857c83aed8944))
+
+
+### Tests
+
+* **ws:** add WebSocket endpoint and ConnectionManager tests ([00204f8](https://github.com/philipreese/the-record/commit/00204f871a1ece63262eef02ce193a551aaedb9e))
+
 ## [0.26.1](https://github.com/philipreese/the-record/compare/v0.26.0...v0.26.1) (2026-06-25)
 
 
