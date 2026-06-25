@@ -13,6 +13,7 @@ from sqlalchemy import func, text, bindparam, update
 from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens, apply_artist_corrections
 from app.utils import clean_artist, clean_title
+from app.ws import broadcast_sync_event
 
 LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
 LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
@@ -79,6 +80,7 @@ async def _run_sync(mode: str) -> None:
         "User-Agent": "the-record-dashboard-sync/1.0",
     }
     _timeout = httpx.Timeout(60.0)
+    await broadcast_sync_event("sync_started", mode=mode)
 
     try:
         async with httpx.AsyncClient(timeout=_timeout) as client:
@@ -327,6 +329,15 @@ async def _run_sync(mode: str) -> None:
     finally:
         _sync_state.running = False
         _sync_state.finished = True
+        if _sync_state.error:
+            await broadcast_sync_event("sync_error", message=_sync_state.error, mode=mode)
+        else:
+            await broadcast_sync_event(
+                "sync_complete",
+                mode=mode,
+                inserted=_sync_state.synced_count,
+                deleted=_sync_state.deleted_count,
+            )
 
 
 async def _run_mirror() -> None:
@@ -350,6 +361,7 @@ async def _run_mirror() -> None:
         "User-Agent": "the-record-dashboard-sync/1.0",
     }
     _timeout = httpx.Timeout(60.0)
+    await broadcast_sync_event("sync_started", mode="mirror")
 
     try:
         async with httpx.AsyncClient(timeout=_timeout) as client:
@@ -600,6 +612,15 @@ async def _run_mirror() -> None:
     finally:
         _sync_state.running = False
         _sync_state.finished = True
+        if _sync_state.error:
+            await broadcast_sync_event("sync_error", message=_sync_state.error, mode="mirror")
+        else:
+            await broadcast_sync_event(
+                "sync_complete",
+                mode="mirror",
+                inserted=_sync_state.synced_count,
+                deleted=_sync_state.deleted_count,
+            )
 
 
 if __name__ == "__main__":

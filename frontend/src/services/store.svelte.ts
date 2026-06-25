@@ -24,6 +24,7 @@ import {
 import type { OnThisDayGroup, ArtistAnniversary } from './api';
 import { getDominantColor } from '../utils/dominantColor';
 import { themeManager } from './theme.svelte';
+import { SyncSocket } from './sync-socket';
 
 class AppCache {
   // Track Stats Cache (unified across all views)
@@ -79,6 +80,8 @@ class AppCache {
   syncError = $state<string | null>(null);
   lastMirrorResult = $state<{ synced: number; updated: number; deleted: number } | null>(null);
   private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private _currentSyncSoft = false;
+  private _syncSocket: SyncSocket | null = null;
 
   // True while a cold-start retry is riding out a suspended backend/DB wake.
   isWakingUp = $state(false);
@@ -282,9 +285,70 @@ class AppCache {
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
 
+    this._syncSocket = new SyncSocket(async (event) => {
+      if (event.type === 'sync_complete' && this.isSyncing) {
+        try {
+          const status = await getSyncStatus();
+          this.syncStatus = status;
+          await this._finishSync(status, this._currentSyncSoft);
+        } catch {
+          // Fall through to polling loop
+        }
+      }
+    });
+    this._syncSocket.connect();
+
     // Trigger an initial soft background sync on page load to fetch new scrobbles
     // since the last session even if no music is actively playing right now.
     this.runSync('normal', true);
+  }
+
+  private async _finishSync(status: SyncStatusInfo, soft: boolean): Promise<void> {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+    this.isSyncing = false;
+    if (!status.error && status.mode === 'mirror') {
+      this.lastMirrorResult = {
+        synced: status.synced_count,
+        updated: status.updated_count,
+        deleted: status.deleted_count,
+      };
+    }
+    if (status.error) {
+      this.syncError = status.error;
+    } else if (soft) {
+      // Soft refresh: prepend any new listens without blanking the list.
+      // Charts/heatmap are untouched so the page doesn't flash through loading states.
+      try {
+        const fresh = await fetchRecentListens(10);
+        const existingIds = new Set(this.recentListens.map((e) => e.id));
+        const newItems = fresh.filter((e) => !existingIds.has(e.id));
+        if (newItems.length > 0) {
+          this.recentListens = [...newItems, ...this.recentListens];
+        }
+      } catch {
+        // Non-fatal
+      }
+      try {
+        const [s, n] = await Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)]);
+        this.stats = s;
+        this.narrative = n;
+      } catch {
+        // Non-fatal
+      }
+    } else {
+      this.invalidate();
+      try {
+        const [s, n] = await Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)]);
+        this.stats = s;
+        this.narrative = n;
+        this.statsLoaded = true;
+      } catch {
+        // Non-fatal — sidebar shows "Connecting…" until OverviewView mounts.
+      }
+    }
   }
 
   // Centralized sync task runner.
@@ -293,6 +357,7 @@ class AppCache {
   async runSync(mode: SyncMode = 'normal', soft = false) {
     if (this.isSyncing) return;
     this.isSyncing = true;
+    this._currentSyncSoft = soft;
     this.syncError = null;
     this.syncStatus = null;
     if (mode === 'mirror') this.lastMirrorResult = null;
@@ -305,65 +370,13 @@ class AppCache {
     try {
       await triggerSync(mode);
 
-      // Poll every 2 seconds
+      // Poll every 2 seconds as a fallback; the WebSocket sync_complete event
+      // will short-circuit this loop when the socket is connected.
       this.pollInterval = setInterval(async () => {
         try {
           const status = await getSyncStatus();
           this.syncStatus = status;
-
-          if (status.finished) {
-            if (this.pollInterval) {
-              clearInterval(this.pollInterval);
-              this.pollInterval = null;
-            }
-            this.isSyncing = false;
-            if (!status.error && status.mode === 'mirror') {
-              this.lastMirrorResult = {
-                synced: status.synced_count,
-                updated: status.updated_count,
-                deleted: status.deleted_count,
-              };
-            }
-            if (status.error) {
-              this.syncError = status.error;
-            } else if (soft) {
-              // Soft refresh: prepend any new listens without blanking the list.
-              // Charts/heatmap are untouched so the page doesn't flash through loading states.
-              try {
-                const fresh = await fetchRecentListens(10);
-                const existingIds = new Set(this.recentListens.map((e) => e.id));
-                const newItems = fresh.filter((e) => !existingIds.has(e.id));
-                if (newItems.length > 0) {
-                  this.recentListens = [...newItems, ...this.recentListens];
-                }
-              } catch {
-                // Non-fatal
-              }
-              try {
-                const [s, n] = await Promise.all([
-                  fetchStats(),
-                  fetchNarrative(this.narrativeSeed),
-                ]);
-                this.stats = s;
-                this.narrative = n;
-              } catch {
-                // Non-fatal
-              }
-            } else {
-              this.invalidate();
-              try {
-                const [s, n] = await Promise.all([
-                  fetchStats(),
-                  fetchNarrative(this.narrativeSeed),
-                ]);
-                this.stats = s;
-                this.narrative = n;
-                this.statsLoaded = true;
-              } catch {
-                // Non-fatal — sidebar shows "Connecting…" until OverviewView mounts.
-              }
-            }
-          }
+          if (status.finished) await this._finishSync(status, soft);
         } catch (err) {
           if (this.pollInterval) {
             clearInterval(this.pollInterval);
