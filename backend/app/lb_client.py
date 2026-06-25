@@ -16,6 +16,7 @@ def get_lb_client() -> httpx.AsyncClient:
         _client = httpx.AsyncClient(
             timeout=httpx.Timeout(connect=15.0, read=15.0, write=10.0, pool=10.0),
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
         )
     return _client
 

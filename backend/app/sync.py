@@ -83,7 +83,10 @@ async def _run_sync(mode: str) -> None:
     await broadcast_sync_event("sync_started", mode=mode)
 
     try:
-        async with httpx.AsyncClient(timeout=_timeout) as client:
+        async with httpx.AsyncClient(
+            timeout=_timeout,
+            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+        ) as client:
             # 1. Fetch total count from ListenBrainz
             lb_total_count = 0
             try:
@@ -364,7 +367,10 @@ async def _run_mirror() -> None:
     await broadcast_sync_event("sync_started", mode="mirror")
 
     try:
-        async with httpx.AsyncClient(timeout=_timeout) as client:
+        async with httpx.AsyncClient(
+            timeout=_timeout,
+            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+        ) as client:
             # 1. Fetch total count for progress display (retry on transient failures)
             count_url = f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listen-count"
             for _attempt in range(3):
