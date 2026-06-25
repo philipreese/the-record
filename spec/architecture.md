@@ -18,15 +18,15 @@
 ## Backend layer map
 
 ```
-routes.py          — HTTP handlers, request validation, background task dispatch
+routes.py          — HTTP handlers with typed return annotations (→ SchemaType); request validation, background task dispatch
     ↓
-repository.py      — All SQL queries (stats, charts, heatmap, trends, streak, wrapped)
+repository.py      — All SQL queries; returns typed Pydantic schema instances (not raw dicts)
     ↓
 db.py              — SQLAlchemy engine/session setup, Listen model, init_db (runs alembic upgrade head)
 db_helpers.py      — SQL dialect abstraction (date/hour/month expressions for SQLite vs PostgreSQL)
 sync.py            — ListenBrainz sync worker (async, background)
-narrative.py       — Template loading, condition evaluation, {token} interpolation; returns plain/rich split
-schemas.py         — Pydantic request/response models
+narrative.py       — Template loading, condition evaluation, {token} interpolation; accepts StatsSummaryResponse/StreakStatsResponse, returns NarrativeResponse
+schemas.py         — Pydantic request/response models shared across routes.py, repository.py, and narrative.py
 migrations/        — Alembic env + versioned migration scripts
 ```
 
