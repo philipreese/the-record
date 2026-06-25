@@ -28,12 +28,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
 
-    op.execute("INSERT INTO artist_corrections (wrong_name, correct_name) VALUES ('Invent Animate', 'Invent, Animate')")
-
-    # Fix existing rows that were scrobbled under the wrong name.
-    op.execute("UPDATE listens SET artist = 'Invent, Animate' WHERE artist = 'Invent Animate'")
-
 
 def downgrade() -> None:
-    op.execute("UPDATE listens SET artist = 'Invent Animate' WHERE artist = 'Invent, Animate'")
     op.drop_table("artist_corrections")

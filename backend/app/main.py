@@ -44,14 +44,18 @@ _app_logger.propagate = False  # Alembic's fileConfig sets root to WARN; bypass 
 
 sys.path.append(PROJECT_ROOT)
 
+from app.corrections import sync_artist_corrections
 from app.db import bootstrap_db_from_json
 from app.lb_client import close_lb_client
+from app.repository import apply_artist_corrections
 from app.routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Ensure database schema exists and bootstrap initial data on startup."""
     bootstrap_db_from_json()
+    sync_artist_corrections()
+    apply_artist_corrections()
     yield
     await close_lb_client()
 

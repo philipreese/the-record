@@ -9,6 +9,7 @@ Revision ID: 005
 Revises: 004
 Create Date: 2026-06-17
 """
+import logging
 from collections import defaultdict
 from typing import Sequence, Union
 
@@ -69,7 +70,7 @@ def upgrade() -> None:
     """))
     deleted = result.rowcount
 
-    print(f"  Casing migration: {updated} row(s) recased, {deleted} exact duplicate(s) removed.")
+    logging.getLogger("alembic").info("Casing migration: %d row(s) recased, %d exact duplicate(s) removed.", updated, deleted)
 
 
 def downgrade() -> None:
