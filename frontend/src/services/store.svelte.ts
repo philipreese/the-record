@@ -3,7 +3,6 @@ import {
   getSyncStatus,
   fetchStats,
   fetchRecentListens,
-  fetchPlayingNow,
   fetchLastPlayed,
   fetchNarrative,
   registerWakingListener,
@@ -25,6 +24,7 @@ import type { OnThisDayGroup, ArtistAnniversary } from './api';
 import { getDominantColor } from '../utils/dominantColor';
 import { themeManager } from './theme.svelte';
 import { SyncSocket } from './sync-socket';
+import { PlayingNowSSE } from './playing-now-sse';
 
 class AppCache {
   // Track Stats Cache (unified across all views)
@@ -169,22 +169,21 @@ class AppCache {
 
   // Now Playing
   playingNow = $state<PlayingNowInfo | null>(null);
-  private _playingPollInterval: ReturnType<typeof setInterval> | null = null;
-  private _pollingInFlight = false;
-  // How many consecutive empty polls while we were showing "now playing".
+  private _playingNowSSE: PlayingNowSSE | null = null;
+  private _sseInFlight = false;
+  // How many consecutive empty pushes while we were showing "now playing".
   // LB's playing-now endpoint has brief keep-alive gaps; don't flip to "last played"
-  // on a single miss — wait for 2 consecutive empty responses (~40s) before switching.
+  // on a single miss — wait for 3 consecutive empty responses (~45s) before switching.
   private _notPlayingCount = 0;
   private readonly NOT_PLAYING_GRACE = 3;
-  // Tracks the last URL we extracted a color from, so we don't re-extract on every poll.
+  // Tracks the last URL we extracted a color from, so we don't re-extract on every push.
   private _lastExtractedCoverUrl: string | null = null;
 
-  private _poll = async () => {
+  private _handlePlayingNow = async (result: PlayingNowInfo) => {
     if (document.visibilityState === 'hidden') return;
-    if (this._pollingInFlight) return;
-    this._pollingInFlight = true;
+    if (this._sseInFlight) return;
+    this._sseInFlight = true;
     try {
-      const result = await fetchPlayingNow();
       const prev = this.playingNow;
       const wasPlaying = prev?.is_playing ?? false;
 
@@ -209,7 +208,7 @@ class AppCache {
       }
 
       // If baseline data never loaded (backend was down at startup), recover it now.
-      // _poll already runs every 20s, so within one cycle of the backend coming back
+      // SSE pushes every 15s, so within one cycle of the backend coming back
       // the page will populate without a manual refresh.
       if (!this.statsLoaded) {
         Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)])
@@ -230,7 +229,7 @@ class AppCache {
       }
 
       // Extract ambient color from the *displayed* state (this.playingNow), not the raw
-      // LB result. During the grace period this.playingNow still holds the previous
+      // SSE payload. During the grace period this.playingNow still holds the previous
       // "now playing" entry, so we keep the track's color rather than switching to
       // last_played (which may have no art and would reset the accent to blue).
       const displayed = this.playingNow;
@@ -247,23 +246,15 @@ class AppCache {
         // No art → keep last extracted color. setAmbientColor(null) would reset to
         // default blue, which is jarring when art is missing for one track mid-session.
       }
-    } catch {
-      // silently skip failed polls
     } finally {
-      this._pollingInFlight = false;
-    }
-  };
-
-  private _onVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      this._poll();
+      this._sseInFlight = false;
     }
   };
 
   startPlayingNowPolling() {
-    if (this._playingPollInterval !== null) return;
+    if (this._playingNowSSE !== null) return;
     // Pre-populate immediately from DB (no LB call, ~50ms) so the widget is
-    // visible at once rather than blank for the duration of the first LB fetch.
+    // visible at once rather than blank until the first SSE push arrives.
     fetchLastPlayed()
       .then((result) => {
         if (!this.playingNow && result.last_played) {
@@ -272,7 +263,7 @@ class AppCache {
       })
       .catch(() => {});
     // Eagerly fetch stats + narrative so the UI has content immediately,
-    // independent of playing-now polling and sync completion timing.
+    // independent of SSE push timing.
     Promise.all([fetchStats(), fetchNarrative(this.narrativeSeed)])
       .then(([s, n]) => {
         this.stats = s;
@@ -281,9 +272,8 @@ class AppCache {
       })
       .catch(() => {});
 
-    this._poll();
-    this._playingPollInterval = setInterval(this._poll, 20_000);
-    document.addEventListener('visibilitychange', this._onVisibilityChange);
+    this._playingNowSSE = new PlayingNowSSE(this._handlePlayingNow);
+    this._playingNowSSE.connect();
 
     this._syncSocket = new SyncSocket(
       async (event) => {

@@ -18,6 +18,7 @@ import app.sync as sync_worker
 import httpx
 from app.narrative import generate_narrative
 from app.ws import manager as ws_manager
+from app.playing_now_sse import broadcaster as pn_broadcaster
 from app.schemas import (
     StatsSummaryResponse,
     ArtistInfo,
@@ -700,6 +701,20 @@ def read_artist_stats(
     return repo.get_artist_stats(artist=clean_name, time_range=range_param)
 
 
+
+
+@router.get("/playing-now/stream")
+async def playing_now_stream() -> StreamingResponse:
+    """SSE stream that pushes playing-now state every 15 s."""
+    return StreamingResponse(
+        pn_broadcaster.subscribe(),
+        media_type="text/event-stream",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.websocket("/ws/sync")
