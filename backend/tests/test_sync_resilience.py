@@ -20,6 +20,13 @@ _COUNT_URL = "https://api.listenbrainz.org/1/user/testuser/listen-count"
 _LISTENS_RE = re.compile(r"https://api\.listenbrainz\.org/1/user/testuser/listens")
 
 
+def _to_thread_se(fn, *args, **kwargs):
+    """Side-effect for asyncio.to_thread mocks: cleanup functions return 0, others return an insert-result tuple."""
+    if getattr(fn, "__name__", "") in ("apply_artist_corrections", "deduplicate_listens"):
+        return 0
+    return (0, 0, 0, set())
+
+
 def _reset_sync_state() -> None:
     s = sync_worker._sync_state
     s.running = False
@@ -54,7 +61,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
         )
         with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
              mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
-             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, return_value=(0, 0, 0, set())), \
+             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", new_callable=mock.AsyncMock):
             await sync_worker._run_sync("normal")
 
@@ -85,7 +92,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
 
         with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
              mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
-             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, return_value=(0, 0, 0, set())), \
+             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", side_effect=record_sleep):
             await sync_worker._run_sync("normal")
 
@@ -110,7 +117,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
 
         with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
              mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
-             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, return_value=(0, 0, 0, set())), \
+             mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", side_effect=record_sleep):
             await sync_worker._run_sync("normal")
 
