@@ -285,22 +285,25 @@ class AppCache {
     this._playingPollInterval = setInterval(this._poll, 20_000);
     document.addEventListener('visibilitychange', this._onVisibilityChange);
 
-    this._syncSocket = new SyncSocket(async (event) => {
-      if (event.type === 'sync_complete' && this.isSyncing) {
-        try {
-          const status = await getSyncStatus();
-          this.syncStatus = status;
-          await this._finishSync(status, this._currentSyncSoft);
-        } catch {
-          // Fall through to polling loop
+    this._syncSocket = new SyncSocket(
+      async (event) => {
+        if (event.type === 'sync_complete' && this.isSyncing) {
+          try {
+            const status = await getSyncStatus();
+            this.syncStatus = status;
+            await this._finishSync(status, this._currentSyncSoft);
+          } catch {
+            // Fall through to polling loop
+          }
         }
-      }
-    });
+      },
+      () => {
+        // Trigger startup sync only once the WS is connected so sync_complete
+        // is guaranteed to be received rather than firing before the socket is ready.
+        this.runSync('normal', true);
+      },
+    );
     this._syncSocket.connect();
-
-    // Trigger an initial soft background sync on page load to fetch new scrobbles
-    // since the last session even if no music is actively playing right now.
-    this.runSync('normal', true);
   }
 
   private async _finishSync(status: SyncStatusInfo, soft: boolean): Promise<void> {

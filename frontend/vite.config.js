@@ -19,6 +19,7 @@ export default defineConfig({
         // IPv6 ::1 first, but the backend binds IPv4 127.0.0.1 only.
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
+        ws: true,
       },
     },
   },

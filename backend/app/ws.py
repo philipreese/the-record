@@ -21,11 +21,13 @@ class ConnectionManager:
         logger.debug("WS client disconnected; total=%d", len(self._connections))
 
     async def broadcast(self, data: dict) -> None:
+        logger.info("Broadcasting %s to %d connection(s)", data.get("type"), len(self._connections))
         dead: list[WebSocket] = []
         for ws in list(self._connections):
             try:
                 await ws.send_json(data)
             except Exception:
+                logger.exception("WS send failed; dropping connection")
                 dead.append(ws)
         for ws in dead:
             self.disconnect(ws)
