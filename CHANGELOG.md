@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0](https://github.com/philipreese/the-record/compare/v0.29.1...v0.30.0) (2026-06-26)
+
+
+### Features
+
+* **frontend:** Add MetaChip pill component and apply to list rows ([b79fb58](https://github.com/philipreese/the-record/commit/b79fb586dae2a8368c28a4b2addcc7f5b2bc55e0))
+
+
+### Bug Fixes
+
+* **frontend:** Prevent chip row stacking on mobile in ArtistView ([18b9363](https://github.com/philipreese/the-record/commit/18b93630e5c227fb2492e6d94278cff93b937155))
+* **frontend:** Redesign ArtistView track row secondary info ([c38d9da](https://github.com/philipreese/the-record/commit/c38d9dae31f109352bf2584f9d3c22f0e66b654b))
+
+
+### Code Refactoring
+
+* **frontend:** Revert chip usage on Charts and ListenRow collapsed state ([8f0a998](https://github.com/philipreese/the-record/commit/8f0a998d4179db3ebf3891bb75c3cd60dec8a199))
+
 ## [0.29.1](https://github.com/philipreese/the-record/compare/v0.29.0...v0.29.1) (2026-06-26)
 
 
