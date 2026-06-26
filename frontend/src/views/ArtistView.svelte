@@ -291,18 +291,18 @@
                 {track.title}
               </div>
               {#if track.album || track.duration_secs || track.first_listen_ts || track.last_listen_ts}
-                <div class="flex flex-wrap gap-1 mt-0.5">
+                <div class="flex gap-1 mt-0.5 overflow-hidden">
                   {#if track.album}
-                    <MetaChip value={track.album} />
+                    <MetaChip value={track.album} class="max-w-36 truncate shrink" />
                   {/if}
                   {#if track.duration_secs}
-                    <MetaChip value={formatDuration(track.duration_secs)} />
+                    <MetaChip value={formatDuration(track.duration_secs)} class="shrink-0" />
                   {/if}
                   {#if track.first_listen_ts}
-                    <MetaChip value="first {formatTs(track.first_listen_ts)}" />
+                    <MetaChip value="first {formatTs(track.first_listen_ts)}" class="shrink-0" />
                   {/if}
                   {#if track.last_listen_ts}
-                    <MetaChip value="last {formatTs(track.last_listen_ts)}" />
+                    <MetaChip value="last {formatTs(track.last_listen_ts)}" class="shrink-0" />
                   {/if}
                 </div>
               {/if}
