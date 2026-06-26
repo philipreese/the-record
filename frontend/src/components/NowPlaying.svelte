@@ -43,12 +43,21 @@
       </div>
       <div class="flex items-center gap-2.5 pl-3.5">
         {#if coverUrl}
-          <img
-            src={coverUrl}
-            alt="Album art"
-            crossorigin="anonymous"
-            class="w-8 h-8 rounded shrink-0 object-cover opacity-90"
-          />
+          <div
+            class="w-8 h-8 rounded shrink-0 overflow-hidden border border-theme-border-soft"
+            style="box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent)"
+          >
+            <img
+              src={coverUrl}
+              alt="Album art"
+              crossorigin="anonymous"
+              class="w-full h-full object-cover transition-opacity duration-300"
+              class:opacity-0={!imgLoaded}
+              class:opacity-100={imgLoaded}
+              onload={() => (imgLoaded = true)}
+              onerror={() => (imgLoaded = false)}
+            />
+          </div>
         {:else}
           <div
             class="w-8 h-8 rounded shrink-0 bg-base-200 border border-theme-border-soft flex items-center justify-center"
