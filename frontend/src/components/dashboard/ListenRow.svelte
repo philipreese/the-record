@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
   import { sourceLabelFull, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
+  import MetaChip from '../ui/MetaChip.svelte';
 
   let {
     entry,
@@ -74,12 +75,8 @@
     </div>
 
     {#if stats && stats.play_count !== undefined}
-      <span
-        class="text-xs font-mono text-base-content/35 shrink-0 mr-2"
-        title={`${stats.play_count} ${stats.play_count === 1 ? 'play' : 'plays'}`}
-      >
-        {stats.play_count}
-        {stats.play_count === 1 ? 'play' : 'plays'}
+      <span class="shrink-0 mr-2">
+        <MetaChip value="{stats.play_count} {stats.play_count === 1 ? 'play' : 'plays'}" />
       </span>
     {/if}
   </div>
