@@ -603,6 +603,10 @@ export interface components {
             duration_secs?: number | null;
             /** Album */
             album?: string | null;
+            /** Recording Mbid */
+            recording_mbid?: string | null;
+            /** Cover Art Url */
+            cover_art_url?: string | null;
         };
         /** MonthlyTrendInfo */
         MonthlyTrendInfo: {

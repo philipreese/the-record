@@ -9,6 +9,8 @@ from collections import OrderedDict
 
 from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 from typing import Any, List, Literal, Optional, Dict
 
 logger = logging.getLogger(__name__)
@@ -134,14 +136,19 @@ def read_wrapped(
     return repo.get_wrapped_data(year=year, quarter=quarter, month=month)
 
 @router.get("/recent", response_model=List[ListenEntry])
-def read_recent(
+async def read_recent(
     limit: int = Query(50, ge=1, le=100, description="Max results per page (1–100)"),
     before_ts: Optional[int] = Query(None, description="Cursor: unix_ts of the last item from the previous page"),
     before_id: Optional[int] = Query(None, description="Cursor: id of the last item from the previous page"),
     anchor_date: Optional[str] = Query(None, description="Anchor date: seek to first listen on or before YYYY-MM-DD"),
 ) -> list[ListenEntry]:
     """Retrieve recent listens in reverse-chronological order with cursor-based pagination."""
-    return repo.get_recent_listens(limit=limit, before_ts=before_ts, before_id=before_id, anchor_date=anchor_date)
+    listens = await run_in_threadpool(
+        repo.get_recent_listens, limit=limit, before_ts=before_ts,
+        before_id=before_id, anchor_date=anchor_date,
+    )
+    _populate_cover_art(listens)
+    return listens
 
 @router.get("/track-stats", response_model=TrackStatsResponse)
 def read_track_stats(
@@ -431,6 +438,37 @@ def _schedule_art(coro) -> None:
         pass
 
 
+def _populate_cover_art(listens: list) -> None:
+    """Fill cover_art_url from cache for each listen; schedule background resolution for misses."""
+    for listen in listens:
+        key = _art_key(listen.artist, listen.title)
+        if key in _cover_art_cache:
+            listen.cover_art_url = _cover_art_cache[key]
+        elif key not in _art_in_flight:
+            _art_in_flight.add(key)
+            _schedule_art(_bg_resolve_art(listen.artist, listen.title, None, listen.recording_mbid, None))
+
+
+class _CoverArtItem(BaseModel):
+    id: int
+    artist: str
+    title: str
+    recording_mbid: Optional[str] = None
+
+
+@router.post("/cover-art", response_model=Dict[str, Optional[str]])
+async def get_cover_art(items: List[_CoverArtItem]) -> Dict[str, Optional[str]]:
+    """Return cached cover art URLs for a batch of listens; schedule background resolution for misses."""
+    result: Dict[str, Optional[str]] = {}
+    for item in items[:50]:
+        key = _art_key(item.artist, item.title)
+        result[str(item.id)] = _cover_art_cache.get(key)
+        if key not in _cover_art_cache and key not in _art_in_flight:
+            _art_in_flight.add(key)
+            _schedule_art(_bg_resolve_art(item.artist, item.title, None, item.recording_mbid, None))
+    return result
+
+
 @router.get("/playing-now", response_model=PlayingNowResponse)
 async def get_playing_now() -> PlayingNowResponse:
     """Fetch the currently playing track from ListenBrainz, or the most recent listen if nothing is playing."""
@@ -613,11 +651,14 @@ def get_sync_status() -> SyncStatusResponse:
     )
 
 @router.get("/on-this-day", response_model=OnThisDayResponse)
-def read_on_this_day() -> OnThisDayResponse:
+async def read_on_this_day() -> OnThisDayResponse:
     """Retrieve listens for today's calendar date grouped by prior year."""
     from datetime import datetime
     today = datetime.now()
-    return repo.get_on_this_day(today.month, today.day)
+    response = await run_in_threadpool(repo.get_on_this_day, today.month, today.day)
+    for group in response.groups:
+        _populate_cover_art(group.listens)
+    return response
 
 
 @router.get("/export")

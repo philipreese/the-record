@@ -335,3 +335,20 @@ export async function fetchArtistStats(
   if (error) throw new Error('Failed to fetch artist stats');
   return data;
 }
+
+export async function fetchCoverArt(
+  entries: Array<{ id: number; artist: string; title: string; recording_mbid?: string | null }>,
+): Promise<Record<string, string | null>> {
+  if (entries.length === 0) return {};
+  try {
+    const res = await fetch(`${API_BASE}/api/cover-art`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entries),
+    });
+    if (!res.ok) return {};
+    return await res.json();
+  } catch {
+    return {};
+  }
+}
