@@ -366,6 +366,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
   transition: all var(--t-immediate) var(--ease-fluid);
 }
 
@@ -380,6 +381,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
   transition: all var(--t-immediate) var(--ease-fluid);
 }
 
@@ -436,13 +438,17 @@ body {
 .list-row-interactive {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.25rem 2rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem;
   border-radius: 1.25rem; /* Standardized 20px */
   cursor: pointer;
   background-color: transparent;
   border: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent);
   transition: all var(--t-responsive) var(--ease-fluid);
+  @media (min-width: 640px) {
+    padding: 1.25rem 2rem;
+    gap: 1.5rem;
+  }
 }
 
 .list-row-interactive:hover {

@@ -58,6 +58,14 @@
     });
   }
 
+  function formatTsShort(ts: number): string {
+    return new Date(ts * 1000).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit',
+    });
+  }
+
   let logMax = $derived(
     stats ? Math.log(Math.max(...stats.monthly_trends.map((t) => t.count), 1) + 1) : 1,
   );
@@ -290,19 +298,31 @@
               <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
                 {track.title}
               </div>
-              {#if track.album || track.duration_secs || track.first_listen_ts || track.last_listen_ts}
-                <div class="flex gap-1 mt-0.5 overflow-hidden">
-                  {#if track.album}
-                    <MetaChip value={track.album} class="max-w-36 truncate shrink" />
-                  {/if}
+              {#if track.album}
+                <div class="text-xs font-mono text-theme-muted/70 mt-0.5 truncate">
+                  {track.album}
+                </div>
+              {/if}
+              {#if track.duration_secs || track.first_listen_ts || track.last_listen_ts}
+                <div class="flex items-center gap-1 mt-1">
                   {#if track.duration_secs}
-                    <MetaChip value={formatDuration(track.duration_secs)} class="shrink-0" />
+                    <MetaChip value={formatDuration(track.duration_secs)} variant="primary" />
                   {/if}
-                  {#if track.first_listen_ts}
-                    <MetaChip value="first {formatTs(track.first_listen_ts)}" class="shrink-0" />
+                  {#if track.duration_secs && (track.first_listen_ts || track.last_listen_ts)}
+                    <span class="text-theme-muted/30 text-xs mx-0.5">·</span>
                   {/if}
-                  {#if track.last_listen_ts}
-                    <MetaChip value="last {formatTs(track.last_listen_ts)}" class="shrink-0" />
+                  {#if track.first_listen_ts || track.last_listen_ts}
+                    <span class="chip-neutral inline-flex items-center gap-1.5">
+                      {#if track.first_listen_ts}
+                        <span class="opacity-50">{formatTsShort(track.first_listen_ts)}</span>
+                      {/if}
+                      {#if track.first_listen_ts && track.last_listen_ts && track.first_listen_ts !== track.last_listen_ts}
+                        <span class="opacity-30">–</span>
+                        <span>{formatTsShort(track.last_listen_ts)}</span>
+                      {:else if !track.first_listen_ts && track.last_listen_ts}
+                        <span>{formatTsShort(track.last_listen_ts)}</span>
+                      {/if}
+                    </span>
                   {/if}
                 </div>
               {/if}
