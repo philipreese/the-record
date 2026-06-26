@@ -8,6 +8,7 @@
     showRelativeTime = true,
     expanded = false,
     stats = undefined,
+    coverArtUrl = undefined,
     onToggle,
   }: {
     entry: ListenEntry;
@@ -15,6 +16,7 @@
     showRelativeTime?: boolean;
     expanded?: boolean;
     stats?: TrackStatsInfo | null | undefined;
+    coverArtUrl?: string | null | undefined;
     onToggle?: () => void;
   } = $props();
 
@@ -51,6 +53,12 @@
         <span class="text-xs font-mono text-base-content/35">
           <span class="hidden sm:inline">· </span>{relativeTimeShort(entry.unix_ts)}
         </span>
+      {/if}
+    </div>
+
+    <div class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200">
+      {#if coverArtUrl}
+        <img src={coverArtUrl} alt="" class="w-full h-full object-cover" loading="lazy" />
       {/if}
     </div>
 

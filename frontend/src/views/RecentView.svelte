@@ -4,6 +4,7 @@
     fetchRecentListens,
     fetchTrackStats,
     fetchMonthlyTrends,
+    fetchCoverArt,
     type ListenEntry,
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
@@ -31,6 +32,27 @@
         appCache.fetchTrackStatsForListens(listens);
       });
     }
+  });
+
+  $effect(() => {
+    const listens = appCache.recentListens;
+    const nullArt = listens.filter((e) => !e.cover_art_url && !(e.id in appCache.coverArt));
+    if (nullArt.length === 0) return;
+    const t = setTimeout(() => {
+      fetchCoverArt(
+        nullArt.map((e) => ({
+          id: e.id,
+          artist: e.artist,
+          title: e.title,
+          recording_mbid: e.recording_mbid,
+        })),
+      ).then((result) => {
+        for (const [idStr, url] of Object.entries(result)) {
+          if (url) appCache.coverArt[Number(idStr)] = url;
+        }
+      });
+    }, 2000);
+    return () => clearTimeout(t);
   });
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
@@ -255,6 +277,7 @@
                 showAbsoluteTime={true}
                 expanded={expandedId === entry.id}
                 stats={appCache.trackStats[appCache.trackKey(entry)]}
+                coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
                 onToggle={() => handleToggle(entry)}
               />
             {/each}

@@ -4,6 +4,7 @@
   import { fetchTrackStats, type ListenEntry } from '../../services/api';
   import { appCache } from '../../services/store.svelte';
   import ListenRow from '../dashboard/ListenRow.svelte';
+  import { fetchCoverArt } from '../../services/api';
 
   let {
     recentListens,
@@ -26,6 +27,27 @@
         appCache.fetchTrackStatsForListens(listens);
       });
     }
+  });
+
+  $effect(() => {
+    const listens = recentListens;
+    const nullArt = listens.filter((e) => !e.cover_art_url && !(e.id in appCache.coverArt));
+    if (nullArt.length === 0) return;
+    const t = setTimeout(() => {
+      fetchCoverArt(
+        nullArt.map((e) => ({
+          id: e.id,
+          artist: e.artist,
+          title: e.title,
+          recording_mbid: e.recording_mbid,
+        })),
+      ).then((result) => {
+        for (const [idStr, url] of Object.entries(result)) {
+          if (url) appCache.coverArt[Number(idStr)] = url;
+        }
+      });
+    }, 2000);
+    return () => clearTimeout(t);
   });
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
@@ -88,6 +110,7 @@
             {entry}
             expanded={expandedId === entry.id}
             stats={appCache.trackStats[appCache.trackKey(entry)]}
+            coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
             onToggle={() => handleToggle(entry)}
           />
         {/each}

@@ -7,6 +7,7 @@ import {
   fetchNarrative,
   registerWakingListener,
   fetchTrackStatsBatch,
+  fetchCoverArt,
   type NarrativeData,
   type SyncMode,
   type StatsInfo,
@@ -30,6 +31,9 @@ class AppCache {
   // Track Stats Cache (unified across all views)
   trackStats = $state<Record<string, TrackStatsInfo | null>>({});
   private inFlightStatsKeys = new Set<string>();
+
+  // Cover Art Cache (keyed by listen ID)
+  coverArt = $state<Record<number, string | null>>({});
 
   // Dashboard / Stats Cache
   stats = $state<StatsInfo | null>(null);
@@ -110,6 +114,7 @@ class AppCache {
     this.recentScrollOffset = 0;
     this.recentExhausted = false;
     this.trackStats = {};
+    this.coverArt = {};
     console.log('[cache] Store cache cleared.');
   }
 
@@ -164,6 +169,26 @@ class AppCache {
       for (const t of uniqueTracksToFetch) {
         this.inFlightStatsKeys.delete(t.key);
       }
+    }
+  }
+
+  async fetchCoverArtForListens(listens: ListenEntry[]) {
+    const missing = listens.filter((e) => !(e.id in this.coverArt) && !e.cover_art_url);
+    if (missing.length === 0) return;
+    try {
+      const result = await fetchCoverArt(
+        missing.map((e) => ({
+          id: e.id,
+          artist: e.artist,
+          title: e.title,
+          recording_mbid: e.recording_mbid,
+        })),
+      );
+      for (const [idStr, url] of Object.entries(result)) {
+        if (url) this.coverArt[Number(idStr)] = url;
+      }
+    } catch {
+      // silent — cover art is non-critical
     }
   }
 

@@ -37,6 +37,8 @@ class ListenEntry(BaseModel):
     source: str
     duration_secs: Optional[int] = None
     album: Optional[str] = None
+    recording_mbid: Optional[str] = None
+    cover_art_url: Optional[str] = None
 
 class MonthlyTrendInfo(BaseModel):
     month: str

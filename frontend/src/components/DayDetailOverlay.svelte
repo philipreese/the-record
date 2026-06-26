@@ -1,6 +1,6 @@
 <script lang="ts">
   import { scale, fade } from 'svelte/transition';
-  import { fetchDayListens } from '../services/api';
+  import { fetchDayListens, fetchCoverArt } from '../services/api';
   import type { ListenEntry } from '../services/api';
   import ListenRow from './dashboard/ListenRow.svelte';
   import { portal } from '../utils/portal';
@@ -46,6 +46,26 @@
     if (tracks.length > 0) {
       appCache.fetchTrackStatsForListens(tracks);
     }
+  });
+
+  $effect(() => {
+    const nullArt = tracks.filter((e) => !e.cover_art_url && !(e.id in appCache.coverArt));
+    if (nullArt.length === 0) return;
+    const t = setTimeout(() => {
+      fetchCoverArt(
+        nullArt.map((e) => ({
+          id: e.id,
+          artist: e.artist,
+          title: e.title,
+          recording_mbid: e.recording_mbid,
+        })),
+      ).then((result) => {
+        for (const [idStr, url] of Object.entries(result)) {
+          if (url) appCache.coverArt[Number(idStr)] = url;
+        }
+      });
+    }, 2000);
+    return () => clearTimeout(t);
   });
 
   async function loadTracks(d: string) {
@@ -157,6 +177,7 @@
               showRelativeTime={false}
               expanded={expandedId === entry.id}
               stats={appCache.trackStats[appCache.trackKey(entry)]}
+              coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
               onToggle={() => {
                 expandedId = expandedId === entry.id ? null : entry.id;
               }}

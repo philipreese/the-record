@@ -451,7 +451,8 @@ def get_recent_listens(
             Listen.unix_ts,
             Listen.source,
             Listen.duration_secs,
-            Listen.album
+            Listen.album,
+            Listen.recording_mbid,
         )
         if before_ts is not None and before_id is not None:
             stmt = stmt.where(tuple_(Listen.unix_ts, Listen.id) < (before_ts, before_id))
@@ -476,7 +477,8 @@ def get_recent_listens(
         rows = conn.execute(stmt).all()
         return [
             ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
-                        source=r.source, duration_secs=r.duration_secs, album=r.album)
+                        source=r.source, duration_secs=r.duration_secs, album=r.album,
+                        recording_mbid=r.recording_mbid)
             for r in rows
         ]
 
@@ -627,7 +629,7 @@ def get_on_this_day(month: int, day: int) -> OnThisDayResponse:
         stmt = (
             select(
                 Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source,
-                Listen.duration_secs, Listen.album,
+                Listen.duration_secs, Listen.album, Listen.recording_mbid,
                 year_expr.label("year"),
             )
             .where(month_expr == month, day_expr == day)
@@ -641,7 +643,8 @@ def get_on_this_day(month: int, day: int) -> OnThisDayResponse:
             continue
         groups.setdefault(str(r.year), []).append(
             ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
-                        source=r.source, duration_secs=r.duration_secs, album=r.album)
+                        source=r.source, duration_secs=r.duration_secs, album=r.album,
+                        recording_mbid=r.recording_mbid)
         )
     group_list = [OnThisDayGroup(year=int(k), listens=v) for k, v in groups.items()]
     anniversaries = get_on_this_day_anniversaries(month, day)

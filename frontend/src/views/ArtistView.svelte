@@ -3,6 +3,7 @@
   import type { TimeRange } from '../services/api';
   import { fetchArtistStatsGql, type ArtistStatsWithAlbums } from '../services/artist-graphql';
   import { router } from '../services/router.svelte';
+  import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import MetaChip from '../components/ui/MetaChip.svelte';
@@ -295,11 +296,17 @@
               {String(globalIdx).padStart(2, '0')}
             </div>
             <div class="grow min-w-0">
-              <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
+              <div
+                class="text-base md:text-lg font-light tracking-wide truncate text-theme-text pointer-events-auto"
+                use:tooltip
+              >
                 {track.title}
               </div>
               {#if track.album}
-                <div class="text-xs font-mono text-theme-muted/70 mt-0.5 truncate">
+                <div
+                  class="text-xs font-mono text-theme-muted/70 mt-0.5 truncate pointer-events-auto"
+                  use:tooltip
+                >
                   {track.album}
                 </div>
               {/if}
@@ -307,9 +314,6 @@
                 <div class="flex items-center gap-1 mt-1">
                   {#if track.duration_secs}
                     <MetaChip value={formatDuration(track.duration_secs)} variant="primary" />
-                  {/if}
-                  {#if track.duration_secs && (track.first_listen_ts || track.last_listen_ts)}
-                    <span class="text-theme-muted/30 text-xs mx-0.5">·</span>
                   {/if}
                   {#if track.first_listen_ts || track.last_listen_ts}
                     <span class="chip-neutral inline-flex items-center gap-1.5">
