@@ -13,6 +13,7 @@
   import { router } from '../services/router.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
+  import MetaChip from '../components/ui/MetaChip.svelte';
   import Icon from '../components/layout/Icon.svelte';
   import StreamGraph from '../components/StreamGraph.svelte';
 
@@ -317,17 +318,12 @@
               >
                 {String(artist.rank ?? (artistPage - 1) * PAGE_SIZE + idx + 1).padStart(2, '0')}
               </div>
-              <div class="grow">
+              <div class="grow min-w-0">
                 <div class="text-base md:text-lg font-light tracking-wide text-theme-text">
                   {artist.artist}
                 </div>
-              </div>
-              <div class="text-right">
-                <div class="text-lg font-mono font-light text-theme-text">
-                  {artist.play_count.toLocaleString()}
-                </div>
-                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                  plays
+                <div class="mt-0.5">
+                  <MetaChip value="{artist.play_count.toLocaleString()} plays" />
                 </div>
               </div>
             </div>
@@ -402,13 +398,8 @@
                 >
                   {track.artist}
                 </div>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="text-lg font-mono font-light text-theme-text">
-                  {track.play_count.toLocaleString()}
-                </div>
-                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                  plays
+                <div class="flex flex-wrap gap-1 mt-0.5">
+                  <MetaChip value="{track.play_count.toLocaleString()} plays" />
                 </div>
               </div>
             </div>

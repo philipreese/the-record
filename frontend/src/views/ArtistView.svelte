@@ -5,6 +5,7 @@
   import { router } from '../services/router.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
+  import MetaChip from '../components/ui/MetaChip.svelte';
 
   let artistName = $derived(router.route.type === 'artist' ? router.route.name : '');
   let timeRange = $derived<TimeRange>((router.params.get('range') as TimeRange) ?? 'all');
@@ -281,18 +282,6 @@
       <div class="flex flex-col gap-3">
         {#each pagedTracks as track, idx}
           {@const globalIdx = (trackPage - 1) * PAGE_SIZE + idx + 1}
-          {@const meta = [
-            trackSort === 'oldest' && track.first_listen_ts
-              ? `first ${formatTs(track.first_listen_ts)}`
-              : null,
-            trackSort === 'recent' && track.last_listen_ts
-              ? `last ${formatTs(track.last_listen_ts)}`
-              : null,
-            track.album ?? null,
-            track.duration_secs ? formatDuration(track.duration_secs) : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
           <div class="list-row-interactive pointer-events-none select-text">
             <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
               {String(globalIdx).padStart(2, '0')}
@@ -301,8 +290,21 @@
               <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
                 {track.title}
               </div>
-              {#if meta}
-                <div class="text-xs font-mono text-theme-muted/60 mt-0.5 truncate">{meta}</div>
+              {#if track.album || track.duration_secs || track.first_listen_ts || track.last_listen_ts}
+                <div class="flex flex-wrap gap-1 mt-0.5">
+                  {#if track.album}
+                    <MetaChip value={track.album} />
+                  {/if}
+                  {#if track.duration_secs}
+                    <MetaChip value={formatDuration(track.duration_secs)} />
+                  {/if}
+                  {#if track.first_listen_ts}
+                    <MetaChip value="first {formatTs(track.first_listen_ts)}" />
+                  {/if}
+                  {#if track.last_listen_ts}
+                    <MetaChip value="last {formatTs(track.last_listen_ts)}" />
+                  {/if}
+                </div>
               {/if}
             </div>
             <div class="text-right shrink-0">
