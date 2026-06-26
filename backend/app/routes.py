@@ -374,10 +374,7 @@ async def _bg_resolve_art(
     """Fire-and-forget: resolve cover art and populate the cache without blocking a request."""
     cache_key = _art_key(artist, title)
     try:
-        async with httpx.AsyncClient(
-            headers={"User-Agent": _UA},
-            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
-        ) as bg:
+        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
             await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
     except Exception:
         logger.debug("Background cover art resolution failed for %r / %r", artist, title, exc_info=True)
@@ -397,10 +394,7 @@ async def _bg_resolve_last_played_art(
     recording_mbid: Optional[str] = None
     release_group_mbid: Optional[str] = None
     try:
-        async with httpx.AsyncClient(
-            headers={"User-Agent": _UA},
-            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
-        ) as bg:
+        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
             try:
                 res = await bg.get(
                     f"https://api.listenbrainz.org/1/user/{lb_username}/listens",
