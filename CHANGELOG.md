@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1](https://github.com/philipreese/the-record/compare/v0.29.0...v0.29.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* **net:** Revert cover art client transport to OS default ([596946e](https://github.com/philipreese/the-record/commit/596946e9914cf4d65c50f483b26eb56e9bfeab74))
+* **net:** Revert cover art client transport to OS default ([de04066](https://github.com/philipreese/the-record/commit/de040666184bd85137884c7e3b4a9e8e563cf3bf))
+
+
+### Code Refactoring
+
+* **net:** Scope IPv4 preference to httpx transports ([49dc254](https://github.com/philipreese/the-record/commit/49dc254aa1d527f486671979a396a068940a30b1))
+
+
+### Documentation
+
+* **spec:** Document lb_client, protocol rationale, and production deployment ([d7e7901](https://github.com/philipreese/the-record/commit/d7e790172769044ca709cb934385e2d704da5b98))
+
 ## [0.29.0](https://github.com/philipreese/the-record/compare/v0.28.0...v0.29.0) (2026-06-25)
 
 
