@@ -16,6 +16,14 @@ JSON_PATH = os.environ.get("JSON_PATH", os.path.join(BACKEND_DIR, "merged_histor
 # Declarative base model
 Base = declarative_base()
 
+class CoverArtCache(Base):
+    __tablename__ = "cover_art_cache"
+
+    artist_folded = Column(String, primary_key=True)
+    title_folded = Column(String, primary_key=True)
+    url = Column(String, nullable=True)
+
+
 class Listen(Base):
     __tablename__ = "listens"
 

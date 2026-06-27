@@ -4,7 +4,7 @@ from typing import Any, List, Optional
 import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_, or_, and_
-from app.db import get_engine, Listen
+from app.db import get_engine, get_session, Listen, CoverArtCache
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 from app.schemas import (
     ArtistAnniversary,
@@ -46,6 +46,27 @@ def get_current_local_date() -> date:
         except Exception:
             pass
     return datetime.now().date()
+
+def get_all_cover_art() -> dict[tuple[str, str], Optional[str]]:
+    """Load every cover art entry from the persistent DB cache."""
+    with get_engine().connect() as conn:
+        rows = conn.execute(select(CoverArtCache)).fetchall()
+        return {(row.artist_folded, row.title_folded): row.url for row in rows}
+
+
+def upsert_cover_art(artist_folded: str, title_folded: str, url: Optional[str]) -> None:
+    """Insert or update a cover art URL in the persistent cache."""
+    session = get_session()
+    try:
+        obj = CoverArtCache(artist_folded=artist_folded, title_folded=title_folded, url=url)
+        session.merge(obj)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 
 def get_stats_summary() -> StatsSummaryResponse:
     """Calculate overall statistics from the scrobble database."""

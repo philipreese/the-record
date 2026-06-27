@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
   import { sourceLabelFull, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
+  import Icon from '../layout/Icon.svelte';
 
   let {
     entry,
@@ -56,9 +57,11 @@
       {/if}
     </div>
 
-    <div class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200">
+    <div class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200 flex items-center justify-center">
       {#if coverArtUrl}
         <img src={coverArtUrl} alt="" class="w-full h-full object-cover" loading="lazy" />
+      {:else}
+        <Icon name="music-note" size="w-4 h-4" class="opacity-20" />
       {/if}
     </div>
 

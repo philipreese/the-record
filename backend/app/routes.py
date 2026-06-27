@@ -209,6 +209,9 @@ _cover_art_attempts: "OrderedDict[tuple[str, str], int]" = _BoundedCache(_ART_CA
 _MAX_ART_ATTEMPTS = 3
 # Tracks keys currently being resolved in background to prevent duplicate tasks.
 _art_in_flight: set[tuple[str, str]] = set()
+# One background iTunes request at a time with a post-request sleep keeps us
+# well under Apple's undocumented rate limit (~20 req/min observed in practice).
+_art_semaphore = asyncio.Semaphore(1)
 
 _UA = "the-record-dashboard/1.0 (https://github.com/philipreese/the-record)"
 
@@ -251,73 +254,25 @@ async def _get_caa_release_group_url(client: httpx.AsyncClient, release_group_mb
     return None
 
 
-async def _recording_to_release_mbid(client: httpx.AsyncClient, recording_mbid: str) -> Optional[str]:
-    """Look up the best release MBID for a recording via MusicBrainz."""
-    try:
-        r = await client.get(
-            f"https://musicbrainz.org/ws/2/recording/{recording_mbid}",
-            params={"inc": "releases", "fmt": "json"},
-            headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(2.0),
-        )
-        if r.status_code == 200:
-            releases = r.json().get("releases", [])
-            if releases:
-                return releases[0]["id"]
-    except Exception:
-        logger.debug("MB recording-to-release lookup failed for recording_mbid=%s", recording_mbid, exc_info=True)
-    return None
-
-
-async def _search_cover_art_by_text(
+async def _search_cover_art_itunes(
     client: httpx.AsyncClient, artist: str, title: str
 ) -> Optional[str]:
-    """Last-resort cover art lookup via MB text search when no MBID is in the LB response."""
+    """Primary cover art lookup via iTunes Search API — single request, high coverage, no auth needed."""
     try:
         r = await client.get(
-            "https://musicbrainz.org/ws/2/recording",
-            params={
-                "query": f'recording:"{title}" AND artistname:"{artist}"',
-                "fmt": "json",
-                "limit": "5",
-            },
-            headers={"User-Agent": _UA},
-            timeout=httpx.Timeout(4.0),
+            "https://itunes.apple.com/search",
+            params={"term": f"{artist} {title}", "entity": "song", "media": "music", "limit": "5"},
+            timeout=httpx.Timeout(5.0),
         )
         if r.status_code != 200:
-            logger.warning("MB text-search returned %d for %r / %r", r.status_code, artist, title)
+            logger.debug("iTunes search returned %d for %r / %r", r.status_code, artist, title)
             return None
-        recordings = r.json().get("recordings", [])
-        if not recordings:
-            logger.warning("MB text-search found no recordings for %r / %r", artist, title)
-            return None
-
-        # Check at most the top 2 recordings, and for each at most 1 release (preferring release group lookup first, then direct URL)
-        checked_count = 0
-        for recording in recordings[:2]:
-            for release in recording.get("releases", []):
-                # Try release group of this release if available (it has wider coverage and we can fetch it)
-                rg = release.get("release-group", {})
-                rg_id = rg.get("id")
-                if rg_id:
-                    url = await _get_caa_release_group_url(client, rg_id)
-                    if url:
-                        return url
-                
-                # Otherwise try the direct release URL
-                url = await _get_caa_direct_url(client, release["id"])
-                if url:
-                    return url
-                
-                checked_count += 1
-                if checked_count >= 2:
-                    break
-            if checked_count >= 2:
-                break
-
-        logger.warning("MB text-search found recordings for %r / %r but no CAA art in any release", artist, title)
-    except Exception:
-        logger.warning("MB text-search cover art lookup failed for %r / %r", artist, title, exc_info=True)
+        for result in r.json().get("results", []):
+            url = result.get("artworkUrl100")
+            if url:
+                return url.replace("100x100bb", "300x300bb")
+    except Exception as e:
+        logger.debug("iTunes cover art lookup failed for %r / %r: %s(%s)", artist, title, type(e).__name__, e)
     return None
 
 
@@ -345,24 +300,20 @@ async def _resolve_cover_art(
 
     _cover_art_attempts[cache_key] = attempts + 1
 
-    # Tier 1: release MBID (most specific)
-    mbid = release_mbid
-    if not mbid and recording_mbid:
-        mbid = await _recording_to_release_mbid(client, recording_mbid)
     url: Optional[str] = None
-    if mbid:
-        url = await _get_caa_direct_url(client, mbid)
-    # Tier 2: release group MBID (wider coverage in CAA)
+    # Tier 1: direct CAA lookup when we already have a release MBID (playing-now provides one)
+    if release_mbid:
+        url = await _get_caa_direct_url(client, release_mbid)
     if not url and release_group_mbid:
         url = await _get_caa_release_group_url(client, release_group_mbid)
-    # Tier 3: text search fallback
+    # Tier 2: iTunes — single request, high coverage, no rate limit concerns
     if not url:
-        url = await _search_cover_art_by_text(client, artist, title)
+        url = await _search_cover_art_itunes(client, artist, title)
 
     if url:
         _cover_art_cache[cache_key] = url
     else:
-        logger.warning(
+        logger.debug(
             "Cover art resolution failed for %r / %r (attempt %d/%d); release_mbid=%s recording_mbid=%s release_group_mbid=%s",
             artist, title, attempts + 1, _MAX_ART_ATTEMPTS, release_mbid, recording_mbid, release_group_mbid,
         )
@@ -378,56 +329,24 @@ async def _bg_resolve_art(
     recording_mbid: Optional[str],
     release_group_mbid: Optional[str],
 ) -> None:
-    """Fire-and-forget: resolve cover art and populate the cache without blocking a request."""
+    """Resolve cover art in the background and persist the result to the DB cache."""
     cache_key = _art_key(artist, title)
     try:
-        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
-            await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
+        async with _art_semaphore:
+            async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
+                await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
+            if cache_key in _cover_art_cache:
+                await run_in_threadpool(
+                    repo.upsert_cover_art, cache_key[0], cache_key[1], _cover_art_cache.get(cache_key)
+                )
+            # Hold the semaphore through the sleep so concurrent tasks queue up
+            # and we stay under iTunes' rate limit (~20 req/min).
+            await asyncio.sleep(3.0)
     except Exception:
         logger.debug("Background cover art resolution failed for %r / %r", artist, title, exc_info=True)
     finally:
         _art_in_flight.discard(cache_key)
 
-
-async def _bg_resolve_last_played_art(
-    artist: str,
-    title: str,
-    lb_username: str,
-    lb_token: str,
-) -> None:
-    """Fire-and-forget: fetch LB MBIDs for last-played track, then resolve cover art."""
-    cache_key = _art_key(artist, title)
-    release_mbid: Optional[str] = None
-    recording_mbid: Optional[str] = None
-    release_group_mbid: Optional[str] = None
-    try:
-        async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
-            try:
-                res = await bg.get(
-                    f"https://api.listenbrainz.org/1/user/{lb_username}/listens",
-                    params={"count": "1"},
-                    headers={"Authorization": f"Token {lb_token}", "User-Agent": _UA},
-                    timeout=httpx.Timeout(8.0),
-                )
-                if res.status_code == 200:
-                    lp_listens = res.json().get("payload", {}).get("listens", [])
-                    if lp_listens:
-                        meta = lp_listens[0].get("track_metadata", {})
-                        if (
-                            meta.get("artist_name", "").casefold().strip() == artist.casefold().strip()
-                            and meta.get("track_name", "").casefold().strip() == title.casefold().strip()
-                        ):
-                            mm = meta.get("mbid_mapping", {})
-                            release_mbid = mm.get("caa_release_mbid") or mm.get("release_mbid")
-                            recording_mbid = mm.get("recording_mbid")
-                            release_group_mbid = mm.get("release_group_mbid")
-            except Exception:
-                logger.debug("Background LB MBID enrichment failed for %r / %r", artist, title, exc_info=True)
-            await _resolve_cover_art(bg, artist, title, release_mbid, recording_mbid, release_group_mbid)
-    except Exception:
-        logger.debug("Background last-played art resolution failed for %r / %r", artist, title, exc_info=True)
-    finally:
-        _art_in_flight.discard(cache_key)
 
 
 def _schedule_art(coro) -> None:
@@ -439,14 +358,11 @@ def _schedule_art(coro) -> None:
 
 
 def _populate_cover_art(listens: list) -> None:
-    """Fill cover_art_url from cache for each listen; schedule background resolution for misses."""
+    """Fill cover_art_url from in-process cache for each listen (cache hits only)."""
     for listen in listens:
         key = _art_key(listen.artist, listen.title)
         if key in _cover_art_cache:
             listen.cover_art_url = _cover_art_cache[key]
-        elif key not in _art_in_flight:
-            _art_in_flight.add(key)
-            _schedule_art(_bg_resolve_art(listen.artist, listen.title, None, listen.recording_mbid, None))
 
 
 class _CoverArtItem(BaseModel):
@@ -458,9 +374,9 @@ class _CoverArtItem(BaseModel):
 
 @router.post("/cover-art", response_model=Dict[str, Optional[str]])
 async def get_cover_art(items: List[_CoverArtItem]) -> Dict[str, Optional[str]]:
-    """Return cached cover art URLs for a batch of listens; schedule background resolution for misses."""
+    """Return cached cover art URLs and schedule background resolution for misses."""
     result: Dict[str, Optional[str]] = {}
-    for item in items[:50]:
+    for item in items[:100]:
         key = _art_key(item.artist, item.title)
         result[str(item.id)] = _cover_art_cache.get(key)
         if key not in _cover_art_cache and key not in _art_in_flight:
@@ -493,7 +409,7 @@ async def get_playing_now() -> PlayingNowResponse:
 
         from app.lb_client import get_lb_client
         client = get_lb_client()
-        res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(15.0))
+        res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(4.0))
         res.raise_for_status()
 
         listens = res.json().get("payload", {}).get("listens", [])
@@ -505,8 +421,7 @@ async def get_playing_now() -> PlayingNowResponse:
                 return PlayingNowResponse(is_playing=False)
             r = rows[0]
 
-            # Fast-path cache check: if we already have a resolved or suppressed art result
-            # for this track, avoid calling ListenBrainz listens endpoint and CAA/MB.
+            # Fast-path: return immediately on cache hit.
             cache_key = _art_key(r.artist, r.title)
             if cache_key in _cover_art_cache:
                 return PlayingNowResponse(
@@ -516,18 +431,16 @@ async def get_playing_now() -> PlayingNowResponse:
                         cover_art_url=_cover_art_cache[cache_key],
                     ),
                 )
-            # Cache miss: kick off background enrichment + art resolution and return
-            # immediately. The next poll (20s) will hit the cache.
-            bg_key = _art_key(r.artist, r.title)
-            if bg_key not in _art_in_flight:
-                _art_in_flight.add(bg_key)
-                _schedule_art(_bg_resolve_last_played_art(
-                    r.artist, r.title, LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
-                ))
+            # Cache miss: resolve inline — iTunes answers in ~100ms so the added
+            # latency is negligible compared to the LB API call above.
+            async with httpx.AsyncClient(headers={"User-Agent": _UA}) as art_client:
+                np_art = await _search_cover_art_itunes(art_client, r.artist, r.title)
+            _cover_art_cache[cache_key] = np_art
+            await run_in_threadpool(repo.upsert_cover_art, cache_key[0], cache_key[1], np_art)
             return PlayingNowResponse(
                 is_playing=False,
                 last_played=LastPlayedEntry(
-                    artist=r.artist, title=r.title, unix_ts=r.unix_ts, cover_art_url=None
+                    artist=r.artist, title=r.title, unix_ts=r.unix_ts, cover_art_url=np_art
                 ),
             )
 
@@ -545,11 +458,11 @@ async def get_playing_now() -> PlayingNowResponse:
             np_key = _art_key(artist, title)
             if np_key in _cover_art_cache:
                 cover_art_url = _cover_art_cache[np_key]
-            elif np_key not in _art_in_flight:
-                _art_in_flight.add(np_key)
-                _schedule_art(_bg_resolve_art(
-                    artist, title, release_mbid, recording_mbid, release_group_mbid
-                ))
+            else:
+                async with httpx.AsyncClient(headers={"User-Agent": _UA}) as art_client:
+                    cover_art_url = await _search_cover_art_itunes(art_client, artist, title)
+                _cover_art_cache[np_key] = cover_art_url
+                await run_in_threadpool(repo.upsert_cover_art, np_key[0], np_key[1], cover_art_url)
 
         return PlayingNowResponse(
             is_playing=bool(artist and title),
@@ -564,7 +477,11 @@ async def get_playing_now() -> PlayingNowResponse:
         if not rows:
             return PlayingNowResponse(is_playing=False)
         r = rows[0]
-        cached_art = _cover_art_cache.get(_art_key(r.artist, r.title))
+        cache_key = _art_key(r.artist, r.title)
+        cached_art = _cover_art_cache.get(cache_key)
+        if cache_key not in _cover_art_cache and cache_key not in _art_in_flight:
+            _art_in_flight.add(cache_key)
+            _schedule_art(_bg_resolve_art(r.artist, r.title, None, None, None))
         return PlayingNowResponse(
             is_playing=False,
             last_played=LastPlayedEntry(
