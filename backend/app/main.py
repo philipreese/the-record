@@ -21,6 +21,8 @@ _app_logger.setLevel(_log_level)
 _app_logger.handlers = [_log_handler]
 _app_logger.propagate = False  # Alembic's fileConfig sets root to WARN; bypass it
 
+logger = logging.getLogger(__name__)
+
 sys.path.append(PROJECT_ROOT)
 
 from app.corrections import sync_artist_corrections
@@ -28,8 +30,8 @@ from app.db import bootstrap_db_from_json
 from app.graphql_schema import gql_router
 from app.lb_client import close_lb_client
 from app.playing_now_sse import broadcaster as pn_broadcaster
-from app.repository import apply_artist_corrections
-from app.routes import get_playing_now, router
+from app.repository import apply_artist_corrections, get_all_cover_art
+from app.routes import get_playing_now, router, _cover_art_cache
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -37,6 +39,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     bootstrap_db_from_json()
     sync_artist_corrections()
     apply_artist_corrections()
+
+    # Warm the in-process cover art cache from the DB so resolved art survives restarts.
+    try:
+        cached = get_all_cover_art()
+        for key, url in cached.items():
+            _cover_art_cache[key] = url
+        logger.info("Cover art cache warmed: %d entries", len(cached))
+    except Exception as exc:
+        logger.warning("Failed to warm cover art cache from DB: %s", exc)
 
     async def _fetch_playing_now() -> dict:
         result = await get_playing_now()

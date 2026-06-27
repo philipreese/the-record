@@ -15,7 +15,8 @@
       | 'download'
       | 'trash'
       | 'search'
-      | 'pencil';
+      | 'pencil'
+      | 'music-note';
     size?: string; // e.g. "w-5 h-5" or custom
     class?: string;
     style?: string;
@@ -24,7 +25,17 @@
   let { name, size = 'w-5 h-5', class: className = '', style = '' }: Props = $props();
 </script>
 
-{#if name === 'logo'}
+{#if name === 'music-note'}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    class="{size} {className}"
+    {style}
+  >
+    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+  </svg>
+{:else if name === 'logo'}
   <!-- Record logo: renders its own SVG because inner circles need mixed fill colors -->
   <svg
     xmlns="http://www.w3.org/2000/svg"

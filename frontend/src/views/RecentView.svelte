@@ -18,6 +18,7 @@
   let sentinel: HTMLElement | undefined = $state(undefined);
   let observer: IntersectionObserver | undefined;
   let scrollThrottle: ReturnType<typeof setTimeout> | undefined;
+  let artPoller: ReturnType<typeof setInterval> | undefined;
 
   let expandedId: number | null = $state(null);
 
@@ -34,26 +35,6 @@
     }
   });
 
-  $effect(() => {
-    const listens = appCache.recentListens;
-    const nullArt = listens.filter((e) => !e.cover_art_url && !(e.id in appCache.coverArt));
-    if (nullArt.length === 0) return;
-    const t = setTimeout(() => {
-      fetchCoverArt(
-        nullArt.map((e) => ({
-          id: e.id,
-          artist: e.artist,
-          title: e.title,
-          recording_mbid: e.recording_mbid,
-        })),
-      ).then((result) => {
-        for (const [idStr, url] of Object.entries(result)) {
-          if (url) appCache.coverArt[Number(idStr)] = url;
-        }
-      });
-    }, 2000);
-    return () => clearTimeout(t);
-  });
 
   async function handleToggle(entry: ListenEntry): Promise<void> {
     if (expandedId === entry.id) {
@@ -161,12 +142,31 @@
       { rootMargin: '200px' },
     );
     if (sentinel) observer.observe(sentinel);
+
+    // Poll every 2s for art that background tasks have resolved since last check.
+    artPoller = setInterval(async () => {
+      const needsArt = appCache.recentListens.filter(
+        (e) => !e.cover_art_url && !(e.id in appCache.coverArt),
+      );
+      if (needsArt.length === 0) return;
+      try {
+        const result = await fetchCoverArt(
+          needsArt.map((e) => ({ id: e.id, artist: e.artist, title: e.title, recording_mbid: e.recording_mbid })),
+        );
+        for (const [idStr, url] of Object.entries(result)) {
+          if (url) appCache.coverArt[Number(idStr)] = url;
+        }
+      } catch (_) {
+        // ignore network errors
+      }
+    }, 2000);
   });
 
   onDestroy(() => {
     window.removeEventListener('scroll', onScroll);
     observer?.disconnect();
     if (scrollThrottle) clearTimeout(scrollThrottle);
+    if (artPoller) clearInterval(artPoller);
   });
 
   $effect(() => {
