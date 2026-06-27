@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0](https://github.com/philipreese/the-record/compare/v0.30.0...v0.31.0) (2026-06-27)
+
+
+### Features
+
+* **frontend:** Album art thumbnails on listen rows ([0018dc9](https://github.com/philipreese/the-record/commit/0018dc9864b62936ef9dd6c636d7c9d2608b3fd9))
+
+
+### Bug Fixes
+
+* **art:** Persist cover art to DB and rate-limit iTunes resolution ([e336913](https://github.com/philipreese/the-record/commit/e33691311bde5a53c1d76176755e96c883285f92))
+
+
+### Miscellaneous
+
+* **frontend:** Fix prettier formatting on art-related components ([6cac479](https://github.com/philipreese/the-record/commit/6cac4790e1752f16291468316dac794228174e98))
+
 ## [0.30.0](https://github.com/philipreese/the-record/compare/v0.29.1...v0.30.0) (2026-06-26)
 
 
