@@ -35,7 +35,6 @@
     }
   });
 
-
   async function handleToggle(entry: ListenEntry): Promise<void> {
     if (expandedId === entry.id) {
       expandedId = null;
@@ -151,7 +150,12 @@
       if (needsArt.length === 0) return;
       try {
         const result = await fetchCoverArt(
-          needsArt.map((e) => ({ id: e.id, artist: e.artist, title: e.title, recording_mbid: e.recording_mbid })),
+          needsArt.map((e) => ({
+            id: e.id,
+            artist: e.artist,
+            title: e.title,
+            recording_mbid: e.recording_mbid,
+          })),
         );
         for (const [idStr, url] of Object.entries(result)) {
           if (url) appCache.coverArt[Number(idStr)] = url;

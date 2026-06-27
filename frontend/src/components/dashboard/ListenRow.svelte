@@ -57,7 +57,9 @@
       {/if}
     </div>
 
-    <div class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200 flex items-center justify-center">
+    <div
+      class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200 flex items-center justify-center"
+    >
       {#if coverArtUrl}
         <img src={coverArtUrl} alt="" class="w-full h-full object-cover" loading="lazy" />
       {:else}
