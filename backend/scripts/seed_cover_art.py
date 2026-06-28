@@ -77,6 +77,7 @@ _DURATION_TOLERANCE_SECS = 30
 def _pick_result(
     results: list[dict],
     existing_duration_secs: Optional[int] = None,
+    title: str = "",
 ) -> tuple[Optional[str], Optional[int], Optional[str]]:
     """Return (art_url, duration_secs, collection_name) from the best iTunes result.
 
@@ -85,12 +86,14 @@ def _pick_result(
       tier2 -- soft skipped (deluxe / EP / single), duration ok
       give up -- all results are hard-skipped or duration-mismatched; return (None, None, None)
 
-    A duration mismatch (>45s vs existing) means iTunes matched a different track
-    entirely. Don't fall back to those -- return nothing so the entry appears in
-    the audit log for manual correction via #209.
+    Special case: if the track title itself contains "instrumental", the preference is
+    inverted — instrumental album collections become tier1 and standard editions tier2.
+    This handles albums where the instrumental version has an identical duration to the
+    standard version (e.g. Sleep Token), so duration alone can't differentiate them.
     """
     tier1: list[dict] = []
     tier2: list[dict] = []
+    is_instrumental_track = "instrumental" in title.lower()
 
     for r in results:
         if not r.get("artworkUrl100"):
@@ -111,10 +114,17 @@ def _pick_result(
         if duration_mismatch:
             continue
 
-        if any(kw in collection for kw in _SOFT_SKIP):
-            tier2.append(r)
+        if is_instrumental_track:
+            # Prefer the instrumental album; accept standard edition as fallback.
+            if "instrumental" in collection:
+                tier1.append(r)
+            else:
+                tier2.append(r)
         else:
-            tier1.append(r)
+            if any(kw in collection for kw in _SOFT_SKIP):
+                tier2.append(r)
+            else:
+                tier1.append(r)
 
     chosen = next(iter(tier1 or tier2), None)
     if not chosen:
@@ -145,7 +155,7 @@ async def _search_itunes(
         if r.status_code != 200:
             logger.warning("iTunes returned %d for %r / %r", r.status_code, artist, title)
             return None, None, None
-        return _pick_result(r.json().get("results", []), existing_duration_secs)
+        return _pick_result(r.json().get("results", []), existing_duration_secs, title)
     except Exception as e:
         logger.warning("iTunes request failed for %r / %r: %s", artist, title, e)
         return None, None, None
@@ -259,6 +269,10 @@ async def main() -> None:
         "--random", action="store_true",
         help="With --dry-run: pick N tracks at random instead of the first N",
     )
+    parser.add_argument(
+        "--reprocess-filter", metavar="SUBSTR",
+        help="Re-seed tracks whose title contains SUBSTR, bypassing the checkpoint",
+    )
     args = parser.parse_args()
 
     if args.dry_run and args.reset:
@@ -275,7 +289,8 @@ async def main() -> None:
     current_meta = get_current_metadata()
 
     if args.dry_run:
-        pool = [t for t in tracks if f"{t[0]}|{t[1]}" not in done]
+        rf = (args.reprocess_filter or "").lower()
+        pool = [t for t in tracks if rf and rf in t[1] or f"{t[0]}|{t[1]}" not in done]
         sample = random.sample(pool, min(args.dry_run, len(pool))) if args.random else pool[: args.dry_run]
         if not sample:
             logger.info("Dry run: no unprocessed tracks to preview.")
@@ -295,7 +310,16 @@ async def main() -> None:
         return
 
     total = len(tracks)
-    remaining = [(af, tf) for af, tf in tracks if f"{af}|{tf}" not in done]
+    reprocess_filter = (args.reprocess_filter or "").lower()
+    if reprocess_filter:
+        # Bypass checkpoint for tracks whose title matches the filter.
+        remaining = [
+            (af, tf) for af, tf in tracks
+            if reprocess_filter in tf or f"{af}|{tf}" not in done
+        ]
+        logger.info("Reprocess filter %r active.", reprocess_filter)
+    else:
+        remaining = [(af, tf) for af, tf in tracks if f"{af}|{tf}" not in done]
 
     logger.info(
         "Unique tracks: %d | Already done: %d | Remaining: %d",

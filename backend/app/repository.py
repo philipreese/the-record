@@ -54,6 +54,25 @@ def get_all_cover_art() -> dict[tuple[str, str], Optional[str]]:
         return {(row.artist_folded, row.title_folded): row.url for row in rows}
 
 
+def get_cover_art_batch(keys: list[tuple[str, str]]) -> dict[tuple[str, str], Optional[str]]:
+    """Look up a batch of (artist_folded, title_folded) keys from the DB cache.
+
+    Returns only keys that exist in the DB (absent = never attempted).
+    """
+    if not keys:
+        return {}
+    with get_engine().connect() as conn:
+        rows = conn.execute(
+            select(CoverArtCache).where(
+                or_(*[
+                    and_(CoverArtCache.artist_folded == k[0], CoverArtCache.title_folded == k[1])
+                    for k in keys
+                ])
+            )
+        ).fetchall()
+    return {(row.artist_folded, row.title_folded): row.url for row in rows}
+
+
 def upsert_cover_art(artist_folded: str, title_folded: str, url: Optional[str]) -> None:
     """Insert or update a cover art URL in the persistent cache."""
     session = get_session()
