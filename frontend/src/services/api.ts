@@ -336,6 +336,33 @@ export async function fetchArtistStats(
   return data;
 }
 
+export type ListenCorrectionRequest = components['schemas']['ListenCorrectionRequest'];
+export type MBRecordingResult = components['schemas']['MBRecordingResult'];
+export type MBSearchResponse = components['schemas']['MBSearchResponse'];
+
+export async function submitListenCorrection(
+  listenId: number,
+  correction: ListenCorrectionRequest,
+): Promise<ListenEntry> {
+  const { data, error } = await client.POST('/api/listens/{listen_id}/correction', {
+    params: { path: { listen_id: listenId } },
+    body: correction,
+  });
+  if (error) throw new Error((error as { detail?: string }).detail || 'Failed to save correction');
+  return data;
+}
+
+export async function searchMusicBrainz(
+  artist: string,
+  title: string,
+): Promise<MBRecordingResult[]> {
+  const { data, error } = await client.GET('/api/mb/search', {
+    params: { query: { artist, title } },
+  });
+  if (error) throw new Error('MusicBrainz search failed');
+  return data.results;
+}
+
 export async function fetchCoverArt(
   entries: Array<{ id: number; artist: string; title: string; recording_mbid?: string | null }>,
 ): Promise<Record<string, string | null>> {

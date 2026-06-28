@@ -181,6 +181,10 @@
               onToggle={() => {
                 expandedId = expandedId === entry.id ? null : entry.id;
               }}
+              onCorrectionSaved={(updated) => {
+                tracks = tracks.map((e) => (e.id === updated.id ? updated : e));
+                if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
+              }}
             />
           {/each}
         {/if}

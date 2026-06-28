@@ -25,13 +25,13 @@ logger = logging.getLogger(__name__)
 
 sys.path.append(PROJECT_ROOT)
 
-from app.corrections import sync_artist_corrections
+from app.corrections import sync_artist_corrections, sync_album_corrections, apply_album_corrections
 from app.db import bootstrap_db_from_json
 from app.graphql_schema import gql_router
 from app.lb_client import close_lb_client
 from app.playing_now_sse import broadcaster as pn_broadcaster
-from app.repository import apply_artist_corrections, get_all_cover_art
-from app.routes import get_playing_now, router, _cover_art_cache
+from app.repository import apply_artist_corrections, get_all_cover_art, re_apply_listen_corrections
+from app.routes import get_playing_now, router, _cover_art_cache, _manual_override_art_keys
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -39,13 +39,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     bootstrap_db_from_json()
     sync_artist_corrections()
     apply_artist_corrections()
+    sync_album_corrections()
+    apply_album_corrections()
+
+    n = re_apply_listen_corrections()
+    if n:
+        logger.info("Re-applied %d per-listen corrections", n)
 
     # Warm the in-process cover art cache from the DB so resolved art survives restarts.
     try:
         cached = get_all_cover_art()
-        for key, url in cached.items():
+        override_count = 0
+        for key, (url, is_override) in cached.items():
             _cover_art_cache[key] = url
-        logger.info("Cover art cache warmed: %d entries", len(cached))
+            if is_override:
+                _manual_override_art_keys.add(key)
+                override_count += 1
+        logger.info(
+            "Cover art cache warmed: %d entries (%d manual overrides)",
+            len(cached), override_count,
+        )
     except Exception as exc:
         logger.warning("Failed to warm cover art cache from DB: %s", exc)
 

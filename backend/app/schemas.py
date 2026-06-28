@@ -198,3 +198,25 @@ class ArtistTrendResponse(BaseModel):
     artist: str
     year: int
     trends: List[TrackTrendSeries]
+
+
+class ListenCorrectionRequest(BaseModel):
+    artist: Optional[str] = None
+    title: Optional[str] = None
+    album: Optional[str] = None
+    duration_secs: Optional[int] = None
+    recording_mbid: Optional[str] = None
+    cover_art_url: Optional[str] = None
+
+
+class MBRecordingResult(BaseModel):
+    mbid: str
+    title: str
+    artist_credit: str
+    release: Optional[str] = None
+    release_date: Optional[str] = None
+    length_ms: Optional[int] = None
+
+
+class MBSearchResponse(BaseModel):
+    results: List[MBRecordingResult]

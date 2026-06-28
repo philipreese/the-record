@@ -7,7 +7,7 @@ import logging
 import os
 from collections import OrderedDict
 
-from fastapi import APIRouter, BackgroundTasks, Header, Query, HTTPException, Path, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, BackgroundTasks, Body, Header, Query, HTTPException, Path, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 import app.repository as repo
 import app.sync as sync_worker
 import httpx
+from app.lb_client import get_lb_client
 from app.narrative import generate_narrative
 from app.ws import manager as ws_manager
 from app.playing_now_sse import broadcaster as pn_broadcaster
@@ -46,6 +47,9 @@ from app.schemas import (
     ArtistStatsResponse,
     ArtistAnniversary,
     OnThisDayResponse,
+    ListenCorrectionRequest,
+    MBSearchResponse,
+    MBRecordingResult,
 )
 
 router = APIRouter()
@@ -209,6 +213,8 @@ _cover_art_attempts: "OrderedDict[tuple[str, str], int]" = _BoundedCache(_ART_CA
 _MAX_ART_ATTEMPTS = 3
 # Tracks keys currently being resolved in background to prevent duplicate tasks.
 _art_in_flight: set[tuple[str, str]] = set()
+# Keys with manually set art that the background resolver must never overwrite.
+_manual_override_art_keys: set[tuple[str, str]] = set()
 # One background iTunes request at a time with a post-request sleep keeps us
 # well under Apple's undocumented rate limit (~20 req/min observed in practice).
 _art_semaphore = asyncio.Semaphore(1)
@@ -331,6 +337,9 @@ async def _bg_resolve_art(
 ) -> None:
     """Resolve cover art in the background and persist the result to the DB cache."""
     cache_key = _art_key(artist, title)
+    if cache_key in _manual_override_art_keys:
+        _art_in_flight.discard(cache_key)
+        return
     try:
         async with _art_semaphore:
             async with httpx.AsyncClient(headers={"User-Agent": _UA}) as bg:
@@ -370,8 +379,11 @@ def _populate_cover_art(listens: list) -> None:
         db_hits = repo.get_cover_art_batch([k for _, k in mem_misses])
         for listen, key in mem_misses:
             if key in db_hits:
-                _cover_art_cache[key] = db_hits[key]
-                listen.cover_art_url = db_hits[key]
+                url, is_override = db_hits[key]
+                _cover_art_cache[key] = url
+                if is_override:
+                    _manual_override_art_keys.add(key)
+                listen.cover_art_url = url
 
 
 class _CoverArtItem(BaseModel):
@@ -400,11 +412,14 @@ async def get_cover_art(items: List[_CoverArtItem]) -> Dict[str, Optional[str]]:
         for item in mem_misses:
             key = _art_key(item.artist, item.title)
             if key in db_hits:
-                _cover_art_cache[key] = db_hits[key]
-                result[str(item.id)] = db_hits[key]
+                url, is_override = db_hits[key]
+                _cover_art_cache[key] = url
+                if is_override:
+                    _manual_override_art_keys.add(key)
+                result[str(item.id)] = url
             else:
                 result[str(item.id)] = None
-                if key not in _art_in_flight:
+                if key not in _art_in_flight and key not in _manual_override_art_keys:
                     _art_in_flight.add(key)
                     _schedule_art(_bg_resolve_art(item.artist, item.title, None, item.recording_mbid, None))
 
@@ -432,8 +447,6 @@ async def get_playing_now() -> PlayingNowResponse:
         "User-Agent": _UA,
     }
     try:
-
-        from app.lb_client import get_lb_client
         client = get_lb_client()
         res = await client.get(lb_url, headers=lb_headers, timeout=httpx.Timeout(4.0))
         res.raise_for_status()
@@ -685,6 +698,268 @@ def read_artist_stats(
     return repo.get_artist_stats(artist=clean_name, time_range=range_param)
 
 
+
+
+@router.post("/listens/{listen_id}/correction", response_model=ListenEntry)
+async def correct_listen(
+    listen_id: int = Path(..., ge=1, description="ID of the listen to correct"),
+    correction: ListenCorrectionRequest = Body(...),
+) -> ListenEntry:
+    """Apply field-level corrections to a listen and write back to ListenBrainz asynchronously."""
+    listen = await run_in_threadpool(repo.get_listen_by_id, listen_id)
+    if not listen:
+        raise HTTPException(status_code=404, detail="Listen not found")
+
+    # Determine which DB-backed fields actually changed
+    db_updates: dict[str, Any] = {}
+    if correction.artist is not None and correction.artist != listen.artist:
+        db_updates["artist"] = correction.artist
+    if correction.title is not None and correction.title != listen.title:
+        db_updates["title"] = correction.title
+    if correction.album is not None and correction.album != listen.album:
+        db_updates["album"] = correction.album
+    if correction.duration_secs is not None and correction.duration_secs != listen.duration_secs:
+        db_updates["duration_secs"] = correction.duration_secs
+    if correction.recording_mbid is not None and correction.recording_mbid != listen.recording_mbid:
+        db_updates["recording_mbid"] = correction.recording_mbid
+
+    # Cover art is separate — keyed by artist/title, not stored in listens
+    new_artist = db_updates.get("artist", listen.artist)
+    new_title = db_updates.get("title", listen.title)
+    new_art_key = _art_key(new_artist, new_title)
+    current_art = _cover_art_cache.get(new_art_key)
+    raw_art = correction.cover_art_url or None  # treat empty string as None
+    art_changed = raw_art != current_art and correction.cover_art_url is not None
+
+    if not db_updates and not art_changed:
+        _populate_cover_art([listen])
+        return listen
+
+    # Persist each changed field to listen_corrections for audit + startup replay
+    correction_ids: list[int] = []
+    for field, value in db_updates.items():
+        cid = await run_in_threadpool(
+            repo.save_listen_correction, listen_id, field, str(value) if value is not None else None
+        )
+        correction_ids.append(cid)
+    if art_changed:
+        cid = await run_in_threadpool(repo.save_listen_correction, listen_id, "cover_art_url", raw_art)
+        correction_ids.append(cid)
+
+    # Apply to listens table
+    if db_updates:
+        await run_in_threadpool(repo.update_listen_fields, listen_id, db_updates)
+
+    # Apply cover art override — stored under the (possibly corrected) artist/title key
+    if art_changed:
+        _cover_art_cache[new_art_key] = raw_art
+        _manual_override_art_keys.add(new_art_key)
+        af = new_artist.casefold().strip()
+        tf = new_title.casefold().strip()
+        await run_in_threadpool(repo.upsert_cover_art, af, tf, raw_art, True)
+
+    # LB write-back: fire-and-forget, does not block the response
+    asyncio.get_running_loop().create_task(
+        _lb_write_back(listen, db_updates, correction_ids)
+    )
+
+    updated = await run_in_threadpool(repo.get_listen_by_id, listen_id)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to fetch updated listen")
+    _populate_cover_art([updated])
+    return updated
+
+
+async def _lb_write_back(
+    original: ListenEntry,
+    updates: dict[str, Any],
+    correction_ids: list[int],
+) -> None:
+    """Async write-back to ListenBrainz. Marks lb_synced for successful syncs."""
+    from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
+
+    if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
+        return
+
+    lb_headers = {
+        "Authorization": f"Token {LISTENBRAINZ_TOKEN}",
+        "User-Agent": _UA,
+    }
+
+    ok = False
+    if "recording_mbid" in updates:
+        ok = await _lb_submit_manual_mapping(original.unix_ts, updates["recording_mbid"], lb_headers)
+    elif "artist" in updates or "title" in updates:
+        ok = await _lb_delete_and_resubmit(original, updates, lb_headers)
+
+    if ok:
+        for cid in correction_ids:
+            await run_in_threadpool(repo.mark_lb_synced, cid)
+
+
+async def _lb_submit_manual_mapping(
+    listened_at: int, recording_mbid: str, headers: dict
+) -> bool:
+    """Submit a manual MBID mapping to ListenBrainz for a specific listen timestamp."""
+    try:
+        client = get_lb_client()
+        res = await client.post(
+            "https://api.listenbrainz.org/1/metadata/submit_manual_mapping",
+            headers=headers,
+            json={"listened_at": listened_at, "recording_mbid": recording_mbid},
+            timeout=httpx.Timeout(10.0),
+        )
+        if res.status_code not in (200, 201):
+            logger.warning(
+                "LB submit_manual_mapping returned %d for ts=%d mbid=%s",
+                res.status_code, listened_at, recording_mbid,
+            )
+            return False
+        return True
+    except Exception as exc:
+        logger.warning("LB submit_manual_mapping failed for ts=%d: %s", listened_at, exc)
+        return False
+
+
+async def _lb_delete_and_resubmit(
+    original: ListenEntry, updates: dict[str, Any], headers: dict
+) -> bool:
+    """Delete a listen from LB and resubmit with corrected metadata.
+
+    Aborts entirely if the listen can't be found on LB to avoid creating duplicates.
+    """
+    from app.sync import LISTENBRAINZ_USERNAME
+
+    try:
+        client = get_lb_client()
+
+        # Step 1: find the recording_msid on LB by timestamp
+        ts = original.unix_ts
+        res = await client.get(
+            f"https://api.listenbrainz.org/1/user/{LISTENBRAINZ_USERNAME}/listens",
+            headers=headers,
+            params={"max_ts": ts + 1, "min_ts": ts - 1, "count": 5},
+            timeout=httpx.Timeout(10.0),
+        )
+        if res.status_code != 200:
+            logger.warning("LB listens lookup returned %d for ts=%d", res.status_code, ts)
+            return False
+
+        lb_listens = res.json().get("payload", {}).get("listens", [])
+        recording_msid = None
+        for lb_listen in lb_listens:
+            if lb_listen.get("listened_at") == ts:
+                recording_msid = (
+                    lb_listen.get("track_metadata", {})
+                    .get("additional_info", {})
+                    .get("recording_msid")
+                )
+                break
+
+        if not recording_msid:
+            logger.warning(
+                "LB delete-and-resubmit aborted: listen ts=%d not found on LB (would create duplicate)",
+                ts,
+            )
+            return False
+
+        # Step 2: delete from LB
+        del_res = await client.post(
+            "https://api.listenbrainz.org/1/delete-listen",
+            headers=headers,
+            json={"listened_at": ts, "recording_msid": recording_msid},
+            timeout=httpx.Timeout(10.0),
+        )
+        if del_res.status_code != 200:
+            logger.warning("LB delete-listen returned %d for ts=%d", del_res.status_code, ts)
+            return False
+
+        # Step 3: resubmit with corrected metadata
+        corrected_artist = updates.get("artist", original.artist)
+        corrected_title = updates.get("title", original.title)
+        corrected_album = updates.get("album", original.album)
+        submit_payload = {
+            "listen_type": "single",
+            "payload": [{
+                "listened_at": ts,
+                "track_metadata": {
+                    "artist_name": corrected_artist,
+                    "track_name": corrected_title,
+                    "release_name": corrected_album or "",
+                    "additional_info": {
+                        "submission_client": "the-record",
+                    },
+                },
+            }],
+        }
+        sub_res = await client.post(
+            "https://api.listenbrainz.org/1/submit-listens",
+            headers=headers,
+            json=submit_payload,
+            timeout=httpx.Timeout(10.0),
+        )
+        if sub_res.status_code != 200:
+            logger.warning("LB submit-listens returned %d for ts=%d", sub_res.status_code, ts)
+            return False
+
+        return True
+    except Exception as exc:
+        logger.warning("LB delete-and-resubmit failed for ts=%d: %s", original.unix_ts, exc)
+        return False
+
+
+_mb_semaphore = asyncio.Semaphore(1)
+
+
+@router.get("/mb/search", response_model=MBSearchResponse)
+async def search_musicbrainz(
+    artist: str = Query(..., description="Artist name"),
+    title: str = Query(..., description="Track title"),
+) -> MBSearchResponse:
+    """Proxy MusicBrainz recording search, rate-limited to one request at a time."""
+    query = f'artist:"{artist.strip()}" AND recording:"{title.strip()}"'
+    try:
+        async with asyncio.wait_for(
+            _mb_semaphore.acquire(), timeout=10.0
+        ) if False else _mb_semaphore:
+            async with httpx.AsyncClient(headers={"User-Agent": _UA}) as client:
+                res = await client.get(
+                    "https://musicbrainz.org/ws/2/recording",
+                    params={"query": query, "fmt": "json", "limit": "10"},
+                    timeout=httpx.Timeout(10.0),
+                )
+        if res.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"MusicBrainz returned {res.status_code}")
+        data = res.json()
+        results: list[MBRecordingResult] = []
+        for rec in data.get("recordings", []):
+            artist_credit = " & ".join(
+                ac.get("artist", {}).get("name", "") or ac.get("name", "")
+                for ac in rec.get("artist-credit", [])
+                if isinstance(ac, dict)
+            )
+            release = None
+            release_date = None
+            releases = rec.get("releases", [])
+            if releases:
+                release = releases[0].get("title")
+                release_date = releases[0].get("date")
+            results.append(MBRecordingResult(
+                mbid=rec.get("id", ""),
+                title=rec.get("title", ""),
+                artist_credit=artist_credit,
+                release=release,
+                release_date=release_date,
+                length_ms=rec.get("length"),
+            ))
+        return MBSearchResponse(results=results)
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=503, detail="MusicBrainz search timed out")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("MusicBrainz search failed: %s", exc)
+        raise HTTPException(status_code=502, detail="MusicBrainz search failed")
 
 
 @router.get("/playing-now/stream")
