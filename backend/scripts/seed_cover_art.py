@@ -47,8 +47,10 @@ from app.db import get_engine, get_session, Listen, CoverArtCache
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger("seed-art")
 
-CHECKPOINT_FILE = SCRIPTS_DIR / "seed_cover_art_checkpoint.json"
-CHANGES_LOG = SCRIPTS_DIR / "seed_cover_art_changes.log"
+OUTPUT_DIR = SCRIPTS_DIR / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
+CHECKPOINT_FILE = OUTPUT_DIR / "seed_cover_art_checkpoint.json"
+CHANGES_LOG = OUTPUT_DIR / "seed_cover_art_changes.log"
 
 _UA = "the-record-seed/1.0 (github.com/philipreese/the-record)"
 
