@@ -2,6 +2,7 @@
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
   import { sourceLabelFull, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
   import Icon from '../layout/Icon.svelte';
+  import MetadataCorrectionDrawer from './MetadataCorrectionDrawer.svelte';
 
   let {
     entry,
@@ -11,6 +12,7 @@
     stats = undefined,
     coverArtUrl = undefined,
     onToggle,
+    onCorrectionSaved,
   }: {
     entry: ListenEntry;
     showAbsoluteTime?: boolean;
@@ -19,7 +21,10 @@
     stats?: TrackStatsInfo | null | undefined;
     coverArtUrl?: string | null | undefined;
     onToggle?: () => void;
+    onCorrectionSaved?: (updated: ListenEntry) => void;
   } = $props();
+
+  let correctionOpen = $state(false);
 
   let imgLoaded = $state(false);
   let imgError = $state(false);
@@ -79,6 +84,17 @@
           onerror={() => (imgError = true)}
         />
       {/if}
+      <button
+        type="button"
+        class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded"
+        aria-label="Edit metadata"
+        onclick={(e) => {
+          e.stopPropagation();
+          correctionOpen = true;
+        }}
+      >
+        <Icon name="pencil" size="w-3.5 h-3.5" class="text-white" />
+      </button>
     </div>
 
     <div class="flex-1 min-w-0">
@@ -137,3 +153,14 @@
     </div>
   {/if}
 </div>
+
+{#if correctionOpen}
+  <MetadataCorrectionDrawer
+    {entry}
+    onClose={() => (correctionOpen = false)}
+    onSaved={(updated) => {
+      onCorrectionSaved?.(updated);
+      correctionOpen = false;
+    }}
+  />
+{/if}

@@ -331,6 +331,10 @@
       sectionNumber={appCache.onThisDay.length > 0 || appCache.onThisDayAnniversaries.length > 0
         ? '05'
         : '04'}
+      onCorrectionSaved={(updated) => {
+        overviewListens = overviewListens.map((e) => (e.id === updated.id ? updated : e));
+        if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
+      }}
     />
 
     <!-- Now Playing / Last Played column -->

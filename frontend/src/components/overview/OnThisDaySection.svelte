@@ -182,6 +182,13 @@
                 stats={appCache.trackStats[appCache.trackKey(entry)]}
                 coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
                 onToggle={() => handleToggle(entry)}
+                onCorrectionSaved={(updated) => {
+                  appCache.onThisDay = appCache.onThisDay.map((g) => ({
+                    ...g,
+                    listens: g.listens.map((e) => (e.id === updated.id ? updated : e)),
+                  }));
+                  if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
+                }}
               />
             {/each}
           </div>

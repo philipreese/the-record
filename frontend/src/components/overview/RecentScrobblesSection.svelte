@@ -11,11 +11,13 @@
     loading,
     onViewAll,
     sectionNumber = '04',
+    onCorrectionSaved,
   }: {
     recentListens: ListenEntry[];
     loading: boolean;
     onViewAll: () => void;
     sectionNumber?: string;
+    onCorrectionSaved?: (updated: ListenEntry) => void;
   } = $props();
 
   let expandedId = $state<number | null>(null);
@@ -112,6 +114,7 @@
             stats={appCache.trackStats[appCache.trackKey(entry)]}
             coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
             onToggle={() => handleToggle(entry)}
+            {onCorrectionSaved}
           />
         {/each}
       </div>

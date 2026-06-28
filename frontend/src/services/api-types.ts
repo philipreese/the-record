@@ -264,6 +264,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cover-art": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Cover Art
+         * @description Return cached cover art URLs and schedule background resolution for misses.
+         */
+        post: operations["get_cover_art_api_cover_art_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playing-now": {
         parameters: {
             query?: never;
@@ -485,6 +505,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/listens/{listen_id}/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct Listen
+         * @description Apply field-level corrections to a listen and write back to ListenBrainz asynchronously.
+         */
+        post: operations["correct_listen_api_listens__listen_id__correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mb/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Musicbrainz
+         * @description Proxy MusicBrainz recording search, rate-limited to one request at a time.
+         */
+        get: operations["search_musicbrainz_api_mb_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playing-now/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Playing Now Stream
+         * @description SSE stream that pushes playing-now state every 15 s.
+         */
+        get: operations["playing_now_stream_api_playing_now_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graphql": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Handle Http Get */
+        get: operations["handle_http_get_api_graphql_get"];
+        put?: never;
+        /** Handle Http Post */
+        post: operations["handle_http_post_api_graphql_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -587,6 +685,21 @@ export interface components {
             /** Cover Art Url */
             cover_art_url?: string | null;
         };
+        /** ListenCorrectionRequest */
+        ListenCorrectionRequest: {
+            /** Artist */
+            artist?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Album */
+            album?: string | null;
+            /** Duration Secs */
+            duration_secs?: number | null;
+            /** Recording Mbid */
+            recording_mbid?: string | null;
+            /** Cover Art Url */
+            cover_art_url?: string | null;
+        };
         /** ListenEntry */
         ListenEntry: {
             /** Id */
@@ -607,6 +720,26 @@ export interface components {
             recording_mbid?: string | null;
             /** Cover Art Url */
             cover_art_url?: string | null;
+        };
+        /** MBRecordingResult */
+        MBRecordingResult: {
+            /** Mbid */
+            mbid: string;
+            /** Title */
+            title: string;
+            /** Artist Credit */
+            artist_credit: string;
+            /** Release */
+            release?: string | null;
+            /** Release Date */
+            release_date?: string | null;
+            /** Length Ms */
+            length_ms?: number | null;
+        };
+        /** MBSearchResponse */
+        MBSearchResponse: {
+            /** Results */
+            results: components["schemas"]["MBRecordingResult"][];
         };
         /** MonthlyTrendInfo */
         MonthlyTrendInfo: {
@@ -849,6 +982,17 @@ export interface components {
             title: string;
             /** Plays */
             plays: number;
+        };
+        /** _CoverArtItem */
+        _CoverArtItem: {
+            /** Id */
+            id: number;
+            /** Artist */
+            artist: string;
+            /** Title */
+            title: string;
+            /** Recording Mbid */
+            recording_mbid?: string | null;
         };
     };
     responses: never;
@@ -1252,6 +1396,41 @@ export interface operations {
             };
         };
     };
+    get_cover_art_api_cover_art_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["_CoverArtItem"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_playing_now_api_playing_now_get: {
         parameters: {
             query?: never;
@@ -1561,6 +1740,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_listen_api_listens__listen_id__correction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the listen to correct */
+                listen_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListenCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_musicbrainz_api_mb_search_get: {
+        parameters: {
+            query: {
+                /** @description Artist name */
+                artist: string;
+                /** @description Track title */
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MBSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    playing_now_stream_api_playing_now_stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    handle_http_get_api_graphql_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The GraphiQL integrated development environment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not found if GraphiQL or query via GET are not enabled. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    handle_http_post_api_graphql_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

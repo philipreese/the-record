@@ -2,8 +2,9 @@ import logging
 import os
 import json
 from pathlib import Path
-from sqlalchemy import create_engine, Column, Integer, String, Index
+from sqlalchemy import Boolean, Column, create_engine, DateTime, Integer, String, Index, Text, UniqueConstraint
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.sql import func
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,33 @@ class CoverArtCache(Base):
     artist_folded = Column(String, primary_key=True)
     title_folded = Column(String, primary_key=True)
     url = Column(String, nullable=True)
+    manual_override = Column(Boolean, nullable=False, default=False)
+
+
+class AlbumCorrection(Base):
+    __tablename__ = "album_corrections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    wrong_album = Column(Text, nullable=False, unique=True)
+    correct_album = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class ListenCorrection(Base):
+    __tablename__ = "listen_corrections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    listen_id = Column(Integer, nullable=False)
+    field = Column(Text, nullable=False)
+    corrected_value = Column(Text, nullable=True)
+    corrected_at = Column(DateTime, server_default=func.now())
+    lb_synced = Column(Boolean, nullable=False, default=False)
+    user_id = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("listen_id", "field", name="uq_listen_corrections_listen_field"),
+        Index("idx_listen_corrections_listen_id", "listen_id"),
+    )
 
 
 class Listen(Base):

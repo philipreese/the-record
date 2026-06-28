@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, date, timezone, timedelta
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 import os
 from zoneinfo import ZoneInfo
 from sqlalchemy import select, func, desc, distinct, text, tuple_, or_, and_
-from app.db import get_engine, get_session, Listen, CoverArtCache
+from app.db import get_engine, get_session, Listen, CoverArtCache, ListenCorrection
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 from app.schemas import (
     ArtistAnniversary,
@@ -47,17 +47,24 @@ def get_current_local_date() -> date:
             pass
     return datetime.now().date()
 
-def get_all_cover_art() -> dict[tuple[str, str], Optional[str]]:
-    """Load every cover art entry from the persistent DB cache."""
+def get_all_cover_art() -> dict[tuple[str, str], tuple[Optional[str], bool]]:
+    """Load every cover art entry from the persistent DB cache.
+
+    Returns a dict mapping (artist_folded, title_folded) to (url, manual_override).
+    """
     with get_engine().connect() as conn:
         rows = conn.execute(select(CoverArtCache)).fetchall()
-        return {(row.artist_folded, row.title_folded): row.url for row in rows}
+        return {
+            (row.artist_folded, row.title_folded): (row.url, bool(row.manual_override))
+            for row in rows
+        }
 
 
-def get_cover_art_batch(keys: list[tuple[str, str]]) -> dict[tuple[str, str], Optional[str]]:
+def get_cover_art_batch(keys: list[tuple[str, str]]) -> dict[tuple[str, str], tuple[Optional[str], bool]]:
     """Look up a batch of (artist_folded, title_folded) keys from the DB cache.
 
     Returns only keys that exist in the DB (absent = never attempted).
+    Each value is (url, manual_override).
     """
     if not keys:
         return {}
@@ -70,21 +77,47 @@ def get_cover_art_batch(keys: list[tuple[str, str]]) -> dict[tuple[str, str], Op
                 ])
             )
         ).fetchall()
-    return {(row.artist_folded, row.title_folded): row.url for row in rows}
+    return {
+        (row.artist_folded, row.title_folded): (row.url, bool(row.manual_override))
+        for row in rows
+    }
 
 
-def upsert_cover_art(artist_folded: str, title_folded: str, url: Optional[str]) -> None:
-    """Insert or update a cover art URL in the persistent cache."""
-    session = get_session()
-    try:
-        obj = CoverArtCache(artist_folded=artist_folded, title_folded=title_folded, url=url)
-        session.merge(obj)
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+def upsert_cover_art(
+    artist_folded: str,
+    title_folded: str,
+    url: Optional[str],
+    manual_override: bool = False,
+) -> None:
+    """Insert or update a cover art URL in the persistent cache.
+
+    manual_override=True marks the entry so background resolvers skip it.
+    This flag is sticky — once True, subsequent calls with manual_override=False
+    leave it True to prevent auto-resolution from overwriting user-set art.
+    """
+    with get_engine().begin() as conn:
+        if IS_POSTGRES:
+            conn.execute(
+                text(
+                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, manual_override)"
+                    " VALUES (:af, :tf, :url, :mo)"
+                    " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
+                    "   url = excluded.url,"
+                    "   manual_override = cover_art_cache.manual_override OR excluded.manual_override"
+                ),
+                {"af": artist_folded, "tf": title_folded, "url": url, "mo": manual_override},
+            )
+        else:
+            conn.execute(
+                text(
+                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, manual_override)"
+                    " VALUES (:af, :tf, :url, :mo)"
+                    " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
+                    "   url = excluded.url,"
+                    "   manual_override = MAX(cover_art_cache.manual_override, excluded.manual_override)"
+                ),
+                {"af": artist_folded, "tf": title_folded, "url": url, "mo": int(manual_override)},
+            )
 
 
 def get_stats_summary() -> StatsSummaryResponse:
@@ -1059,3 +1092,149 @@ def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> ArtistTre
 
     return ArtistTrendResponse(artist=artist, year=year, trends=trends)
 
+
+# ---------------------------------------------------------------------------
+# Per-listen correction helpers
+# ---------------------------------------------------------------------------
+
+_LISTEN_FIELD_TYPES: dict[str, type] = {
+    "artist": str,
+    "title": str,
+    "album": str,
+    "duration_secs": int,
+    "recording_mbid": str,
+}
+
+
+def get_listen_by_id(listen_id: int) -> Optional[ListenEntry]:
+    """Fetch a single listen by primary key. Returns None if not found."""
+    with get_engine().connect() as conn:
+        row = conn.execute(
+            select(
+                Listen.id, Listen.artist, Listen.title, Listen.unix_ts,
+                Listen.source, Listen.duration_secs, Listen.album, Listen.recording_mbid,
+            ).where(Listen.id == listen_id)
+        ).first()
+    if not row:
+        return None
+    return ListenEntry(
+        id=row.id, artist=row.artist, title=row.title, unix_ts=row.unix_ts,
+        source=row.source, duration_secs=row.duration_secs, album=row.album,
+        recording_mbid=row.recording_mbid,
+    )
+
+
+def update_listen_fields(listen_id: int, updates: dict[str, Any]) -> None:
+    """Apply a dict of field→value updates directly to a listens row."""
+    if not updates:
+        return
+    set_clause = ", ".join(f"{k} = :{k}" for k in updates)
+    params: dict[str, Any] = {**updates, "_id": listen_id}
+    with get_engine().begin() as conn:
+        conn.execute(
+            text(f"UPDATE listens SET {set_clause} WHERE id = :_id"),
+            params,
+        )
+
+
+def save_listen_correction(listen_id: int, field: str, value: Optional[str]) -> int:
+    """Upsert a per-listen correction row. Returns the row id."""
+    with get_engine().begin() as conn:
+        if IS_POSTGRES:
+            conn.execute(
+                text(
+                    "INSERT INTO listen_corrections (listen_id, field, corrected_value)"
+                    " VALUES (:listen_id, :field, :value)"
+                    " ON CONFLICT (listen_id, field) DO UPDATE SET"
+                    "   corrected_value = excluded.corrected_value,"
+                    "   corrected_at = now(),"
+                    "   lb_synced = false"
+                ),
+                {"listen_id": listen_id, "field": field, "value": value},
+            )
+        else:
+            conn.execute(
+                text(
+                    "INSERT INTO listen_corrections (listen_id, field, corrected_value)"
+                    " VALUES (:listen_id, :field, :value)"
+                    " ON CONFLICT (listen_id, field) DO UPDATE SET"
+                    "   corrected_value = excluded.corrected_value,"
+                    "   corrected_at = strftime('%Y-%m-%d %H:%M:%S', 'now'),"
+                    "   lb_synced = 0"
+                ),
+                {"listen_id": listen_id, "field": field, "value": value},
+            )
+        row = conn.execute(
+            text(
+                "SELECT id FROM listen_corrections"
+                " WHERE listen_id = :listen_id AND field = :field"
+            ),
+            {"listen_id": listen_id, "field": field},
+        ).fetchone()
+    return row.id if row else 0
+
+
+def mark_lb_synced(correction_id: int) -> None:
+    """Mark a listen_correction row as successfully synced to ListenBrainz."""
+    with get_engine().begin() as conn:
+        conn.execute(
+            text("UPDATE listen_corrections SET lb_synced = :v WHERE id = :id"),
+            {"v": True, "id": correction_id},
+        )
+
+
+def re_apply_listen_corrections() -> int:
+    """Re-apply all listen_corrections to listens and cover_art_cache on startup.
+
+    Called after batch corrections so per-listen manual overrides win last.
+    Returns the total number of field corrections applied.
+    """
+    with get_engine().connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT listen_id, field, corrected_value"
+                " FROM listen_corrections"
+                " ORDER BY listen_id, corrected_at"
+            )
+        ).fetchall()
+
+    if not rows:
+        return 0
+
+    from collections import defaultdict
+    by_listen: dict[int, dict[str, Optional[str]]] = defaultdict(dict)
+    for row in rows:
+        by_listen[row.listen_id][row.field] = row.corrected_value
+
+    applied = 0
+    for listen_id, fields in by_listen.items():
+        art_url = fields.pop("cover_art_url", _SENTINEL)
+
+        if fields:
+            # Coerce stored text values to the correct Python type for each field
+            typed: dict[str, Any] = {}
+            for field, raw in fields.items():
+                if raw is None:
+                    typed[field] = None
+                elif field in _LISTEN_FIELD_TYPES:
+                    try:
+                        typed[field] = _LISTEN_FIELD_TYPES[field](raw)
+                    except (ValueError, TypeError):
+                        typed[field] = raw
+                else:
+                    typed[field] = raw
+            update_listen_fields(listen_id, typed)
+            applied += len(typed)
+
+        if art_url is not _SENTINEL:
+            listen = get_listen_by_id(listen_id)
+            if listen:
+                af = listen.artist.casefold().strip()
+                tf = listen.title.casefold().strip()
+                upsert_cover_art(af, tf, cast(Optional[str], art_url), manual_override=True)
+                applied += 1
+
+    return applied
+
+
+_SENTINEL = object()
