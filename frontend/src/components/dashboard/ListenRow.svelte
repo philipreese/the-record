@@ -21,6 +21,13 @@
     onToggle?: () => void;
   } = $props();
 
+  let imgLoaded = $state(false);
+  let imgError = $state(false);
+  $effect(() => {
+    imgLoaded = false;
+    imgError = false;
+  });
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -58,12 +65,19 @@
     </div>
 
     <div
-      class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200 flex items-center justify-center"
+      class="w-10 h-10 shrink-0 rounded overflow-hidden bg-base-200 flex items-center justify-center relative"
     >
-      {#if coverArtUrl}
-        <img src={coverArtUrl} alt="" class="w-full h-full object-cover" loading="lazy" />
-      {:else}
-        <Icon name="music-note" size="w-4 h-4" class="opacity-20" />
+      <Icon name="music-note" size="w-4 h-4" class="opacity-20" />
+      {#if coverArtUrl && !imgError}
+        <img
+          src={coverArtUrl}
+          alt=""
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-150"
+          class:opacity-0={!imgLoaded}
+          loading="lazy"
+          onload={() => (imgLoaded = true)}
+          onerror={() => (imgError = true)}
+        />
       {/if}
     </div>
 

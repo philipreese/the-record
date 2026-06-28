@@ -22,9 +22,8 @@
 
   let expandedId: number | null = $state(null);
 
-  // Date jump states
-  let selectedDate = $state('');
-  let currentDate = $state('');
+  // Date jump states — persisted in appCache so "back to today" survives navigation
+  let currentDate = $state(appCache.recentAnchorDate);
 
   $effect(() => {
     const listens = appCache.recentListens;
@@ -96,7 +95,8 @@
     loading = true;
     try {
       const last = appCache.recentListens[appCache.recentListens.length - 1];
-      const anchor = !last && selectedDate ? getAnchorDate(selectedDate) : undefined;
+      const anchor =
+        !last && appCache.recentAnchorDate ? getAnchorDate(appCache.recentAnchorDate) : undefined;
       const page = await fetchRecentListens(PAGE_SIZE, last?.unix_ts, last?.id, anchor);
       appCache.recentListens = [...appCache.recentListens, ...page];
       if (page.length < PAGE_SIZE) appCache.recentExhausted = true;
@@ -177,9 +177,9 @@
     if (sentinel && observer) observer.observe(sentinel);
   });
 
-  // Trigger reload when selectedDate changes
+  // Trigger reload when the anchor date changes
   $effect(() => {
-    const date = selectedDate;
+    const date = appCache.recentAnchorDate;
     if (date !== currentDate) {
       currentDate = date;
       untrack(() => {
@@ -211,18 +211,18 @@
     {#snippet actions(_isShrunk)}
       <div class="hidden lg:block">
         <div class="flex items-center gap-3">
-          {#if selectedDate}
+          {#if appCache.recentAnchorDate}
             <button
               type="button"
               class="btn-nav-text text-xs uppercase tracking-widest font-mono text-theme-accent hover:text-theme-accent/80 transition-colors"
-              onclick={() => (selectedDate = '')}
+              onclick={() => (appCache.recentAnchorDate = '')}
             >
               back to today ↑
             </button>
           {/if}
 
           <DatePicker
-            bind:value={selectedDate}
+            bind:value={appCache.recentAnchorDate}
             monthlyTrends={appCache.monthlyTrends}
             class="w-50"
           />
@@ -233,13 +233,17 @@
 
   <!-- Mobile Sticky Sub-Header: Stuck month selector on mobile -->
   <div class="sticky-sub-header lg:hidden flex items-center justify-between gap-3 py-2">
-    <DatePicker bind:value={selectedDate} monthlyTrends={appCache.monthlyTrends} class="w-47.5" />
+    <DatePicker
+      bind:value={appCache.recentAnchorDate}
+      monthlyTrends={appCache.monthlyTrends}
+      class="w-47.5"
+    />
 
-    {#if selectedDate}
+    {#if appCache.recentAnchorDate}
       <button
         type="button"
         class="btn-nav-text text-xs uppercase tracking-widest font-mono text-theme-accent hover:text-theme-accent/80 transition-colors shrink-0"
-        onclick={() => (selectedDate = '')}
+        onclick={() => (appCache.recentAnchorDate = '')}
       >
         back to today ↑
       </button>

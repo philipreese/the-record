@@ -67,6 +67,7 @@ class AppCache {
   recentListens = $state<ListenEntry[]>([]);
   recentScrollOffset = $state(0);
   recentExhausted = $state(false);
+  recentAnchorDate = $state('');
 
   // Sync Authentication
   syncToken = $state<string>(
@@ -113,6 +114,7 @@ class AppCache {
     this.recentListens = [];
     this.recentScrollOffset = 0;
     this.recentExhausted = false;
+    this.recentAnchorDate = '';
     this.trackStats = {};
     this.coverArt = {};
     console.log('[cache] Store cache cleared.');
