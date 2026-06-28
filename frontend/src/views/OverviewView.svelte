@@ -29,11 +29,14 @@
   import { appCache } from '../services/store.svelte';
   import { router } from '../services/router.svelte';
 
+  import type { ListenEntry } from '../services/api';
+
   let heatmapYear = $derived(
     parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
   );
   let loadingStats = $state(!appCache.statsLoaded);
   let scrollY = $state(0);
+  let overviewListens = $state<ListenEntry[]>([]);
 
   let currentTarget = $derived.by(() => {
     void scrollY;
@@ -167,11 +170,8 @@
       appCache.onThisDayAnniversaries = onThisDayRes.anniversaries;
       appCache.statsLoaded = true;
 
-      if (appCache.recentListens.length === 0) {
-        const recent = await fetchRecentListens(10);
-        appCache.recentListens = recent;
-        if (recent.length < 10) appCache.recentExhausted = true;
-      }
+      const recent = await fetchRecentListens(10);
+      overviewListens = recent;
     } catch (e) {
       console.error('Failed to fetch dashboard data:', e);
     } finally {
@@ -325,7 +325,7 @@
 
   <div class="mt-30 grid grid-cols-1 xl:grid-cols-2 gap-16 lg:gap-20 items-start">
     <RecentScrobblesSection
-      recentListens={appCache.recentListens}
+      recentListens={overviewListens}
       loading={loadingStats}
       onViewAll={() => router.navigate('/recent')}
       sectionNumber={appCache.onThisDay.length > 0 || appCache.onThisDayAnniversaries.length > 0
