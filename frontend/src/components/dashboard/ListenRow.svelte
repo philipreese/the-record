@@ -86,7 +86,7 @@
       {/if}
       <button
         type="button"
-        class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded"
+        class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity rounded"
         aria-label="Edit metadata"
         onclick={(e) => {
           e.stopPropagation();
@@ -128,8 +128,15 @@
   </div>
 
   {#if expanded}
-    <div class="px-2 pb-2 pt-0.5 flex gap-6 text-xs font-mono text-base-content/50">
+    <div
+      class="px-2 pb-2 pt-0.5 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-mono text-base-content/50"
+    >
       <span>source: <span class="text-base-content/70">{sourceLabelFull(entry.source)}</span></span>
+      {#if entry.album}
+        <span class="truncate max-w-48"
+          >album: <span class="text-base-content/70">{entry.album}</span></span
+        >
+      {/if}
       {#if stats === undefined}
         <span class="opacity-40">loading…</span>
       {:else if stats === null}
@@ -150,6 +157,16 @@
           >
         {/if}
       {/if}
+      <button
+        type="button"
+        class="ml-auto text-theme-muted hover:text-theme-text transition-colors"
+        onclick={(e) => {
+          e.stopPropagation();
+          correctionOpen = true;
+        }}
+      >
+        edit
+      </button>
     </div>
   {/if}
 </div>

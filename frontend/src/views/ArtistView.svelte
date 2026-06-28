@@ -82,6 +82,7 @@
   let trackSort = $state<TrackSort>('plays');
   let trackPage = $state(1);
   const PAGE_SIZE = 10;
+  let expandedAlbum = $state<string | null>(null);
 
   const sortOptions: [TrackSort, string][] = [
     ['plays', 'Plays'],
@@ -364,31 +365,112 @@
       {/if}
     </div>
 
-    <!-- Top Albums -->
+    <!-- Top Albums (collapsible with track breakdown) -->
     {#if stats.top_albums && stats.top_albums.length > 0}
+      {@const tracksByAlbum = new Map(
+        stats.top_albums.map((a) => [
+          a.name,
+          stats!.top_tracks
+            .filter((t) => t.album === a.name)
+            .sort((a, b) => b.play_count - a.play_count),
+        ]),
+      )}
       <div class="flex flex-col gap-4">
         <h2 class="editorial-text-h2 pb-2 border-b border-theme-border-soft">Albums</h2>
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
           {#each stats.top_albums as album, idx}
-            <div class="list-row-interactive pointer-events-none select-text">
-              <div
-                class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
+            {@const albumTracks = tracksByAlbum.get(album.name) ?? []}
+            {@const isExpanded = expandedAlbum === album.name}
+            <div>
+              <button
+                type="button"
+                class="list-row-interactive w-full text-left"
+                onclick={() => (expandedAlbum = isExpanded ? null : album.name)}
               >
-                {String(idx + 1).padStart(2, '0')}
-              </div>
-              <div class="grow min-w-0">
-                <div class="text-base md:text-lg font-light tracking-wide truncate text-theme-text">
-                  {album.name}
+                <div
+                  class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
+                >
+                  {String(idx + 1).padStart(2, '0')}
                 </div>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="text-lg font-mono font-light text-theme-text">
-                  {album.playCount.toLocaleString()}
+                <div class="grow min-w-0">
+                  <div
+                    class="text-base md:text-lg font-light tracking-wide truncate text-theme-text"
+                  >
+                    {album.name}
+                  </div>
+                  {#if albumTracks.length > 0}
+                    <div class="text-xs font-mono text-theme-muted/50 mt-0.5">
+                      {albumTracks.length}
+                      {albumTracks.length === 1 ? 'track' : 'tracks'}
+                    </div>
+                  {/if}
                 </div>
-                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                  plays
+                <div class="flex items-center gap-3 shrink-0">
+                  <div class="text-right">
+                    <div class="text-lg font-mono font-light text-theme-text">
+                      {album.playCount.toLocaleString()}
+                    </div>
+                    <div
+                      class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5"
+                    >
+                      plays
+                    </div>
+                  </div>
+                  <span
+                    class="text-theme-muted/50 text-xs font-mono transition-transform duration-150"
+                    class:rotate-90={isExpanded}>›</span
+                  >
                 </div>
-              </div>
+              </button>
+
+              {#if isExpanded && albumTracks.length > 0}
+                <div
+                  class="ml-12 pl-4 border-l border-theme-border-soft/40 py-1 flex flex-col gap-0"
+                >
+                  {#each albumTracks as track}
+                    <div class="list-row-interactive pointer-events-none select-text py-2!">
+                      <div class="grow min-w-0">
+                        <div
+                          class="text-sm font-light tracking-wide truncate text-theme-text pointer-events-auto"
+                          use:tooltip
+                        >
+                          {track.title}
+                        </div>
+                        {#if track.duration_secs || track.first_listen_ts}
+                          <div class="flex items-center gap-1 mt-0.5">
+                            {#if track.duration_secs}
+                              <MetaChip
+                                value={formatDuration(track.duration_secs)}
+                                variant="primary"
+                              />
+                            {/if}
+                            {#if track.first_listen_ts}
+                              <span class="chip-neutral text-[10px]">
+                                {formatTsShort(track.first_listen_ts)}
+                                {#if track.last_listen_ts && track.last_listen_ts !== track.first_listen_ts}
+                                  <span class="opacity-40">–</span>{formatTsShort(
+                                    track.last_listen_ts,
+                                  )}
+                                {/if}
+                              </span>
+                            {/if}
+                          </div>
+                        {/if}
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-sm font-mono font-light text-theme-text">
+                          {track.play_count.toLocaleString()}
+                        </div>
+                        <div
+                          class="text-[10px] font-mono tracking-widest text-theme-muted uppercase mt-0.5"
+                        >
+                          plays
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
