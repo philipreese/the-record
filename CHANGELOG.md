@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0](https://github.com/philipreese/the-record/compare/v0.31.0...v0.32.0) (2026-06-28)
+
+
+### Features
+
+* **scripts:** Add normalize_album_art.py MusicBrainz/CAA art normalization ([1ea08b4](https://github.com/philipreese/the-record/commit/1ea08b4fb7209218a3088b2b0baa5a0a82d255bc))
+* **scripts:** Add seed_cover_art.py and extend mirror_to_prod to cover cover_art_cache ([e5bef2f](https://github.com/philipreese/the-record/commit/e5bef2f6bfa4d06d5788557e17456a8bde8fa5b5))
+
+
+### Bug Fixes
+
+* **art:** Serve cover art from DB on cold start; fix instrumental tier preference ([be25574](https://github.com/philipreese/the-record/commit/be255741aa0ecd3ed91d986702fa26c0ebd82eee))
+* **ui:** Restore cover art placeholder and fix journal date-anchor persistence ([fbb58cf](https://github.com/philipreese/the-record/commit/fbb58cfb8f856222c203e7a4724f20f80f5ec5d0))
+
 ## [0.31.0](https://github.com/philipreese/the-record/compare/v0.30.0...v0.31.0) (2026-06-27)
 
 
