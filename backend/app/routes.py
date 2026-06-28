@@ -358,11 +358,20 @@ def _schedule_art(coro) -> None:
 
 
 def _populate_cover_art(listens: list) -> None:
-    """Fill cover_art_url from in-process cache for each listen (cache hits only)."""
+    """Fill cover_art_url from in-process cache then DB for each listen."""
+    mem_misses: list[tuple] = []
     for listen in listens:
         key = _art_key(listen.artist, listen.title)
         if key in _cover_art_cache:
             listen.cover_art_url = _cover_art_cache[key]
+        else:
+            mem_misses.append((listen, key))
+    if mem_misses:
+        db_hits = repo.get_cover_art_batch([k for _, k in mem_misses])
+        for listen, key in mem_misses:
+            if key in db_hits:
+                _cover_art_cache[key] = db_hits[key]
+                listen.cover_art_url = db_hits[key]
 
 
 class _CoverArtItem(BaseModel):
@@ -376,12 +385,29 @@ class _CoverArtItem(BaseModel):
 async def get_cover_art(items: List[_CoverArtItem]) -> Dict[str, Optional[str]]:
     """Return cached cover art URLs and schedule background resolution for misses."""
     result: Dict[str, Optional[str]] = {}
+    mem_misses: list[_CoverArtItem] = []
     for item in items[:100]:
         key = _art_key(item.artist, item.title)
-        result[str(item.id)] = _cover_art_cache.get(key)
-        if key not in _cover_art_cache and key not in _art_in_flight:
-            _art_in_flight.add(key)
-            _schedule_art(_bg_resolve_art(item.artist, item.title, None, item.recording_mbid, None))
+        if key in _cover_art_cache:
+            result[str(item.id)] = _cover_art_cache[key]
+        else:
+            mem_misses.append(item)
+
+    if mem_misses:
+        db_hits = await run_in_threadpool(
+            repo.get_cover_art_batch, [_art_key(i.artist, i.title) for i in mem_misses]
+        )
+        for item in mem_misses:
+            key = _art_key(item.artist, item.title)
+            if key in db_hits:
+                _cover_art_cache[key] = db_hits[key]
+                result[str(item.id)] = db_hits[key]
+            else:
+                result[str(item.id)] = None
+                if key not in _art_in_flight:
+                    _art_in_flight.add(key)
+                    _schedule_art(_bg_resolve_art(item.artist, item.title, None, item.recording_mbid, None))
+
     return result
 
 
