@@ -31,7 +31,12 @@ from app.graphql_schema import gql_router
 from app.lb_client import close_lb_client
 from app.playing_now_sse import broadcaster as pn_broadcaster
 from app.repository import apply_artist_corrections, get_all_cover_art
-from app.routes import get_playing_now, router, _cover_art_cache, _manual_override_art_keys
+from app.services.cover_art import cover_art_cache, manual_override_art_keys
+from app.api.playing import get_playing_now
+
+from app.api import artists, corrections, listens, media, playing, stats
+from app.api import sync as sync_api
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -47,9 +52,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         cached = get_all_cover_art()
         override_count = 0
         for key, (url, is_override) in cached.items():
-            _cover_art_cache[key] = url
+            cover_art_cache[key] = url
             if is_override:
-                _manual_override_art_keys.add(key)
+                manual_override_art_keys.add(key)
                 override_count += 1
         logger.info(
             "Cover art cache warmed: %d entries (%d manual overrides)",
@@ -66,6 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     await close_lb_client()
 
+
 app = FastAPI(title="The Record API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
@@ -76,6 +82,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.middleware("http")
 async def add_no_cache_headers(request: Request, call_next):
     response = await call_next(request)
@@ -85,6 +92,13 @@ async def add_no_cache_headers(request: Request, call_next):
         response.headers["Expires"] = "0"
     return response
 
-# Include routes under the /api prefix
-app.include_router(router, prefix="/api")
+
+# Include modular routers under the /api prefix
+app.include_router(stats.router, prefix="/api")
+app.include_router(artists.router, prefix="/api")
+app.include_router(listens.router, prefix="/api")
+app.include_router(corrections.router, prefix="/api")
+app.include_router(media.router, prefix="/api")
+app.include_router(playing.router, prefix="/api")
+app.include_router(sync_api.router, prefix="/api")
 app.include_router(gql_router, prefix="/api/graphql")
