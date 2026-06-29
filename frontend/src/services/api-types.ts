@@ -505,6 +505,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/listens/{listen_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Listen
+         * @description Fetch a single listen with its effective (corrected) values and correction metadata.
+         */
+        get: operations["get_listen_api_listens__listen_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/listens/{listen_id}/correction": {
         parameters: {
             query?: never;
@@ -516,9 +536,69 @@ export interface paths {
         put?: never;
         /**
          * Correct Listen
-         * @description Apply field-level corrections to a listen and write back to ListenBrainz asynchronously.
+         * @description Persist a per-listen metadata correction and write back to ListenBrainz.
          */
         post: operations["correct_listen_api_listens__listen_id__correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/listens/{listen_id}/correction/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert Listen Correction
+         * @description Remove the per-listen correction, reverting to track correction or raw values.
+         */
+        post: operations["revert_listen_correction_api_listens__listen_id__correction_revert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct Track
+         * @description Apply corrections to all listens of a logical track (canonical track correction).
+         */
+        post: operations["correct_track_api_tracks_correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/correction/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert Track Correction
+         * @description Remove a canonical track correction, reverting all matching listens to raw values.
+         */
+        post: operations["revert_track_correction_api_tracks_correction_revert_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -650,6 +730,8 @@ export interface components {
             album?: string | null;
             /** Duration Secs */
             duration_secs?: number | null;
+            /** Representative Listen Id */
+            representative_listen_id?: number | null;
         };
         /** ArtistTrendResponse */
         ArtistTrendResponse: {
@@ -720,6 +802,30 @@ export interface components {
             recording_mbid?: string | null;
             /** Cover Art Url */
             cover_art_url?: string | null;
+            /**
+             * Has Listen Correction
+             * @default false
+             */
+            has_listen_correction: boolean;
+            /**
+             * Has Track Correction
+             * @default false
+             */
+            has_track_correction: boolean;
+            /** Track Id */
+            track_id?: number | null;
+            /** Original Artist */
+            original_artist?: string | null;
+            /** Original Title */
+            original_title?: string | null;
+            /** Original Album */
+            original_album?: string | null;
+            /** Original Duration Secs */
+            original_duration_secs?: number | null;
+            /** Original Recording Mbid */
+            original_recording_mbid?: string | null;
+            /** Track Play Count */
+            track_play_count?: number | null;
         };
         /** MBRecordingResult */
         MBRecordingResult: {
@@ -735,6 +841,8 @@ export interface components {
             release_date?: string | null;
             /** Length Ms */
             length_ms?: number | null;
+            /** Release Mbid */
+            release_mbid?: string | null;
         };
         /** MBSearchResponse */
         MBSearchResponse: {
@@ -895,6 +1003,19 @@ export interface components {
             /** Duration Secs */
             duration_secs?: number | null;
         };
+        /** TrackCorrectionRequest */
+        TrackCorrectionRequest: {
+            /** Track Id */
+            track_id?: number | null;
+            /** Corrected Artist */
+            corrected_artist?: string | null;
+            /** Corrected Title */
+            corrected_title?: string | null;
+            /** Corrections */
+            corrections: {
+                [key: string]: string | number | null;
+            };
+        };
         /** TrackInfo */
         TrackInfo: {
             /** Artist */
@@ -912,6 +1033,15 @@ export interface components {
             month: string;
             /** Count */
             count: number;
+        };
+        /** TrackRevertRequest */
+        TrackRevertRequest: {
+            /** Track Id */
+            track_id?: number | null;
+            /** Corrected Artist */
+            corrected_artist?: string | null;
+            /** Corrected Title */
+            corrected_title?: string | null;
         };
         /** TrackStatsResponse */
         TrackStatsResponse: {
@@ -1744,6 +1874,38 @@ export interface operations {
             };
         };
     };
+    get_listen_api_listens__listen_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the listen */
+                listen_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     correct_listen_api_listens__listen_id__correction_post: {
         parameters: {
             query?: never;
@@ -1757,6 +1919,104 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ListenCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revert_listen_correction_api_listens__listen_id__correction_revert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the listen to revert */
+                listen_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_track_api_tracks_correction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revert_track_correction_api_tracks_correction_revert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackRevertRequest"];
             };
         };
         responses: {

@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
-  import type { TimeRange } from '../services/api';
+  import { untrack, tick } from 'svelte';
+  import type { TimeRange, ListenEntry } from '../services/api';
+  import { fetchListen } from '../services/api';
   import { fetchArtistStatsGql, type ArtistStatsWithAlbums } from '../services/artist-graphql';
   import { router } from '../services/router.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import MetaChip from '../components/ui/MetaChip.svelte';
+  import MetadataCorrectionDrawer from '../components/dashboard/MetadataCorrectionDrawer.svelte';
+  import Icon from '../components/layout/Icon.svelte';
 
   let artistName = $derived(router.route.type === 'artist' ? router.route.name : '');
   let timeRange = $derived<TimeRange>((router.params.get('range') as TimeRange) ?? 'all');
@@ -128,6 +131,48 @@
       trackPage = 1;
     });
   });
+
+  // Track edit drawer state
+  let editingEntry = $state<ListenEntry | null>(null);
+  let editingTrackPlayCount = $state(0);
+  let loadingEditEntry = $state(false);
+
+  async function openTrackEdit(repId: number | undefined, playCount: number) {
+    if (!repId) return;
+    loadingEditEntry = true;
+    try {
+      editingEntry = await fetchListen(repId);
+      editingTrackPlayCount = playCount;
+    } catch {
+      // ignore — button stays un-highlighted
+    } finally {
+      loadingEditEntry = false;
+    }
+  }
+
+  async function onTrackEditSaved(_updated: ListenEntry) {
+    editingEntry = null;
+    // Soft refresh — no loading=true so the DOM stays mounted and scroll position is preserved
+    if (artistName) {
+      try {
+        stats = await fetchArtistStatsGql(artistName, timeRange);
+      } catch {
+        // keep stale data
+      }
+    }
+  }
+
+  // Album expand with scroll-into-view so you don't end up below a short album
+  let albumRowEls: Record<string, HTMLElement> = {};
+
+  async function toggleAlbum(name: string) {
+    const wasExpanded = expandedAlbum === name;
+    expandedAlbum = wasExpanded ? null : name;
+    if (!wasExpanded) {
+      await tick();
+      albumRowEls[name]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
 </script>
 
 <PageHeader title={artistName}>
@@ -292,22 +337,26 @@
       <div class="flex flex-col gap-3">
         {#each pagedTracks as track, idx}
           {@const globalIdx = (trackPage - 1) * PAGE_SIZE + idx + 1}
-          <div class="list-row-interactive pointer-events-none select-text">
+          <button
+            type="button"
+            class="list-row-interactive group w-full text-left"
+            onclick={() =>
+              track.representative_listen_id &&
+              openTrackEdit(track.representative_listen_id, track.play_count)}
+            disabled={!track.representative_listen_id || loadingEditEntry}
+          >
             <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
               {String(globalIdx).padStart(2, '0')}
             </div>
             <div class="grow min-w-0">
               <div
-                class="text-base md:text-lg font-light tracking-wide truncate text-theme-text pointer-events-auto"
+                class="text-base md:text-lg font-light tracking-wide truncate text-theme-text"
                 use:tooltip
               >
                 {track.title}
               </div>
               {#if track.album}
-                <div
-                  class="text-xs font-mono text-theme-muted/70 mt-0.5 truncate pointer-events-auto"
-                  use:tooltip
-                >
+                <div class="text-xs font-mono text-theme-muted/70 mt-0.5 truncate" use:tooltip>
                   {track.album}
                 </div>
               {/if}
@@ -332,15 +381,25 @@
                 </div>
               {/if}
             </div>
-            <div class="text-right shrink-0">
-              <div class="text-lg font-mono font-light text-theme-text">
-                {track.play_count.toLocaleString()}
+            <div class="flex items-center gap-4 shrink-0">
+              <div class="text-right">
+                <div class="text-lg font-mono font-light text-theme-text">
+                  {track.play_count.toLocaleString()}
+                </div>
+                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
+                  plays
+                </div>
               </div>
-              <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                plays
-              </div>
+              {#if track.representative_listen_id}
+                <span
+                  class="hidden sm:flex items-center opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted -mr-2 sm:-mr-4"
+                  aria-hidden="true"
+                >
+                  <Icon name="pencil" size="w-4 h-4" />
+                </span>
+              {/if}
             </div>
-          </div>
+          </button>
         {/each}
       </div>
 
@@ -381,11 +440,11 @@
           {#each stats.top_albums as album, idx}
             {@const albumTracks = tracksByAlbum.get(album.name) ?? []}
             {@const isExpanded = expandedAlbum === album.name}
-            <div>
+            <div bind:this={albumRowEls[album.name]}>
               <button
                 type="button"
                 class="list-row-interactive w-full text-left"
-                onclick={() => (expandedAlbum = isExpanded ? null : album.name)}
+                onclick={() => toggleAlbum(album.name)}
               >
                 <div
                   class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
@@ -425,13 +484,20 @@
 
               {#if isExpanded && albumTracks.length > 0}
                 <div
-                  class="ml-12 pl-4 border-l border-theme-border-soft/40 py-1 flex flex-col gap-0"
+                  class="ml-4 md:ml-12 pl-2 md:pl-4 border-l border-theme-border-soft/40 py-1 flex flex-col gap-0"
                 >
                   {#each albumTracks as track}
-                    <div class="list-row-interactive pointer-events-none select-text py-2!">
+                    <button
+                      type="button"
+                      class="list-row-interactive group w-full text-left py-2!"
+                      onclick={() =>
+                        track.representative_listen_id &&
+                        openTrackEdit(track.representative_listen_id, track.play_count)}
+                      disabled={!track.representative_listen_id || loadingEditEntry}
+                    >
                       <div class="grow min-w-0">
                         <div
-                          class="text-sm font-light tracking-wide truncate text-theme-text pointer-events-auto"
+                          class="text-sm font-light tracking-wide truncate text-theme-text"
                           use:tooltip
                         >
                           {track.title}
@@ -457,17 +523,27 @@
                           </div>
                         {/if}
                       </div>
-                      <div class="text-right shrink-0">
-                        <div class="text-sm font-mono font-light text-theme-text">
-                          {track.play_count.toLocaleString()}
+                      <div class="flex items-center gap-2 shrink-0">
+                        <div class="text-right">
+                          <div class="text-sm font-mono font-light text-theme-text">
+                            {track.play_count.toLocaleString()}
+                          </div>
+                          <div
+                            class="text-[10px] font-mono tracking-widest text-theme-muted uppercase mt-0.5"
+                          >
+                            plays
+                          </div>
                         </div>
-                        <div
-                          class="text-[10px] font-mono tracking-widest text-theme-muted uppercase mt-0.5"
-                        >
-                          plays
-                        </div>
+                        {#if track.representative_listen_id}
+                          <span
+                            class="hidden sm:flex items-center opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted -mr-2 sm:-mr-4"
+                            aria-hidden="true"
+                          >
+                            <Icon name="pencil" size="w-4 h-4" />
+                          </span>
+                        {/if}
                       </div>
-                    </div>
+                    </button>
                   {/each}
                 </div>
               {/if}
@@ -484,3 +560,13 @@
     </div>
   {/if}
 </div>
+
+{#if editingEntry}
+  <MetadataCorrectionDrawer
+    entry={editingEntry}
+    forcedScope="track"
+    trackPlayCount={editingTrackPlayCount}
+    onClose={() => (editingEntry = null)}
+    onSaved={onTrackEditSaved}
+  />
+{/if}

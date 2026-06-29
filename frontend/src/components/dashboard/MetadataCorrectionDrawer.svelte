@@ -2,21 +2,31 @@
   import { untrack } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { portal } from '../../utils/portal';
-  import { submitListenCorrection, searchMusicBrainz } from '../../services/api';
+  import {
+    submitListenCorrection,
+    submitTrackCorrection,
+    revertListenCorrection,
+    revertTrackCorrection,
+    searchMusicBrainz,
+  } from '../../services/api';
   import type { ListenEntry, MBRecordingResult } from '../../services/api';
   import Icon from '../layout/Icon.svelte';
 
   let {
     entry,
+    forcedScope = undefined,
+    trackPlayCount = undefined,
     onClose,
     onSaved,
   }: {
     entry: ListenEntry;
+    forcedScope?: 'track';
+    trackPlayCount?: number;
     onClose: () => void;
     onSaved: (updated: ListenEntry) => void;
   } = $props();
 
-  // Form fields — pre-filled from entry (untrack: intentionally capturing initial value only)
+  // Form fields — pre-filled from entry (untrack: capturing initial value only)
   let formArtist = $state(untrack(() => entry.artist));
   let formTitle = $state(untrack(() => entry.title));
   let formAlbum = $state(untrack(() => entry.album ?? ''));
@@ -25,7 +35,9 @@
   let selectedMbid = $state(untrack(() => entry.recording_mbid ?? ''));
 
   // UI state
-  let saving = $state(false);
+  let savingListen = $state(false);
+  let savingTrack = $state(false);
+  let reverting = $state(false);
   let saveError = $state('');
   let mbSearching = $state(false);
   let mbResults = $state<MBRecordingResult[]>([]);
@@ -71,45 +83,107 @@
     }
   }
 
+  function msToMmSs(ms: number | null | undefined): string {
+    if (!ms) return '';
+    const s = Math.round(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+
   function applyMbResult(result: MBRecordingResult) {
     selectedMbid = result.mbid;
     if (result.release) formAlbum = result.release;
+    if (result.length_ms) formDuration = msToMmSs(result.length_ms);
+    if (result.release_mbid) {
+      formArtUrl = `https://coverartarchive.org/release/${result.release_mbid}/front-250`;
+    }
     mbResults = [];
   }
 
-  async function handleSave() {
-    if (!validateDuration(formDuration)) return;
-    saveError = '';
-    saving = true;
-
-    const correction: Record<string, string | number | null> = {};
-    if (formArtist !== entry.artist) correction.artist = formArtist;
-    if (formTitle !== entry.title) correction.title = formTitle;
-    if ((formAlbum || null) !== (entry.album ?? null)) correction.album = formAlbum || null;
-
+  function buildCorrections(): Record<string, string | number | null> | null {
+    if (!validateDuration(formDuration)) return null;
+    const c: Record<string, string | number | null> = {};
+    if (formArtist !== entry.artist) c.artist = formArtist;
+    if (formTitle !== entry.title) c.title = formTitle;
+    // Pass "" as-is — COALESCE("", x) returns "" which clears the field in the view
+    if (formAlbum !== (entry.album ?? '')) c.album = formAlbum;
     const newDurSecs = durationToSecs(formDuration);
-    if (newDurSecs !== (entry.duration_secs ?? null)) correction.duration_secs = newDurSecs;
-
-    if (selectedMbid !== (entry.recording_mbid ?? '')) {
-      correction.recording_mbid = selectedMbid || null;
-    }
-
+    if (newDurSecs !== (entry.duration_secs ?? null)) c.duration_secs = newDurSecs;
+    if (selectedMbid !== (entry.recording_mbid ?? '')) c.recording_mbid = selectedMbid || null;
     const newArt = formArtUrl.trim() || null;
-    const currentArt = entry.cover_art_url ?? null;
-    if (newArt !== currentArt) correction.cover_art_url = newArt;
+    if (newArt !== (entry.cover_art_url ?? null)) c.cover_art_url = newArt;
+    return c;
+  }
 
+  async function handleSaveListen() {
+    const correction = buildCorrections();
+    if (correction === null) return;
     if (Object.keys(correction).length === 0) {
       onClose();
       return;
     }
-
+    saveError = '';
+    savingListen = true;
     try {
       const updated = await submitListenCorrection(entry.id, correction);
       onSaved(updated);
     } catch (err) {
       saveError = err instanceof Error ? err.message : 'Save failed.';
     } finally {
-      saving = false;
+      savingListen = false;
+    }
+  }
+
+  async function handleSaveTrack() {
+    const correction = buildCorrections();
+    if (correction === null) return;
+    if (Object.keys(correction).length === 0) {
+      onClose();
+      return;
+    }
+    saveError = '';
+    savingTrack = true;
+    try {
+      const updated = await submitTrackCorrection({
+        corrected_artist: entry.artist,
+        corrected_title: entry.title,
+        track_id: entry.track_id,
+        corrections: correction,
+      });
+      onSaved(updated);
+    } catch (err) {
+      saveError = err instanceof Error ? err.message : 'Save failed.';
+    } finally {
+      savingTrack = false;
+    }
+  }
+
+  async function handleRevertListen() {
+    saveError = '';
+    reverting = true;
+    try {
+      const updated = await revertListenCorrection(entry.id);
+      onSaved(updated);
+    } catch (err) {
+      saveError = err instanceof Error ? err.message : 'Revert failed.';
+    } finally {
+      reverting = false;
+    }
+  }
+
+  async function handleRevertTrack() {
+    saveError = '';
+    reverting = true;
+    try {
+      const updated = await revertTrackCorrection({
+        corrected_artist: entry.artist,
+        corrected_title: entry.title,
+        track_id: entry.track_id,
+      });
+      onSaved(updated);
+    } catch (err) {
+      saveError = err instanceof Error ? err.message : 'Revert failed.';
+    } finally {
+      reverting = false;
     }
   }
 
@@ -120,6 +194,11 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onClose();
   }
+
+  let resolvedTrackCount = $derived(trackPlayCount ?? entry.track_play_count ?? null);
+  let trackCountLabel = $derived(
+    resolvedTrackCount != null ? resolvedTrackCount.toLocaleString() : '?',
+  );
 </script>
 
 <div
@@ -161,7 +240,39 @@
     </div>
 
     <!-- Form body -->
-    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+    <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <!-- Existing corrections / revert section -->
+      {#if entry.has_listen_correction || entry.has_track_correction}
+        <div
+          class="rounded border border-base-content/10 p-3 space-y-1.5"
+          style="background: color-mix(in srgb, var(--base-content) 3%, transparent);"
+        >
+          <p class="text-[10px] font-mono text-theme-muted tracking-widest uppercase mb-2">
+            existing corrections
+          </p>
+          {#if entry.has_listen_correction && forcedScope !== 'track'}
+            <button
+              type="button"
+              class="btn btn-xs btn-ghost w-full justify-start text-left font-mono text-[10px] tracking-widest"
+              onclick={handleRevertListen}
+              disabled={reverting}
+            >
+              {reverting ? '…' : 'Revert this listen → original'}
+            </button>
+          {/if}
+          {#if entry.has_track_correction}
+            <button
+              type="button"
+              class="btn btn-xs btn-ghost w-full justify-start text-left font-mono text-[10px] tracking-widest text-warning"
+              onclick={handleRevertTrack}
+              disabled={reverting}
+            >
+              {reverting ? '…' : `Revert all ${trackCountLabel} listens → original`}
+            </button>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Artist -->
       <label class="block space-y-1">
         <span class="text-[10px] font-mono text-theme-muted tracking-widest uppercase">Artist</span>
@@ -170,6 +281,11 @@
           class="input input-sm w-full bg-base-200 border-base-content/10"
           bind:value={formArtist}
         />
+        {#if entry.original_artist != null && entry.original_artist !== entry.artist}
+          <p class="text-[10px] font-mono text-theme-muted/50">
+            original: {entry.original_artist}
+          </p>
+        {/if}
       </label>
 
       <!-- Title -->
@@ -180,6 +296,11 @@
           class="input input-sm w-full bg-base-200 border-base-content/10"
           bind:value={formTitle}
         />
+        {#if entry.original_title != null && entry.original_title !== entry.title}
+          <p class="text-[10px] font-mono text-theme-muted/50">
+            original: {entry.original_title}
+          </p>
+        {/if}
       </label>
 
       <!-- Album -->
@@ -190,6 +311,11 @@
           class="input input-sm w-full bg-base-200 border-base-content/10"
           bind:value={formAlbum}
         />
+        {#if entry.original_album != null && entry.original_album !== entry.album}
+          <p class="text-[10px] font-mono text-theme-muted/50">
+            original: {entry.original_album}
+          </p>
+        {/if}
       </label>
 
       <!-- Duration -->
@@ -258,22 +384,23 @@
         {/if}
 
         {#if mbResults.length > 0}
-          <div class="space-y-1 memory-surface-nested p-2">
-            {#each mbResults as result (result.mbid)}
+          <div class="space-y-0.5 memory-surface-nested p-1.5">
+            {#each mbResults as result, i (result.mbid)}
               <button
                 type="button"
-                class="w-full text-left px-2 py-1.5 rounded hover:bg-base-content/5 transition-colors"
+                class="w-full text-left px-2 py-2 rounded hover:bg-base-content/5 transition-colors"
                 onclick={() => applyMbResult(result)}
               >
-                <p class="text-xs font-medium text-theme-primary truncate">{result.title}</p>
-                <p class="text-[10px] text-theme-muted truncate">{result.artist_credit}</p>
-                {#if result.release}
-                  <p class="text-[10px] text-theme-muted/70 truncate">
-                    {result.release}{result.release_date
-                      ? ` · ${result.release_date.slice(0, 4)}`
-                      : ''}
-                  </p>
-                {/if}
+                <div class="flex items-baseline gap-1.5">
+                  <span class="text-[9px] font-mono text-theme-muted/40 shrink-0">{i + 1}</span>
+                  <p class="text-xs font-medium text-theme-primary truncate">{result.title}</p>
+                </div>
+                <p class="text-[10px] text-theme-muted truncate pl-4">{result.artist_credit}</p>
+                <p class="text-[10px] text-theme-muted/60 truncate pl-4">
+                  {#if result.release}{result.release}{/if}{result.release_date
+                    ? ` · ${result.release_date.slice(0, 4)}`
+                    : ''}{result.length_ms ? ` · ${msToMmSs(result.length_ms)}` : ''}
+                </p>
               </button>
             {/each}
           </div>
@@ -283,24 +410,43 @@
 
     <!-- Footer -->
     <div
-      class="px-5 py-4 border-t shrink-0 space-y-2"
+      class="px-4 py-3 border-t shrink-0 space-y-2"
       style="border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);"
     >
       {#if saveError}
         <p class="text-xs text-error">{saveError}</p>
       {/if}
-      <div class="flex gap-2 justify-end">
+      <!--
+        flex-col-reverse on mobile: DOM order is cancel → listen → track,
+        visual order top-to-bottom is track (most important) → listen → cancel.
+        sm:flex-row: left-to-right cancel | listen | track.
+      -->
+      <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
         <button type="button" class="btn btn-sm btn-ghost" onclick={onClose}>cancel</button>
+        {#if forcedScope !== 'track'}
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            onclick={handleSaveListen}
+            disabled={savingListen || savingTrack || reverting || !!durationError}
+          >
+            {#if savingListen}
+              <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+              Save for this listen
+            {/if}
+          </button>
+        {/if}
         <button
           type="button"
-          class="btn btn-sm btn-primary"
-          onclick={handleSave}
-          disabled={saving || !!durationError}
+          class="btn btn-sm btn-warning"
+          onclick={handleSaveTrack}
+          disabled={savingListen || savingTrack || reverting || !!durationError}
         >
-          {#if saving}
+          {#if savingTrack}
             <span class="loading loading-spinner loading-xs"></span>
           {:else}
-            save
+            Save for all {trackCountLabel} listens
           {/if}
         </button>
       </div>

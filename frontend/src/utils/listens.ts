@@ -1,3 +1,5 @@
+import type { ListenEntry } from '../services/api';
+
 const LB_SOURCES = new Set(['listenbrainz', 'listenbrainz_sync']);
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -49,6 +51,35 @@ export function absoluteTime(unix_ts: number): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+  });
+}
+
+/**
+ * Patch a listen list after a correction save or revert.
+ * The exact listen (by id) is replaced; sibling listens of the same track are
+ * updated by their artist/title fields when a track-scope correction was applied.
+ */
+export function patchWithCorrection(listens: ListenEntry[], updated: ListenEntry): ListenEntry[] {
+  return listens.map((e) => {
+    if (e.id === updated.id) return updated;
+    // Track-scope: match by canonical_track_id (update) or by raw artist/title (initial save)
+    const sameTrack =
+      (updated.track_id != null && e.track_id === updated.track_id) ||
+      (updated.original_artist != null &&
+        updated.original_title != null &&
+        e.artist === updated.original_artist &&
+        e.title === updated.original_title);
+    if (!sameTrack) return e;
+    return {
+      ...e,
+      artist: updated.artist,
+      title: updated.title,
+      album: updated.album,
+      duration_secs: updated.duration_secs,
+      recording_mbid: updated.recording_mbid,
+      has_track_correction: updated.has_track_correction,
+      track_id: updated.track_id,
+    };
   });
 }
 

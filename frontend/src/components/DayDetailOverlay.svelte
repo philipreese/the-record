@@ -6,6 +6,7 @@
   import { portal } from '../utils/portal';
   import { appCache } from '../services/store.svelte';
   import Icon from './layout/Icon.svelte';
+  import { patchWithCorrection } from '../utils/listens';
 
   let { date, onclose }: { date: string | null; onclose: () => void } = $props();
 
@@ -182,7 +183,7 @@
                 expandedId = expandedId === entry.id ? null : entry.id;
               }}
               onCorrectionSaved={(updated) => {
-                tracks = tracks.map((e) => (e.id === updated.id ? updated : e));
+                tracks = patchWithCorrection(tracks, updated);
                 if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
               }}
             />

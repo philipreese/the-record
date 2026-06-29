@@ -340,6 +340,25 @@ export type ListenCorrectionRequest = components['schemas']['ListenCorrectionReq
 export type MBRecordingResult = components['schemas']['MBRecordingResult'];
 export type MBSearchResponse = components['schemas']['MBSearchResponse'];
 
+// Manual types for new endpoints (not yet in generated api-types.ts)
+export interface TrackCorrectionRequest {
+  track_id?: number | null;
+  corrected_artist?: string | null;
+  corrected_title?: string | null;
+  corrections: Record<string, string | number | null>;
+}
+export interface TrackRevertRequest {
+  track_id?: number | null;
+  corrected_artist?: string | null;
+  corrected_title?: string | null;
+}
+
+export async function fetchListen(listenId: number): Promise<ListenEntry> {
+  const res = await fetch(`${API_BASE}/api/listens/${listenId}`);
+  if (!res.ok) throw new Error(`Failed to fetch listen ${listenId}`);
+  return (await res.json()) as ListenEntry;
+}
+
 export async function submitListenCorrection(
   listenId: number,
   correction: ListenCorrectionRequest,
@@ -350,6 +369,43 @@ export async function submitListenCorrection(
   });
   if (error) throw new Error((error as { detail?: string }).detail || 'Failed to save correction');
   return data;
+}
+
+export async function submitTrackCorrection(req: TrackCorrectionRequest): Promise<ListenEntry> {
+  const res = await fetch(`${API_BASE}/api/tracks/correction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail || 'Failed to save track correction');
+  }
+  return (await res.json()) as ListenEntry;
+}
+
+export async function revertListenCorrection(listenId: number): Promise<ListenEntry> {
+  const res = await fetch(`${API_BASE}/api/listens/${listenId}/correction/revert`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail || 'Failed to revert correction');
+  }
+  return (await res.json()) as ListenEntry;
+}
+
+export async function revertTrackCorrection(req: TrackRevertRequest): Promise<ListenEntry> {
+  const res = await fetch(`${API_BASE}/api/tracks/correction/revert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail || 'Failed to revert track correction');
+  }
+  return (await res.json()) as ListenEntry;
 }
 
 export async function searchMusicBrainz(

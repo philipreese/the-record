@@ -39,16 +39,43 @@ class ListenCorrection(Base):
     __tablename__ = "listen_corrections"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    listen_id = Column(Integer, nullable=False)
-    field = Column(Text, nullable=False)
-    corrected_value = Column(Text, nullable=True)
+    listen_id = Column(Integer, unique=True, nullable=False)
+    artist = Column(Text, nullable=True)
+    title = Column(Text, nullable=True)
+    album = Column(Text, nullable=True)
+    duration_secs = Column(Integer, nullable=True)
+    recording_mbid = Column(Text, nullable=True)
     corrected_at = Column(DateTime, server_default=func.now())
-    lb_synced = Column(Boolean, nullable=False, default=False)
-    user_id = Column(Integer, nullable=True)
+
+    __table_args__ = (Index("idx_listen_corrections_listen_id", "listen_id"),)
+
+
+class CanonicalTrack(Base):
+    __tablename__ = "canonical_tracks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    artist = Column(Text, nullable=True)
+    title = Column(Text, nullable=True)
+    album = Column(Text, nullable=True)
+    duration_secs = Column(Integer, nullable=True)
+    recording_mbid = Column(Text, nullable=True, unique=True)
+    corrected_at = Column(DateTime, server_default=func.now())
+
+
+class TrackRawKey(Base):
+    __tablename__ = "track_raw_keys"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    canonical_track_id = Column(Integer, nullable=False)
+    artist_raw_folded = Column(Text, nullable=False)
+    title_raw_folded = Column(Text, nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("listen_id", "field", name="uq_listen_corrections_listen_field"),
-        Index("idx_listen_corrections_listen_id", "listen_id"),
+        UniqueConstraint(
+            "artist_raw_folded", "title_raw_folded", name="uq_track_raw_keys_identity"
+        ),
+        Index("idx_track_raw_keys_identity", "artist_raw_folded", "title_raw_folded"),
+        Index("idx_track_raw_keys_track_id", "canonical_track_id"),
     )
 
 
@@ -63,12 +90,15 @@ class Listen(Base):
     duration_secs = Column(Integer, nullable=True)
     album = Column(String, nullable=True)
     recording_mbid = Column(String, nullable=True)
+    artist_raw_folded = Column(Text, nullable=True)
+    title_raw_folded = Column(Text, nullable=True)
 
     __table_args__ = (
         Index("idx_listens_unix_ts", "unix_ts"),
         Index("idx_listens_artist", "artist"),
         Index("idx_listens_dedup", "artist", "title", "unix_ts"),
         Index("idx_listens_recording_mbid", "recording_mbid"),
+        Index("idx_listens_raw_folded", "artist_raw_folded", "title_raw_folded"),
     )
 
 # Internal engine caching to support unit test overrides of DB_PATH
@@ -159,7 +189,9 @@ def bootstrap_db_from_json() -> bool:
                 artist=item["artist"],
                 title=item["title"],
                 unix_ts=item["unix_ts"],
-                source=item.get("source", "unknown")
+                source=item.get("source", "unknown"),
+                artist_raw_folded=item["artist"].casefold().strip(),
+                title_raw_folded=item["title"].casefold().strip(),
             )
             for item in history
         ]

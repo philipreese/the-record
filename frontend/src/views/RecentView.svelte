@@ -10,6 +10,7 @@
   import { appCache } from '../services/store.svelte';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import ListenRow from '../components/dashboard/ListenRow.svelte';
+  import { patchWithCorrection } from '../utils/listens';
   import DatePicker from '../components/layout/DatePicker.svelte';
 
   const PAGE_SIZE = 50;
@@ -288,9 +289,7 @@
                 coverArtUrl={appCache.coverArt[entry.id] ?? entry.cover_art_url}
                 onToggle={() => handleToggle(entry)}
                 onCorrectionSaved={(updated) => {
-                  appCache.recentListens = appCache.recentListens.map((e) =>
-                    e.id === updated.id ? updated : e,
-                  );
+                  appCache.recentListens = patchWithCorrection(appCache.recentListens, updated);
                   if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
                 }}
               />

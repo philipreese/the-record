@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict
+from pydantic import BaseModel, model_validator
+from typing import Any, Optional, List, Dict, Union
 
 class StatsSummaryResponse(BaseModel):
     total_listens: int
@@ -39,6 +39,17 @@ class ListenEntry(BaseModel):
     album: Optional[str] = None
     recording_mbid: Optional[str] = None
     cover_art_url: Optional[str] = None
+    # Correction metadata — populated by correction endpoints and list queries
+    has_listen_correction: bool = False
+    has_track_correction: bool = False
+    track_id: Optional[int] = None
+    # Original (raw) values — only set when at least one correction exists
+    original_artist: Optional[str] = None
+    original_title: Optional[str] = None
+    original_album: Optional[str] = None
+    original_duration_secs: Optional[int] = None
+    original_recording_mbid: Optional[str] = None
+    track_play_count: Optional[int] = None
 
 class MonthlyTrendInfo(BaseModel):
     month: str
@@ -146,6 +157,7 @@ class ArtistTopTrack(BaseModel):
     last_listen_ts: Optional[int] = None
     album: Optional[str] = None
     duration_secs: Optional[int] = None
+    representative_listen_id: Optional[int] = None
 
 
 class ArtistStatsResponse(BaseModel):
@@ -216,7 +228,41 @@ class MBRecordingResult(BaseModel):
     release: Optional[str] = None
     release_date: Optional[str] = None
     length_ms: Optional[int] = None
+    release_mbid: Optional[str] = None
 
 
 class MBSearchResponse(BaseModel):
     results: List[MBRecordingResult]
+
+
+class TrackCorrectionRequest(BaseModel):
+    track_id: Optional[int] = None
+    corrected_artist: Optional[str] = None
+    corrected_title: Optional[str] = None
+    corrections: Dict[str, Optional[Union[str, int]]]
+
+    @model_validator(mode="after")
+    def validate_identity(self) -> "TrackCorrectionRequest":
+        if self.track_id is not None:
+            return self
+        if self.corrected_artist and self.corrected_title:
+            return self
+        raise ValueError(
+            "Either track_id or both corrected_artist+corrected_title are required."
+        )
+
+
+class TrackRevertRequest(BaseModel):
+    track_id: Optional[int] = None
+    corrected_artist: Optional[str] = None
+    corrected_title: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_identity(self) -> "TrackRevertRequest":
+        if self.track_id is not None:
+            return self
+        if self.corrected_artist and self.corrected_title:
+            return self
+        raise ValueError(
+            "Either track_id or both corrected_artist+corrected_title are required."
+        )
