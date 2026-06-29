@@ -123,7 +123,7 @@ def upsert_cover_art(
                     "INSERT INTO cover_art_cache (artist_folded, title_folded, url, original_url, manual_override)"
                     " VALUES (:af, :tf, :url, :url, :mo)"
                     " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
-                    "   url = excluded.url,"
+                    "   url = CASE WHEN cover_art_cache.manual_override THEN cover_art_cache.url ELSE excluded.url END,"
                     "   original_url = COALESCE(cover_art_cache.original_url, excluded.url),"
                     "   manual_override = cover_art_cache.manual_override OR excluded.manual_override"
                 ),
@@ -135,7 +135,7 @@ def upsert_cover_art(
                     "INSERT INTO cover_art_cache (artist_folded, title_folded, url, original_url, manual_override)"
                     " VALUES (:af, :tf, :url, :url, :mo)"
                     " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
-                    "   url = excluded.url,"
+                    "   url = CASE WHEN cover_art_cache.manual_override THEN cover_art_cache.url ELSE excluded.url END,"
                     "   original_url = COALESCE(cover_art_cache.original_url, excluded.url),"
                     "   manual_override = MAX(cover_art_cache.manual_override, excluded.manual_override)"
                 ),

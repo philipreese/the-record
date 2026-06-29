@@ -91,6 +91,17 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 | GET | `/api/top-artist-trends` | `year` (required int), `limit` (default 5) | `TopArtistTrendsResponse` |
 | GET | `/api/artist-trend` | `artist` (required), `year` (required int), `limit` (default 5) | `ArtistTrendResponse` |
 | GET | `/api/artist/stats` | `name` (required), `range` (30/90/365/all, default all) | `ArtistStatsResponse` |
+| GET | `/api/listens/{listen_id}` | path: `listen_id` (≥1) | `ListenEntry` (with correction metadata and `original_*` fields) |
+| DELETE | `/api/listens/{listen_id}` | path: `listen_id` (≥1) | 204 No Content |
+| POST | `/api/listens/{listen_id}/correction` | path: `listen_id`; body: `ListenCorrectionRequest` | `ListenEntry` (updated); writes back to ListenBrainz (fire-and-forget) |
+| POST | `/api/listens/{listen_id}/correction/revert` | path: `listen_id` | `ListenEntry` (raw values restored); writes back to ListenBrainz |
+| POST | `/api/tracks/correction` | body: `TrackCorrectionRequest` (`corrected_artist`+`corrected_title` or `track_id`; `corrections` dict) | `ListenEntry` (representative listen with updated values) |
+| POST | `/api/tracks/correction/revert` | body: `TrackRevertRequest` (`corrected_artist`+`corrected_title` or `track_id`) | `ListenEntry` (representative listen with raw values restored) |
+| GET | `/api/tracks/listens` | `artist` (required), `title` (required) | `ListenEntry[]` (all listens for corrected artist+title, newest first) |
+| DELETE | `/api/tracks/listens` | `artist` (required), `title` (required) | 204 No Content; 404 if no listens found |
+| POST | `/api/cover-art` | body: `[{id, artist, title, recording_mbid?}]` (max 100) | `Record<string, string \| null>` (keyed by listen ID; triggers background resolution for misses) |
+| GET | `/api/cover-art/search` | `artist` (required), `album` (optional), `recording_mbid` (optional) | `CoverArtSearchResponse` (MB releases with CAA art URLs) |
+| GET | `/api/mb/search` | `artist` (required), `title` (required) | `MBSearchResponse` (recording search results; rate-limited to one in-flight request) |
 
 ### GraphQL endpoint
 
@@ -101,8 +112,8 @@ All routes are prefixed `/api`. See [backend/app/routes.py](../backend/app/route
 ```graphql
 query ArtistStats($name: String!, $timeRange: String) {
   artist(name: $name, timeRange: $timeRange) {
-    artist totalPlays rank firstListenTs playsSinceDiscovery
-    topTracks  { title playCount album durationSecs firstListenTs lastListenTs }
+    artist totalPlays totalTrackCount rank firstListenTs playsSinceDiscovery
+    topTracks  { title playCount album durationSecs firstListenTs lastListenTs representativeListenId }
     topAlbums  { name playCount }
     monthlyTrends { month count }
     peakDay    { date plays }
@@ -110,6 +121,8 @@ query ArtistStats($name: String!, $timeRange: String) {
   }
 }
 ```
+
+`totalTrackCount` — distinct corrected titles within the time range. `representativeListenId` — most-recent listen for that track; passed to `openTrackEdit()` in `ArtistView.svelte`.
 
 ### Real-time endpoints
 
