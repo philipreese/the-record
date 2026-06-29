@@ -1,6 +1,5 @@
 <script lang="ts">
   import { untrack, onMount } from 'svelte';
-  import { inView } from '../utils/inView';
   import {
     fetchTopArtists,
     fetchTopTracks,
@@ -11,10 +10,11 @@
   } from '../services/api';
   import { appCache } from '../services/store.svelte';
   import { router } from '../services/router.svelte';
-  import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import Icon from '../components/layout/Icon.svelte';
   import StreamGraph from '../components/StreamGraph.svelte';
+  import TopArtistsList from '../components/charts/TopArtistsList.svelte';
+  import TopTracksList from '../components/charts/TopTracksList.svelte';
 
   let selectedYear = $derived(
     parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
@@ -288,160 +288,27 @@
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4 sm:mt-0">
-    <!-- Top Creators List -->
-    <div class="flex flex-col justify-between h-full min-h-125">
-      <div class="space-y-6">
-        <h2
-          class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
-        >
-          <span>Top Creators</span>
-          {#if loadingArtists}
-            <span class="loading loading-spinner loading-xs text-theme-accent"></span>
-          {/if}
-        </h2>
-
-        <div use:inView={{ once: true }} class="flex flex-col gap-3 reveal-list-container">
-          {#each artists as artist, idx}
-            <div
-              role="button"
-              tabindex="0"
-              class="list-row-interactive"
-              style="animation-delay: {idx * 40}ms;"
-              onclick={() => navigateToArtist(artist.artist)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') navigateToArtist(artist.artist);
-              }}
-            >
-              <div
-                class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
-              >
-                {String(artist.rank ?? (artistPage - 1) * PAGE_SIZE + idx + 1).padStart(2, '0')}
-              </div>
-              <div class="grow">
-                <div class="text-base md:text-lg font-light tracking-wide text-theme-text">
-                  {artist.artist}
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="text-lg font-mono font-light text-theme-text">
-                  {artist.play_count.toLocaleString()}
-                </div>
-                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                  plays
-                </div>
-              </div>
-            </div>
-          {:else}
-            <p class="text-xs font-mono opacity-50 text-center py-10">
-              No history found for this range.
-            </p>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Artists Paginator -->
-      <div
-        class="flex items-center justify-between mt-8 pt-4 border-t border-theme-border-soft font-mono text-xs"
-      >
-        <button
-          class="btn-nav-text"
-          disabled={artistPage === 1 || loadingArtists}
-          onclick={() => artistPage--}
-        >
-          ← Prev
-        </button>
-        <span class="text-xs uppercase tracking-widest text-theme-muted/50 font-mono"
-          >Page {artistPage} of {totalArtistPages || 1}</span
-        >
-        <button
-          class="btn-nav-text"
-          disabled={!hasMoreArtists || loadingArtists}
-          onclick={() => artistPage++}
-        >
-          Next →
-        </button>
-      </div>
-    </div>
-
-    <!-- Top Tracks List -->
-    <div class="flex flex-col justify-between h-full min-h-125">
-      <div class="space-y-6">
-        <h2
-          class="editorial-text-h2 pb-2 border-b border-theme-border-soft flex justify-between items-center"
-        >
-          <span>Top Tracks</span>
-          {#if loadingTracks}
-            <span class="loading loading-spinner loading-xs text-theme-accent"></span>
-          {/if}
-        </h2>
-
-        <div use:inView={{ once: true }} class="flex flex-col gap-3 reveal-list-container">
-          {#each tracks as track, idx}
-            <div
-              role="textbox"
-              class="list-row-interactive cursor-default!"
-              style="animation-delay: {idx * 40}ms;"
-              class:border-theme-accent={focusedTrack === `${track.artist} - ${track.title}`}
-              class:bg-theme-accent-soft={focusedTrack === `${track.artist} - ${track.title}`}
-            >
-              <div
-                class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0"
-              >
-                {String(track.rank ?? (trackPage - 1) * PAGE_SIZE + idx + 1).padStart(2, '0')}
-              </div>
-              <div class="grow min-w-0">
-                <div
-                  class="text-base md:text-lg font-light tracking-wide truncate text-theme-text"
-                  use:tooltip
-                >
-                  {track.title}
-                </div>
-                <div
-                  class="text-sm font-normal truncate mt-1 text-theme-secondary opacity-80"
-                  use:tooltip
-                >
-                  {track.artist}
-                </div>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="text-lg font-mono font-light text-theme-text">
-                  {track.play_count.toLocaleString()}
-                </div>
-                <div class="text-xs font-mono tracking-widest text-theme-muted uppercase mt-0.5">
-                  plays
-                </div>
-              </div>
-            </div>
-          {:else}
-            <p class="text-xs font-mono opacity-50 text-center py-10">
-              No history found for this range.
-            </p>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Tracks Paginator -->
-      <div
-        class="flex items-center justify-between mt-8 pt-4 border-t border-theme-border-soft font-mono text-xs"
-      >
-        <button
-          class="btn-nav-text"
-          disabled={trackPage === 1 || loadingTracks}
-          onclick={() => trackPage--}
-        >
-          ← Prev
-        </button>
-        <span class="text-xs uppercase tracking-widest text-theme-muted/50 font-mono"
-          >Page {trackPage} of {totalTrackPages || 1}</span
-        >
-        <button
-          class="btn-nav-text"
-          disabled={!hasMoreTracks || loadingTracks}
-          onclick={() => trackPage++}
-        >
-          Next →
-        </button>
-      </div>
-    </div>
+    <TopArtistsList
+      {artists}
+      {artistPage}
+      {totalArtistPages}
+      {loadingArtists}
+      {hasMoreArtists}
+      pageSize={PAGE_SIZE}
+      onpreviouspage={() => artistPage--}
+      onnextpage={() => artistPage++}
+      onartistclick={navigateToArtist}
+    />
+    <TopTracksList
+      {tracks}
+      {trackPage}
+      {totalTrackPages}
+      {loadingTracks}
+      {hasMoreTracks}
+      pageSize={PAGE_SIZE}
+      {focusedTrack}
+      onpreviouspage={() => trackPage--}
+      onnextpage={() => trackPage++}
+    />
   </div>
 </div>
