@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0](https://github.com/philipreese/the-record/compare/v0.32.0...v0.33.0) (2026-06-29)
+
+
+### Features
+
+* **data:** Corrected listens view with per-listen and per-track correction system ([df1ed1e](https://github.com/philipreese/the-record/commit/df1ed1ee0f927de154c990a70f8a0d707cafc52b))
+* **data:** Per-listen metadata correction with LB write-back ([c19a860](https://github.com/philipreese/the-record/commit/c19a8602ecc1c20fcd5eeb688152a646c1282461))
+* **ui:** Album in listen row details, collapsible album tracks on artist page, mobile edit affordance ([968437f](https://github.com/philipreese/the-record/commit/968437f446733cd6c9f795d764f1c897c75491b5))
+* **ui:** Metadata correction drawer redesign with cover art search and delete ([a4afe0e](https://github.com/philipreese/the-record/commit/a4afe0e5b662ca50dbd24d43c90e0f0fbfe0fffb))
+* **ui:** Track listens modal, bulk delete, track count, and original cover art ([f2315ec](https://github.com/philipreese/the-record/commit/f2315ec71d5e18179656a46817e7e14d22aaffae))
+
+
+### Tests
+
+* **all:** Comprehensive test coverage and spec documentation for all features ([1683af1](https://github.com/philipreese/the-record/commit/1683af1ecea72a0a162927af5bb788358ec2954e))
+
 ## [0.32.0](https://github.com/philipreese/the-record/compare/v0.31.0...v0.32.0) (2026-06-28)
 
 
