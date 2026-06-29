@@ -5,6 +5,7 @@ const ARTIST_QUERY = `
     artist(name: $name, timeRange: $timeRange) {
       artist
       totalPlays
+      totalTrackCount
       rank
       firstListenTs
       playsSinceDiscovery
@@ -49,6 +50,7 @@ export interface ArtistStatsWithAlbums extends ArtistStatsInfo {
 interface GqlArtistStats {
   artist: string;
   totalPlays: number;
+  totalTrackCount: number;
   rank: number | null;
   firstListenTs: number | null;
   playsSinceDiscovery: number | null;
@@ -90,6 +92,7 @@ export async function fetchArtistStatsGql(
   return {
     artist: gql.artist,
     total_plays: gql.totalPlays,
+    total_track_count: gql.totalTrackCount,
     rank: gql.rank ?? undefined,
     first_listen_ts: gql.firstListenTs ?? undefined,
     plays_since_discovery: gql.playsSinceDiscovery ?? undefined,

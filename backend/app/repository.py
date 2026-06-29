@@ -120,10 +120,11 @@ def upsert_cover_art(
         if IS_POSTGRES:
             conn.execute(
                 text(
-                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, manual_override)"
-                    " VALUES (:af, :tf, :url, :mo)"
+                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, original_url, manual_override)"
+                    " VALUES (:af, :tf, :url, :url, :mo)"
                     " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
                     "   url = excluded.url,"
+                    "   original_url = COALESCE(cover_art_cache.original_url, excluded.url),"
                     "   manual_override = cover_art_cache.manual_override OR excluded.manual_override"
                 ),
                 {"af": artist_folded, "tf": title_folded, "url": url, "mo": manual_override},
@@ -131,10 +132,11 @@ def upsert_cover_art(
         else:
             conn.execute(
                 text(
-                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, manual_override)"
-                    " VALUES (:af, :tf, :url, :mo)"
+                    "INSERT INTO cover_art_cache (artist_folded, title_folded, url, original_url, manual_override)"
+                    " VALUES (:af, :tf, :url, :url, :mo)"
                     " ON CONFLICT (artist_folded, title_folded) DO UPDATE SET"
                     "   url = excluded.url,"
+                    "   original_url = COALESCE(cover_art_cache.original_url, excluded.url),"
                     "   manual_override = MAX(cover_art_cache.manual_override, excluded.manual_override)"
                 ),
                 {"af": artist_folded, "tf": title_folded, "url": url, "mo": int(manual_override)},
@@ -984,6 +986,10 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
         ).first()
         rank = rank_row.rank if rank_row else None
 
+        total_track_count = conn.execute(
+            select(func.count(distinct(_cl.c.title))).where(*filters)
+        ).scalar() or 0
+
         # All tracks in selected time range — uses corrected_listens so corrections show in ArtistView
         stmt_tracks = (
             select(
@@ -1074,6 +1080,7 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
     return ArtistStatsResponse(
         artist=artist,
         total_plays=total_plays,
+        total_track_count=total_track_count,
         rank=rank,
         top_tracks=top_tracks,
         monthly_trends=monthly_trends,
@@ -1192,9 +1199,13 @@ def get_listen_with_originals(listen_id: int) -> Optional[ListenEntry]:
                     l.recording_mbid AS original_recording_mbid,
                     (SELECT COUNT(*) FROM corrected_listens cl2
                      WHERE LOWER(cl2.artist) = LOWER(cl.artist)
-                       AND LOWER(cl2.title)  = LOWER(cl.title)) AS track_play_count
+                       AND LOWER(cl2.title)  = LOWER(cl.title)) AS track_play_count,
+                    CASE WHEN cac.manual_override THEN cac.original_url END AS original_cover_art_url
                 FROM corrected_listens cl
                 JOIN listens l ON l.id = cl.id
+                LEFT JOIN cover_art_cache cac
+                    ON cac.artist_folded = LOWER(TRIM(cl.artist))
+                   AND cac.title_folded  = LOWER(TRIM(cl.title))
                 WHERE cl.id = :id
             """),
             {"id": listen_id},
@@ -1215,6 +1226,7 @@ def get_listen_with_originals(listen_id: int) -> Optional[ListenEntry]:
         original_album=row.original_album if any_correction else None,
         original_duration_secs=row.original_duration_secs if any_correction else None,
         original_recording_mbid=row.original_recording_mbid if any_correction else None,
+        original_cover_art_url=row.original_cover_art_url,
     )
 
 
@@ -1273,6 +1285,77 @@ def delete_listen(listen_id: int) -> None:
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM listen_corrections WHERE listen_id = :id"), {"id": listen_id})
         conn.execute(text("DELETE FROM listens WHERE id = :id"), {"id": listen_id})
+
+
+def get_track_listens(artist: str, title: str) -> List[ListenEntry]:
+    """Return all individual listens for a corrected (artist, title) pair, newest first."""
+    with get_engine().connect() as conn:
+        rows = conn.execute(
+            text("""
+                SELECT
+                    cl.id, cl.unix_ts, cl.source,
+                    cl.artist, cl.title, cl.album, cl.duration_secs, cl.recording_mbid,
+                    cl.has_listen_correction, cl.has_track_correction, cl.track_id,
+                    l.artist  AS original_artist,
+                    l.title   AS original_title,
+                    l.album   AS original_album,
+                    l.duration_secs AS original_duration_secs,
+                    l.recording_mbid AS original_recording_mbid
+                FROM corrected_listens cl
+                JOIN listens l ON l.id = cl.id
+                WHERE LOWER(cl.artist) = LOWER(:artist) AND LOWER(cl.title) = LOWER(:title)
+                ORDER BY cl.unix_ts DESC
+            """),
+            {"artist": artist, "title": title},
+        ).fetchall()
+    return [
+        ListenEntry(
+            id=r.id, unix_ts=r.unix_ts, source=r.source,
+            artist=r.artist, title=r.title, album=r.album,
+            duration_secs=r.duration_secs, recording_mbid=r.recording_mbid,
+            has_listen_correction=bool(r.has_listen_correction),
+            has_track_correction=bool(r.has_track_correction),
+            track_id=r.track_id,
+            original_artist=r.original_artist if (r.has_listen_correction or r.has_track_correction) else None,
+            original_title=r.original_title if (r.has_listen_correction or r.has_track_correction) else None,
+            original_album=r.original_album if (r.has_listen_correction or r.has_track_correction) else None,
+            original_duration_secs=r.original_duration_secs if (r.has_listen_correction or r.has_track_correction) else None,
+            original_recording_mbid=r.original_recording_mbid if (r.has_listen_correction or r.has_track_correction) else None,
+        )
+        for r in rows
+    ]
+
+
+def delete_track_listens(artist: str, title: str) -> int:
+    """Delete all listens for a corrected (artist, title) pair. Returns count deleted."""
+    with get_engine().begin() as conn:
+        ids = [
+            r[0] for r in conn.execute(
+                text("SELECT id FROM corrected_listens WHERE LOWER(artist) = LOWER(:a) AND LOWER(title) = LOWER(:t)"),
+                {"a": artist, "t": title},
+            ).fetchall()
+        ]
+        if not ids:
+            return 0
+        id_list = ",".join(str(i) for i in ids)
+        conn.execute(text(f"DELETE FROM listen_corrections WHERE listen_id IN ({id_list})"))
+        conn.execute(text(f"DELETE FROM listens WHERE id IN ({id_list})"))
+        # Clean up orphaned track_raw_keys and canonical_tracks
+        conn.execute(text("""
+            DELETE FROM track_raw_keys
+            WHERE NOT EXISTS (
+                SELECT 1 FROM listens
+                WHERE listens.artist_raw_folded = track_raw_keys.artist_raw_folded
+                  AND listens.title_raw_folded  = track_raw_keys.title_raw_folded
+            )
+        """))
+        conn.execute(text("""
+            DELETE FROM canonical_tracks
+            WHERE NOT EXISTS (
+                SELECT 1 FROM track_raw_keys WHERE track_raw_keys.canonical_track_id = canonical_tracks.id
+            )
+        """))
+        return len(ids)
 
 
 def delete_listen_correction(listen_id: int) -> None:

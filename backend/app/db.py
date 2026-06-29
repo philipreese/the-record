@@ -23,6 +23,7 @@ class CoverArtCache(Base):
     artist_folded = Column(String, primary_key=True)
     title_folded = Column(String, primary_key=True)
     url = Column(String, nullable=True)
+    original_url = Column(String, nullable=True)
     manual_override = Column(Boolean, nullable=False, default=False)
 
 

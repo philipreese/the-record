@@ -914,6 +914,22 @@ async def revert_track_correction(
     return result
 
 
+@router.get("/tracks/listens", response_model=list[ListenEntry])
+async def get_track_listens(artist: str, title: str) -> list[ListenEntry]:
+    """Return all individual listens for a corrected (artist, title) pair, newest first."""
+    listens = await run_in_threadpool(repo.get_track_listens, artist, title)
+    _populate_cover_art(listens)
+    return listens
+
+
+@router.delete("/tracks/listens", status_code=204)
+async def delete_track_listens(artist: str, title: str) -> None:
+    """Delete all listens for a corrected (artist, title) pair."""
+    n = await run_in_threadpool(repo.delete_track_listens, artist, title)
+    if n == 0:
+        raise HTTPException(status_code=404, detail="No listens found for this track")
+
+
 async def _lb_write_back(original: ListenEntry, updates: dict[str, Any]) -> None:
     """Async write-back to ListenBrainz. Best-effort, fire-and-forget."""
     from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN

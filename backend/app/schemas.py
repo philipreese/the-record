@@ -50,6 +50,7 @@ class ListenEntry(BaseModel):
     original_duration_secs: Optional[int] = None
     original_recording_mbid: Optional[str] = None
     track_play_count: Optional[int] = None
+    original_cover_art_url: Optional[str] = None
 
 class MonthlyTrendInfo(BaseModel):
     month: str
@@ -163,6 +164,7 @@ class ArtistTopTrack(BaseModel):
 class ArtistStatsResponse(BaseModel):
     artist: str
     total_plays: int
+    total_track_count: int = 0
     rank: Optional[int] = None
     top_tracks: List[ArtistTopTrack]
     monthly_trends: List[ArtistMonthlyTrend]
