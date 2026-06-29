@@ -345,6 +345,31 @@ class TestArtistGraphQL(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIsNone(res.json()["data"]["artist"])
 
+    @mock.patch("app.graphql_schema.repo.get_artist_stats")
+    def test_artist_query_exposes_total_track_count(self, mock_stats) -> None:
+        from app.schemas import ArtistStatsResponse, ArtistTopTrack
+
+        mock_stats.return_value = ArtistStatsResponse(
+            artist="Radiohead",
+            total_plays=50,
+            total_track_count=3,
+            rank=1,
+            top_tracks=[
+                ArtistTopTrack(title="Creep", play_count=25),
+                ArtistTopTrack(title="Karma Police", play_count=15),
+                ArtistTopTrack(title="Fake Plastic Trees", play_count=10),
+            ],
+            monthly_trends=[],
+            peak_day=None,
+            hourly={f"{h:02d}": 0 for h in range(24)},
+        )
+        query = "{ artist(name: \"Radiohead\") { totalPlays totalTrackCount } }"
+        res = self.client.post("/api/graphql", json={"query": query})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()["data"]["artist"]
+        self.assertEqual(data["totalPlays"], 50)
+        self.assertEqual(data["totalTrackCount"], 3)
+
     def test_graphiql_available(self) -> None:
         res = self.client.get("/api/graphql", headers={"Accept": "text/html"})
         self.assertEqual(res.status_code, 200)
@@ -413,6 +438,195 @@ class TestExtractRecordingMbid(unittest.TestCase):
     def test_none_when_absent(self) -> None:
         self.assertIsNone(sync_worker._extract_recording_mbid({"additional_info": {}}))
         self.assertIsNone(sync_worker._extract_recording_mbid({}))
+
+
+class TestListenRoutes(unittest.TestCase):
+    """GET /api/listens/{id} and DELETE /api/listens/{id}."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_listen_with_originals")
+    def test_get_listen_returns_entry(self, mock_get, _art) -> None:
+        from app.schemas import ListenEntry
+        mock_get.return_value = ListenEntry(
+            id=1, artist="Radiohead", title="Creep", unix_ts=1000000, source="youtube_music"
+        )
+        res = self.client.get("/api/listens/1")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["id"], 1)
+        self.assertEqual(body["artist"], "Radiohead")
+        mock_get.assert_called_once_with(1)
+
+    @mock.patch("app.routes.repo.get_listen_with_originals", return_value=None)
+    def test_get_listen_returns_404_for_unknown(self, _) -> None:
+        res = self.client.get("/api/listens/99999")
+        self.assertEqual(res.status_code, 404)
+
+    @mock.patch("app.routes.repo.delete_listen")
+    @mock.patch("app.routes.repo.get_listen_by_id")
+    def test_delete_listen_returns_204(self, mock_get_raw, mock_delete) -> None:
+        from app.schemas import ListenEntry
+        mock_get_raw.return_value = ListenEntry(
+            id=1, artist="Radiohead", title="Creep", unix_ts=1000000, source="youtube_music"
+        )
+        res = self.client.delete("/api/listens/1")
+        self.assertEqual(res.status_code, 204)
+        mock_delete.assert_called_once_with(1)
+
+    @mock.patch("app.routes.repo.get_listen_by_id", return_value=None)
+    def test_delete_listen_returns_404_when_not_found(self, _) -> None:
+        res = self.client.delete("/api/listens/99999")
+        self.assertEqual(res.status_code, 404)
+
+
+class TestListenCorrectionRoutes(unittest.TestCase):
+    """POST /api/listens/{id}/correction and /correction/revert."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_listen_with_originals")
+    @mock.patch("app.routes.repo.save_listen_correction")
+    @mock.patch("app.routes.repo.get_listen_by_id")
+    def test_post_correction_saves_changed_field(
+        self, mock_raw, mock_save, mock_updated, _art
+    ) -> None:
+        from app.schemas import ListenEntry
+        mock_raw.return_value = ListenEntry(
+            id=1, artist="Radiohead", title="Creep", unix_ts=1000000, source="youtube_music"
+        )
+        mock_updated.return_value = ListenEntry(
+            id=1, artist="Radiohead UK", title="Creep", unix_ts=1000000, source="youtube_music"
+        )
+        res = self.client.post("/api/listens/1/correction", json={"artist": "Radiohead UK"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["artist"], "Radiohead UK")
+        mock_save.assert_called_once()
+
+    @mock.patch("app.routes.repo.get_listen_by_id", return_value=None)
+    def test_post_correction_returns_404_for_unknown_listen(self, _) -> None:
+        res = self.client.post("/api/listens/99999/correction", json={"artist": "X"})
+        self.assertEqual(res.status_code, 404)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_listen_with_originals")
+    @mock.patch("app.routes.repo.delete_listen_correction")
+    def test_revert_correction_removes_and_returns_raw(
+        self, mock_delete, mock_get, _art
+    ) -> None:
+        from app.schemas import ListenEntry
+        mock_get.return_value = ListenEntry(
+            id=1, artist="Original Artist", title="Creep",
+            unix_ts=1000000, source="youtube_music", has_listen_correction=False,
+        )
+        res = self.client.post("/api/listens/1/correction/revert")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["artist"], "Original Artist")
+        mock_delete.assert_called_once_with(1)
+
+    @mock.patch("app.routes.repo.get_listen_with_originals", return_value=None)
+    def test_revert_correction_returns_404_for_unknown(self, _) -> None:
+        res = self.client.post("/api/listens/99999/correction/revert")
+        self.assertEqual(res.status_code, 404)
+
+
+class TestTrackCorrectionRoutes(unittest.TestCase):
+    """POST /api/tracks/correction and /api/tracks/correction/revert."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_listen_with_originals")
+    @mock.patch("app.routes.repo.save_track_correction", return_value=42)
+    @mock.patch("app.routes.repo.get_representative_listen_id", return_value=1)
+    def test_post_track_correction_returns_updated_listen(
+        self, _rep, _save, mock_get, _art
+    ) -> None:
+        from app.schemas import ListenEntry
+        mock_get.return_value = ListenEntry(
+            id=1, artist="Radiohead", title="Creep", unix_ts=1000000,
+            source="youtube_music", album="Pablo Honey",
+        )
+        req = {
+            "corrected_artist": "Radiohead",
+            "corrected_title": "Creep",
+            "corrections": {"album": "Pablo Honey"},
+        }
+        res = self.client.post("/api/tracks/correction", json=req)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["album"], "Pablo Honey")
+
+    @mock.patch("app.routes.repo.save_track_correction", return_value=None)
+    @mock.patch("app.routes.repo.get_representative_listen_id", return_value=None)
+    def test_post_track_correction_returns_404_when_no_listens(self, _, __) -> None:
+        req = {
+            "corrected_artist": "NoOne",
+            "corrected_title": "NoTrack",
+            "corrections": {"album": "X"},
+        }
+        res = self.client.post("/api/tracks/correction", json=req)
+        self.assertEqual(res.status_code, 404)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_listen_with_originals")
+    @mock.patch("app.routes.repo.delete_track_correction")
+    @mock.patch("app.routes.repo.get_representative_listen_id_by_track_id", return_value=1)
+    def test_revert_track_correction_deletes_and_returns_listen(
+        self, _rep, mock_delete, mock_get, _art
+    ) -> None:
+        from app.schemas import ListenEntry
+        mock_get.return_value = ListenEntry(
+            id=1, artist="Radiohead", title="Creep", unix_ts=1000000, source="youtube_music"
+        )
+        req = {"track_id": 42, "corrected_artist": "Radiohead", "corrected_title": "Creep"}
+        res = self.client.post("/api/tracks/correction/revert", json=req)
+        self.assertEqual(res.status_code, 200)
+        mock_delete.assert_called_once()
+
+
+class TestTrackListensRoutes(unittest.TestCase):
+    """GET and DELETE /api/tracks/listens."""
+
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_track_listens")
+    def test_get_track_listens_returns_list(self, mock_get, _art) -> None:
+        from app.schemas import ListenEntry
+        mock_get.return_value = [
+            ListenEntry(id=1, artist="Radiohead", title="Creep", unix_ts=1000000, source="youtube_music"),
+            ListenEntry(id=2, artist="Radiohead", title="Creep", unix_ts=999000, source="last_fm"),
+        ]
+        res = self.client.get("/api/tracks/listens", params={"artist": "Radiohead", "title": "Creep"})
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(len(body), 2)
+        self.assertEqual(body[0]["artist"], "Radiohead")
+        mock_get.assert_called_once_with("Radiohead", "Creep")
+
+    @mock.patch("app.routes.repo.get_cover_art_batch", return_value={})
+    @mock.patch("app.routes.repo.get_track_listens", return_value=[])
+    def test_get_track_listens_returns_empty_list_for_unknown(self, _, _art) -> None:
+        res = self.client.get("/api/tracks/listens", params={"artist": "Nobody", "title": "Nothing"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), [])
+
+    @mock.patch("app.routes.repo.delete_track_listens", return_value=5)
+    def test_delete_track_listens_returns_204(self, mock_delete) -> None:
+        res = self.client.delete("/api/tracks/listens", params={"artist": "Radiohead", "title": "Creep"})
+        self.assertEqual(res.status_code, 204)
+        mock_delete.assert_called_once_with("Radiohead", "Creep")
+
+    @mock.patch("app.routes.repo.delete_track_listens", return_value=0)
+    def test_delete_track_listens_returns_404_when_not_found(self, _) -> None:
+        res = self.client.delete("/api/tracks/listens", params={"artist": "Nobody", "title": "Nothing"})
+        self.assertEqual(res.status_code, 404)
 
 
 if __name__ == "__main__":

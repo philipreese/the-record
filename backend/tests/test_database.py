@@ -433,5 +433,300 @@ class TestCasingNormalisationMigration(unittest.TestCase):
             self.assertEqual(title_row[0], "The Past is Dead")
 
 
+class TestGetArtistStats(unittest.TestCase):
+    """get_artist_stats: total_track_count and time-range filtering."""
+
+    def setUp(self):
+        self.test_db_path = "test_artist_stats.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+        db.init_db()
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM listens"))
+
+        import time
+        now = int(time.time())
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source)"
+                " VALUES (:a, :t, :ts, :s)"
+            ),
+            [
+                {"a": "Radiohead", "t": "Creep", "ts": now - 100, "s": "youtube_music"},
+                {"a": "Radiohead", "t": "Creep", "ts": now - 200, "s": "last_fm"},
+                {"a": "Radiohead", "t": "Karma Police", "ts": now - 300, "s": "youtube_music"},
+                {"a": "Radiohead", "t": "Fake Plastic Trees", "ts": now - 400, "s": "last_fm"},
+            ],
+        )
+        self.now = now
+        self.conn.commit()
+
+    def tearDown(self):
+        self.conn.close()
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_total_track_count_all_time(self):
+        stats = database.get_artist_stats(artist="Radiohead")
+        self.assertEqual(stats.total_plays, 4)
+        self.assertEqual(stats.total_track_count, 3)
+
+    def test_total_track_count_with_time_range(self):
+        old_ts = self.now - (400 * 86400)
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source)"
+                " VALUES ('Radiohead', 'Paranoid Android', :ts, 'last_fm')"
+            ),
+            {"ts": old_ts},
+        )
+        self.conn.commit()
+
+        stats_all = database.get_artist_stats(artist="Radiohead", time_range="all")
+        self.assertEqual(stats_all.total_track_count, 4)
+
+        stats_365 = database.get_artist_stats(artist="Radiohead", time_range="365")
+        self.assertEqual(stats_365.total_track_count, 3)
+
+    def test_unknown_artist_returns_zero_counts(self):
+        stats = database.get_artist_stats(artist="Unknown Artist")
+        self.assertEqual(stats.total_plays, 0)
+        self.assertEqual(stats.total_track_count, 0)
+
+
+class TestTrackListensFunctions(unittest.TestCase):
+    """get_track_listens and delete_track_listens repository functions."""
+
+    def setUp(self):
+        self.test_db_path = "test_track_listens.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+        db.init_db()
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM listens"))
+
+        import time
+        now = int(time.time())
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source)"
+                " VALUES (:a, :t, :ts, :s)"
+            ),
+            [
+                {"a": "Radiohead", "t": "Creep", "ts": now - 100, "s": "youtube_music"},
+                {"a": "Radiohead", "t": "Creep", "ts": now - 200, "s": "last_fm"},
+                {"a": "Radiohead", "t": "Creep", "ts": now - 300, "s": "youtube_music"},
+                {"a": "Radiohead", "t": "Karma Police", "ts": now - 400, "s": "last_fm"},
+            ],
+        )
+        self.conn.commit()
+
+    def tearDown(self):
+        self.conn.close()
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_get_track_listens_returns_all_matching(self):
+        listens = database.get_track_listens("Radiohead", "Creep")
+        self.assertEqual(len(listens), 3)
+        for entry in listens:
+            self.assertEqual(entry.artist, "Radiohead")
+            self.assertEqual(entry.title, "Creep")
+
+    def test_get_track_listens_ordered_newest_first(self):
+        listens = database.get_track_listens("Radiohead", "Creep")
+        self.assertGreaterEqual(listens[0].unix_ts, listens[1].unix_ts)
+        self.assertGreaterEqual(listens[1].unix_ts, listens[2].unix_ts)
+
+    def test_get_track_listens_case_insensitive(self):
+        listens = database.get_track_listens("radiohead", "creep")
+        self.assertEqual(len(listens), 3)
+
+    def test_get_track_listens_returns_empty_for_unknown(self):
+        listens = database.get_track_listens("Nobody", "Nothing")
+        self.assertEqual(listens, [])
+
+    def test_delete_track_listens_removes_all_matching(self):
+        count = database.delete_track_listens("Radiohead", "Creep")
+        self.assertEqual(count, 3)
+        self.assertEqual(database.get_track_listens("Radiohead", "Creep"), [])
+
+    def test_delete_track_listens_leaves_other_tracks(self):
+        database.delete_track_listens("Radiohead", "Creep")
+        karma = database.get_track_listens("Radiohead", "Karma Police")
+        self.assertEqual(len(karma), 1)
+
+    def test_delete_track_listens_returns_zero_for_unknown(self):
+        count = database.delete_track_listens("Nobody", "Nothing")
+        self.assertEqual(count, 0)
+
+
+class TestCoverArtUpsert(unittest.TestCase):
+    """upsert_cover_art: original_url preservation and manual_override stickiness."""
+
+    def setUp(self):
+        self.test_db_path = "test_cover_art.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+        db.init_db()
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM cover_art_cache"))
+        self.conn.commit()
+
+    def tearDown(self):
+        self.conn.close()
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def _fetch(self):
+        return self.conn.execute(
+            text(
+                "SELECT url, manual_override, original_url FROM cover_art_cache"
+                " WHERE artist_folded='radiohead' AND title_folded='creep'"
+            )
+        ).fetchone()
+
+    def test_first_insert_sets_url_and_original_url(self):
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/art1.jpg")
+        row = self._fetch()
+        assert row is not None
+        self.assertEqual(row[0], "https://example.com/art1.jpg")
+        self.assertFalse(row[1])
+        self.assertEqual(row[2], "https://example.com/art1.jpg")
+
+    def test_re_upsert_updates_url_but_preserves_original_url(self):
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/art1.jpg")
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/art2.jpg")
+        row = self._fetch()
+        assert row is not None
+        self.assertEqual(row[0], "https://example.com/art2.jpg")
+        self.assertEqual(row[2], "https://example.com/art1.jpg")
+
+    def test_manual_override_sets_flag_and_sticky(self):
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/original.jpg")
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/manual.jpg", manual_override=True)
+        row = self._fetch()
+        assert row is not None
+        self.assertTrue(row[1])
+        self.assertEqual(row[0], "https://example.com/manual.jpg")
+
+    def test_auto_upsert_after_manual_override_does_not_overwrite(self):
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/original.jpg")
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/manual.jpg", manual_override=True)
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/auto.jpg", manual_override=False)
+        row = self._fetch()
+        assert row is not None
+        self.assertEqual(row[0], "https://example.com/manual.jpg")
+        self.assertTrue(row[1])
+
+    def test_original_url_preserved_through_manual_override(self):
+        """original_url captures the pre-override URL and is never overwritten."""
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/original.jpg")
+        database.upsert_cover_art("radiohead", "creep", "https://example.com/manual.jpg", manual_override=True)
+        row = self._fetch()
+        assert row is not None
+        self.assertEqual(row[0], "https://example.com/manual.jpg")
+        self.assertEqual(row[2], "https://example.com/original.jpg")
+
+
+class TestListenCorrectionSystem(unittest.TestCase):
+    """Per-listen corrections: save, read originals, delete."""
+
+    def setUp(self):
+        self.test_db_path = "test_listen_corrections.db"
+        db.DB_PATH = self.test_db_path
+        db._engine = None
+        db._SessionLocal = None
+        db.init_db()
+        self.conn = db.get_engine().connect()
+        self.conn.execute(text("DELETE FROM listen_corrections"))
+        self.conn.execute(text("DELETE FROM listens"))
+        self.conn.commit()
+
+        self.conn.execute(
+            text(
+                "INSERT INTO listens (artist, title, unix_ts, source, album, duration_secs)"
+                " VALUES ('Raw Artist', 'Raw Title', 1000000, 'youtube_music', 'Raw Album', 200)"
+            )
+        )
+        self.conn.commit()
+        row = self.conn.execute(text("SELECT id FROM listens")).fetchone()
+        assert row is not None
+        self.listen_id = row[0]
+
+    def tearDown(self):
+        self.conn.close()
+        db.get_engine().dispose()
+        db._engine = None
+        db._SessionLocal = None
+        if os.path.exists(self.test_db_path):
+            try:
+                os.remove(self.test_db_path)
+            except Exception:
+                pass
+
+    def test_get_listen_with_originals_returns_raw_when_uncorrected(self):
+        entry = database.get_listen_with_originals(self.listen_id)
+        assert entry is not None
+        self.assertEqual(entry.artist, "Raw Artist")
+        self.assertEqual(entry.title, "Raw Title")
+        self.assertFalse(entry.has_listen_correction)
+        self.assertFalse(entry.has_track_correction)
+
+    def test_save_listen_correction_overrides_artist(self):
+        database.save_listen_correction(self.listen_id, {"artist": "Corrected Artist"})
+        entry = database.get_listen_with_originals(self.listen_id)
+        assert entry is not None
+        self.assertEqual(entry.artist, "Corrected Artist")
+        self.assertEqual(entry.original_artist, "Raw Artist")
+        self.assertTrue(entry.has_listen_correction)
+
+    def test_save_listen_correction_overrides_multiple_fields(self):
+        database.save_listen_correction(
+            self.listen_id,
+            {"artist": "New Artist", "title": "New Title", "album": "New Album"},
+        )
+        entry = database.get_listen_with_originals(self.listen_id)
+        assert entry is not None
+        self.assertEqual(entry.artist, "New Artist")
+        self.assertEqual(entry.title, "New Title")
+        self.assertEqual(entry.album, "New Album")
+        self.assertEqual(entry.original_artist, "Raw Artist")
+        self.assertEqual(entry.original_title, "Raw Title")
+
+    def test_delete_listen_correction_reverts_to_raw(self):
+        database.save_listen_correction(self.listen_id, {"artist": "Corrected Artist"})
+        database.delete_listen_correction(self.listen_id)
+        entry = database.get_listen_with_originals(self.listen_id)
+        assert entry is not None
+        self.assertEqual(entry.artist, "Raw Artist")
+        self.assertFalse(entry.has_listen_correction)
+
+    def test_get_listen_with_originals_returns_none_for_unknown_id(self):
+        entry = database.get_listen_with_originals(99999)
+        self.assertIsNone(entry)
+
+
 if __name__ == "__main__":
     unittest.main()

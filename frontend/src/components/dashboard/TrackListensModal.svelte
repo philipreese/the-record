@@ -43,6 +43,12 @@
   });
 
   $effect(() => {
+    if (listens.length > 0) {
+      appCache.fetchTrackStatsForListens(listens);
+    }
+  });
+
+  $effect(() => {
     const nullArt = listens.filter((e) => !e.cover_art_url && !(e.id in appCache.coverArt));
     if (nullArt.length === 0) return;
     const t = setTimeout(() => {
@@ -211,11 +217,7 @@
               </p>
             {/if}
             <div class="flex gap-2">
-              <button
-                class="btn btn-sm btn-error grow"
-                onclick={handleDeleteAll}
-                disabled={deletingAll}
-              >
+              <button class="btn btn-sm btn-error" onclick={handleDeleteAll} disabled={deletingAll}>
                 {deletingAll ? 'Deleting…' : 'Confirm delete all'}
               </button>
               <button
@@ -232,12 +234,12 @@
           </div>
         {:else}
           <button
-            class="btn btn-sm btn-ghost text-error w-full"
+            class="btn btn-ghost text-error w-full"
             onclick={() => {
               deleteAllConfirm = true;
             }}
           >
-            <Icon name="trash" size="w-3.5 h-3.5" />
+            <Icon name="trash" size="w-4 h-4" />
             Delete all {listens.length} listen{listens.length === 1 ? '' : 's'}
           </button>
         {/if}

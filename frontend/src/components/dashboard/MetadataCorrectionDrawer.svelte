@@ -243,7 +243,7 @@
       </div>
       <button
         type="button"
-        class="btn-nav-icon text-base-content/50 hover:text-base-content transition-colors"
+        class="btn-nav-icon text-base-content/50 hover:text-base-content cursor-pointer transition-colors"
         onclick={onClose}
         aria-label="Close"
       >

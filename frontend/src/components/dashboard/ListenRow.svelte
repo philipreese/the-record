@@ -181,7 +181,7 @@
           <span class="text-xs text-error">{deleteError || 'Delete this listen?'}</span>
           <button
             type="button"
-            class="text-xs text-error hover:text-error/70 transition-colors font-medium"
+            class="text-xs text-error hover:text-error/70 cursor-pointer transition-colors font-medium"
             onclick={(e) => {
               e.stopPropagation();
               handleDelete();
@@ -190,7 +190,7 @@
           >
           <button
             type="button"
-            class="text-xs text-theme-muted hover:text-theme-text transition-colors"
+            class="text-xs text-theme-muted hover:text-theme-text cursor-pointer transition-colors"
             onclick={(e) => {
               e.stopPropagation();
               deleteConfirm = false;
@@ -200,7 +200,7 @@
         {:else}
           <button
             type="button"
-            class="text-theme-muted hover:text-theme-text transition-colors"
+            class="text-theme-muted hover:text-theme-text cursor-pointer transition-colors"
             onclick={(e) => {
               e.stopPropagation();
               correctionOpen = true;
@@ -208,7 +208,7 @@
           >
           <button
             type="button"
-            class="text-theme-muted hover:text-error transition-colors"
+            class="text-theme-muted hover:text-error cursor-pointer transition-colors"
             onclick={(e) => {
               e.stopPropagation();
               deleteConfirm = true;
