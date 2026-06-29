@@ -37,6 +37,7 @@ export type ArtistStatsInfo = components['schemas']['ArtistStatsResponse'];
 export type ArtistAnniversary = components['schemas']['ArtistAnniversary'];
 export type OnThisDayResponse = components['schemas']['OnThisDayResponse'];
 export type ListenCorrectionRequest = components['schemas']['ListenCorrectionRequest'];
+export type ArtistTopTrack = components['schemas']['ArtistTopTrack'];
 export type MBRecordingResult = components['schemas']['MBRecordingResult'];
 export type MBSearchResponse = components['schemas']['MBSearchResponse'];
 export type TrackCorrectionRequest = components['schemas']['TrackCorrectionRequest'];
@@ -412,6 +413,21 @@ export async function searchMusicBrainz(
   });
   if (error) throw new Error('MusicBrainz search failed');
   return data.results;
+}
+
+export async function fetchTrackListens(artist: string, title: string): Promise<ListenEntry[]> {
+  const { data, error } = await client.GET('/api/tracks/listens', {
+    params: { query: { artist, title } },
+  });
+  if (error) throw new Error('Failed to fetch track listens');
+  return data;
+}
+
+export async function deleteTrackListens(artist: string, title: string): Promise<void> {
+  const { error } = await client.DELETE('/api/tracks/listens', {
+    params: { query: { artist, title } },
+  });
+  if (error) throw new Error('Failed to delete track listens');
 }
 
 export async function searchCoverArt(

@@ -1,14 +1,16 @@
 <script lang="ts">
   import { untrack, tick } from 'svelte';
   import type { TimeRange, ListenEntry } from '../services/api';
-  import { fetchListen } from '../services/api';
+  import { fetchListen, deleteTrackListens } from '../services/api';
   import { fetchArtistStatsGql, type ArtistStatsWithAlbums } from '../services/artist-graphql';
+  import type { ArtistTopTrack } from '../services/api';
   import { router } from '../services/router.svelte';
   import { tooltip } from '../utils/tooltip';
   import PageHeader from '../components/layout/PageHeader.svelte';
   import HourlyHeatClock from '../components/HourlyHeatClock.svelte';
   import MetaChip from '../components/ui/MetaChip.svelte';
   import MetadataCorrectionDrawer from '../components/dashboard/MetadataCorrectionDrawer.svelte';
+  import TrackListensModal from '../components/dashboard/TrackListensModal.svelte';
   import Icon from '../components/layout/Icon.svelte';
 
   let artistName = $derived(router.route.type === 'artist' ? router.route.name : '');
@@ -159,6 +161,36 @@
       } catch {
         // keep stale data
       }
+    }
+  }
+
+  // Track listens modal state
+  let listeningToTrack = $state<ArtistTopTrack | null>(null);
+
+  async function refreshStats() {
+    if (!artistName) return;
+    try {
+      stats = await fetchArtistStatsGql(artistName, timeRange);
+    } catch {
+      // keep stale data
+    }
+  }
+
+  // Per-track delete state
+  let deleteConfirmTrack = $state<string | null>(null);
+  let deletingTrack = $state(false);
+  let deleteTrackError = $state('');
+
+  async function handleTrackDelete(trackTitle: string) {
+    deletingTrack = true;
+    deleteTrackError = '';
+    try {
+      await deleteTrackListens(artistName, trackTitle);
+      deleteConfirmTrack = null;
+      await refreshStats();
+    } catch {
+      deleteTrackError = 'Delete failed.';
+      deletingTrack = false;
     }
   }
 
@@ -321,7 +353,12 @@
     <!-- Tracks -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between pb-2 border-b border-theme-border-soft">
-        <h2 class="editorial-text-h2">Tracks</h2>
+        <h2 class="editorial-text-h2">
+          Tracks{#if stats.total_track_count > 0}<span
+              class="text-sm font-mono font-normal text-theme-muted/40 ml-2"
+              >{stats.total_track_count.toLocaleString()}</span
+            >{/if}
+        </h2>
         <div class="nav-selector gap-3 md:gap-6">
           {#each sortOptions as [val, label]}
             <button
@@ -334,16 +371,17 @@
           {/each}
         </div>
       </div>
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2">
         {#each pagedTracks as track, idx}
           {@const globalIdx = (trackPage - 1) * PAGE_SIZE + idx + 1}
-          <button
-            type="button"
-            class="list-row-interactive group w-full text-left"
-            onclick={() =>
-              track.representative_listen_id &&
-              openTrackEdit(track.representative_listen_id, track.play_count)}
-            disabled={!track.representative_listen_id || loadingEditEntry}
+          <div
+            role="button"
+            tabindex="0"
+            class="list-row-interactive group w-full text-left cursor-pointer"
+            onclick={() => (listeningToTrack = track)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') listeningToTrack = track;
+            }}
           >
             <div class="w-12 text-xl md:text-2xl font-mono font-light text-theme-muted/80 shrink-0">
               {String(globalIdx).padStart(2, '0')}
@@ -381,8 +419,8 @@
                 </div>
               {/if}
             </div>
-            <div class="flex items-center gap-4 shrink-0">
-              <div class="text-right">
+            <div class="flex items-center gap-1 shrink-0">
+              <div class="text-right mr-2">
                 <div class="text-lg font-mono font-light text-theme-text">
                   {track.play_count.toLocaleString()}
                 </div>
@@ -391,15 +429,67 @@
                 </div>
               </div>
               {#if track.representative_listen_id}
-                <span
-                  class="hidden sm:flex items-center opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted -mr-2 sm:-mr-4"
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  class="hidden sm:flex items-center p-1.5 rounded opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted"
+                  aria-label="Edit track metadata"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openTrackEdit(track.representative_listen_id!, track.play_count);
+                  }}
+                  disabled={loadingEditEntry}
                 >
                   <Icon name="pencil" size="w-4 h-4" />
-                </span>
+                </button>
               {/if}
+              <button
+                type="button"
+                class="hidden sm:flex items-center p-1.5 rounded opacity-0 group-hover:opacity-100 group-hover:text-error transition-all duration-150 text-theme-muted"
+                aria-label="Delete all listens for this track"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  deleteConfirmTrack = track.title;
+                  deletingTrack = false;
+                  deleteTrackError = '';
+                }}
+              >
+                <Icon name="trash" size="w-4 h-4" />
+              </button>
             </div>
-          </button>
+          </div>
+          {#if deleteConfirmTrack === track.title}
+            <div
+              class="mx-4 px-4 py-3 rounded-xl bg-error/5 border border-error/20 flex flex-col gap-2"
+            >
+              {#if deleteTrackError}
+                <p class="text-xs text-error font-mono">{deleteTrackError}</p>
+              {:else}
+                <p class="text-xs text-theme-muted font-mono">
+                  Delete all {track.play_count.toLocaleString()} listens for "{track.title}"? This
+                  cannot be undone.
+                </p>
+              {/if}
+              <div class="flex gap-2">
+                <button
+                  class="btn btn-sm btn-error"
+                  onclick={() => handleTrackDelete(track.title)}
+                  disabled={deletingTrack}
+                >
+                  {deletingTrack ? 'Deleting…' : 'Confirm'}
+                </button>
+                <button
+                  class="btn btn-sm btn-ghost"
+                  onclick={() => {
+                    deleteConfirmTrack = null;
+                    deleteTrackError = '';
+                  }}
+                  disabled={deletingTrack}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          {/if}
         {/each}
       </div>
 
@@ -487,13 +577,14 @@
                   class="ml-4 md:ml-12 pl-2 md:pl-4 border-l border-theme-border-soft/40 py-1 flex flex-col gap-0"
                 >
                   {#each albumTracks as track}
-                    <button
-                      type="button"
-                      class="list-row-interactive group w-full text-left py-2!"
-                      onclick={() =>
-                        track.representative_listen_id &&
-                        openTrackEdit(track.representative_listen_id, track.play_count)}
-                      disabled={!track.representative_listen_id || loadingEditEntry}
+                    <div
+                      role="button"
+                      tabindex="0"
+                      class="list-row-interactive group w-full text-left py-2! cursor-pointer"
+                      onclick={() => (listeningToTrack = track)}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') listeningToTrack = track;
+                      }}
                     >
                       <div class="grow min-w-0">
                         <div
@@ -523,8 +614,8 @@
                           </div>
                         {/if}
                       </div>
-                      <div class="flex items-center gap-2 shrink-0">
-                        <div class="text-right">
+                      <div class="flex items-center gap-1 shrink-0">
+                        <div class="text-right mr-1">
                           <div class="text-sm font-mono font-light text-theme-text">
                             {track.play_count.toLocaleString()}
                           </div>
@@ -535,15 +626,66 @@
                           </div>
                         </div>
                         {#if track.representative_listen_id}
-                          <span
-                            class="hidden sm:flex items-center opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted -mr-2 sm:-mr-4"
-                            aria-hidden="true"
+                          <button
+                            type="button"
+                            class="hidden sm:flex items-center p-1 rounded opacity-0 group-hover:opacity-100 group-hover:text-theme-accent transition-all duration-150 text-theme-muted"
+                            aria-label="Edit track metadata"
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              openTrackEdit(track.representative_listen_id!, track.play_count);
+                            }}
+                            disabled={loadingEditEntry}
                           >
-                            <Icon name="pencil" size="w-4 h-4" />
-                          </span>
+                            <Icon name="pencil" size="w-3.5 h-3.5" />
+                          </button>
                         {/if}
+                        <button
+                          type="button"
+                          class="hidden sm:flex items-center p-1 rounded opacity-0 group-hover:opacity-100 group-hover:text-error transition-all duration-150 text-theme-muted"
+                          aria-label="Delete all listens for this track"
+                          onclick={(e) => {
+                            e.stopPropagation();
+                            deleteConfirmTrack = track.title;
+                            deletingTrack = false;
+                            deleteTrackError = '';
+                          }}
+                        >
+                          <Icon name="trash" size="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    </button>
+                    </div>
+                    {#if deleteConfirmTrack === track.title}
+                      <div
+                        class="mx-2 px-3 py-2 rounded-lg bg-error/5 border border-error/20 flex flex-col gap-2"
+                      >
+                        {#if deleteTrackError}
+                          <p class="text-xs text-error font-mono">{deleteTrackError}</p>
+                        {:else}
+                          <p class="text-xs text-theme-muted font-mono">
+                            Delete all {track.play_count.toLocaleString()} listens for "{track.title}"?
+                          </p>
+                        {/if}
+                        <div class="flex gap-2">
+                          <button
+                            class="btn btn-sm btn-error"
+                            onclick={() => handleTrackDelete(track.title)}
+                            disabled={deletingTrack}
+                          >
+                            {deletingTrack ? 'Deleting…' : 'Confirm'}
+                          </button>
+                          <button
+                            class="btn btn-sm btn-ghost"
+                            onclick={() => {
+                              deleteConfirmTrack = null;
+                              deleteTrackError = '';
+                            }}
+                            disabled={deletingTrack}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
                   {/each}
                 </div>
               {/if}
@@ -568,5 +710,14 @@
     trackPlayCount={editingTrackPlayCount}
     onClose={() => (editingEntry = null)}
     onSaved={onTrackEditSaved}
+  />
+{/if}
+
+{#if listeningToTrack && artistName}
+  <TrackListensModal
+    track={listeningToTrack}
+    {artistName}
+    onClose={() => (listeningToTrack = null)}
+    onChanged={refreshStats}
   />
 {/if}

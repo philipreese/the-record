@@ -50,6 +50,7 @@ class HourlyCount:
 class ArtistStats:
     artist: str
     total_plays: int
+    total_track_count: int
     rank: Optional[int]
     first_listen_ts: Optional[int]
     plays_since_discovery: Optional[int]
@@ -81,6 +82,7 @@ class Query:
         return ArtistStats(
             artist=stats.artist,
             total_plays=stats.total_plays,
+            total_track_count=stats.total_track_count,
             rank=stats.rank,
             first_listen_ts=stats.first_listen_ts,
             plays_since_discovery=stats.plays_since_discovery,

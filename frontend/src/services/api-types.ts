@@ -609,6 +609,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tracks/listens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Track Listens
+         * @description Return all individual listens for a corrected (artist, title) pair, newest first.
+         */
+        get: operations["get_track_listens_api_tracks_listens_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Track Listens
+         * @description Delete all listens for a corrected (artist, title) pair.
+         */
+        delete: operations["delete_track_listens_api_tracks_listens_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mb/search": {
         parameters: {
             query?: never;
@@ -724,6 +748,11 @@ export interface components {
             artist: string;
             /** Total Plays */
             total_plays: number;
+            /**
+             * Total Track Count
+             * @default 0
+             */
+            total_track_count: number;
             /** Rank */
             rank?: number | null;
             /** Top Tracks */
@@ -866,6 +895,8 @@ export interface components {
             original_recording_mbid?: string | null;
             /** Track Play Count */
             track_play_count?: number | null;
+            /** Original Cover Art Url */
+            original_cover_art_url?: string | null;
         };
         /** MBRecordingResult */
         MBRecordingResult: {
@@ -2098,6 +2129,68 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ListenEntry"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_track_listens_api_tracks_listens_get: {
+        parameters: {
+            query: {
+                artist: string;
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListenEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_track_listens_api_tracks_listens_delete: {
+        parameters: {
+            query: {
+                artist: string;
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

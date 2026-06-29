@@ -494,6 +494,29 @@
             />
           {/if}
 
+          {#if entry.original_cover_art_url && entry.original_cover_art_url !== formArtUrl}
+            <div class="flex items-center gap-3 mt-2 p-2 rounded-lg bg-base-200">
+              <img
+                src={entry.original_cover_art_url}
+                alt="original art"
+                class="w-10 h-10 rounded object-cover shrink-0 shadow"
+                onerror={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+              />
+              <div class="flex flex-col gap-0.5 grow min-w-0">
+                <span class="text-[10px] font-mono text-theme-muted uppercase tracking-widest"
+                  >Original art</span
+                >
+                <button
+                  type="button"
+                  class="btn btn-xs btn-ghost text-theme-accent self-start"
+                  onclick={() => (formArtUrl = entry.original_cover_art_url!)}
+                >
+                  Use original
+                </button>
+              </div>
+            </div>
+          {/if}
+
           {#if artError}
             <p class="text-xs text-error mt-1">{artError}</p>
           {/if}
