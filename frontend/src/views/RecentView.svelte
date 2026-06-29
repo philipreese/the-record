@@ -292,6 +292,9 @@
                   appCache.recentListens = patchWithCorrection(appCache.recentListens, updated);
                   if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
                 }}
+                onDeleted={(id) => {
+                  appCache.recentListens = appCache.recentListens.filter((e) => e.id !== id);
+                }}
               />
             {/each}
           </div>

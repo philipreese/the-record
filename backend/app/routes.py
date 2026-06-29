@@ -52,6 +52,8 @@ from app.schemas import (
     TrackRevertRequest,
     MBSearchResponse,
     MBRecordingResult,
+    CoverArtResult,
+    CoverArtSearchResponse,
 )
 
 router = APIRouter()
@@ -714,6 +716,17 @@ async def get_listen(
     return entry
 
 
+@router.delete("/listens/{listen_id}", status_code=204)
+async def delete_listen(
+    listen_id: int = Path(..., ge=1, description="ID of the listen to delete"),
+) -> None:
+    """Permanently delete a listen and any per-listen correction from the local DB."""
+    raw = await run_in_threadpool(repo.get_listen_by_id, listen_id)
+    if not raw:
+        raise HTTPException(status_code=404, detail="Listen not found")
+    await run_in_threadpool(repo.delete_listen, listen_id)
+
+
 @router.post("/listens/{listen_id}/correction", response_model=ListenEntry)
 async def correct_listen(
     listen_id: int = Path(..., ge=1, description="ID of the listen to correct"),
@@ -1085,6 +1098,70 @@ async def search_musicbrainz(
     except Exception as exc:
         logger.warning("MusicBrainz search failed: %s", exc)
         raise HTTPException(status_code=502, detail="MusicBrainz search failed")
+
+
+@router.get("/cover-art/search", response_model=CoverArtSearchResponse)
+async def search_cover_art(
+    artist: str = Query(..., description="Artist name"),
+    album: str = Query("", description="Album / release title"),
+    recording_mbid: str = Query("", description="Recording MBID (if known, used for precise release lookup)"),
+) -> CoverArtSearchResponse:
+    """Return MB releases with CAA cover art URLs for a given artist+album or recording MBID."""
+    try:
+        async with _mb_semaphore:
+            async with httpx.AsyncClient(headers={"User-Agent": _UA}) as client:
+                if recording_mbid.strip():
+                    res = await client.get(
+                        f"https://musicbrainz.org/ws/2/recording/{recording_mbid.strip()}",
+                        params={"inc": "releases", "fmt": "json"},
+                        timeout=httpx.Timeout(10.0),
+                    )
+                    if res.status_code != 200:
+                        raise HTTPException(status_code=502, detail=f"MusicBrainz returned {res.status_code}")
+                    data = res.json()
+                    releases = data.get("releases", [])
+                else:
+                    query_parts = [f'artist:"{artist.strip()}"']
+                    if album.strip():
+                        query_parts.append(f'release:"{album.strip()}"')
+                    res = await client.get(
+                        "https://musicbrainz.org/ws/2/release",
+                        params={"query": " AND ".join(query_parts), "fmt": "json", "limit": "12", "inc": "artist-credits"},
+                        timeout=httpx.Timeout(10.0),
+                    )
+                    if res.status_code != 200:
+                        raise HTTPException(status_code=502, detail=f"MusicBrainz returned {res.status_code}")
+                    data = res.json()
+                    releases = data.get("releases", [])
+
+        results: list[CoverArtResult] = []
+        seen: set[str] = set()
+        for r in releases:
+            mbid = r.get("id", "")
+            if not mbid or mbid in seen:
+                continue
+            seen.add(mbid)
+            ac_list = r.get("artist-credit", [])
+            artist_credit = " & ".join(
+                ac.get("artist", {}).get("name", "") or ac.get("name", "")
+                for ac in ac_list
+                if isinstance(ac, dict)
+            )
+            results.append(CoverArtResult(
+                release_mbid=mbid,
+                release_title=r.get("title", ""),
+                artist_credit=artist_credit,
+                date=r.get("date") or None,
+            ))
+            if len(results) >= 12:
+                break
+
+        return CoverArtSearchResponse(results=results)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Cover art search failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Cover art search failed")
 
 
 @router.get("/playing-now/stream")

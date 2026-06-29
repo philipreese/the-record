@@ -519,7 +519,11 @@ export interface paths {
         get: operations["get_listen_api_listens__listen_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Listen
+         * @description Permanently delete a listen and any per-listen correction from the local DB.
+         */
+        delete: operations["delete_listen_api_listens__listen_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -617,6 +621,26 @@ export interface paths {
          * @description Proxy MusicBrainz recording search, rate-limited to one request at a time.
          */
         get: operations["search_musicbrainz_api_mb_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cover-art/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Cover Art
+         * @description Return MB releases with CAA cover art URLs for a given artist+album or recording MBID.
+         */
+        get: operations["search_cover_art_api_cover_art_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -750,6 +774,22 @@ export interface components {
             play_count: number;
             /** Monthly Counts */
             monthly_counts: components["schemas"]["ArtistMonthlyTrend"][];
+        };
+        /** CoverArtResult */
+        CoverArtResult: {
+            /** Release Mbid */
+            release_mbid: string;
+            /** Release Title */
+            release_title: string;
+            /** Artist Credit */
+            artist_credit: string;
+            /** Date */
+            date?: string | null;
+        };
+        /** CoverArtSearchResponse */
+        CoverArtSearchResponse: {
+            /** Results */
+            results: components["schemas"]["CoverArtResult"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1906,6 +1946,36 @@ export interface operations {
             };
         };
     };
+    delete_listen_api_listens__listen_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the listen to delete */
+                listen_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     correct_listen_api_listens__listen_id__correction_post: {
         parameters: {
             query?: never;
@@ -2061,6 +2131,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MBSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_cover_art_api_cover_art_search_get: {
+        parameters: {
+            query: {
+                /** @description Artist name */
+                artist: string;
+                /** @description Album / release title */
+                album?: string;
+                /** @description Recording MBID (if known, used for precise release lookup) */
+                recording_mbid?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverArtSearchResponse"];
                 };
             };
             /** @description Validation Error */

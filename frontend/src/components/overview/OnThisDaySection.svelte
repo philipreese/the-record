@@ -190,6 +190,12 @@
                   }));
                   if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
                 }}
+                onDeleted={(id) => {
+                  appCache.onThisDay = appCache.onThisDay.map((g) => ({
+                    ...g,
+                    listens: g.listens.filter((e) => e.id !== id),
+                  }));
+                }}
               />
             {/each}
           </div>

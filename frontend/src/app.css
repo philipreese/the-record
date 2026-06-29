@@ -359,7 +359,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.7rem; /* Scaled up */
   font-weight: 400;
-  padding: 0.25rem 0.6rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 0.25rem; /* Standardized 4px */
   background-color: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);

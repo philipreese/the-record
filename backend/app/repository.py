@@ -1268,6 +1268,13 @@ def save_listen_correction(listen_id: int, corrections: dict[str, Any]) -> None:
             )
 
 
+def delete_listen(listen_id: int) -> None:
+    """Permanently delete a listen and its correction (if any) from the local DB."""
+    with get_engine().begin() as conn:
+        conn.execute(text("DELETE FROM listen_corrections WHERE listen_id = :id"), {"id": listen_id})
+        conn.execute(text("DELETE FROM listens WHERE id = :id"), {"id": listen_id})
+
+
 def delete_listen_correction(listen_id: int) -> None:
     """Delete the per-listen correction for a listen (revert to track correction or raw)."""
     with get_engine().begin() as conn:
