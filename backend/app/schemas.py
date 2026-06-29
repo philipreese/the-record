@@ -235,6 +235,17 @@ class MBSearchResponse(BaseModel):
     results: List[MBRecordingResult]
 
 
+class CoverArtResult(BaseModel):
+    release_mbid: str
+    release_title: str
+    artist_credit: str
+    date: Optional[str] = None
+
+
+class CoverArtSearchResponse(BaseModel):
+    results: List[CoverArtResult]
+
+
 class TrackCorrectionRequest(BaseModel):
     track_id: Optional[int] = None
     corrected_artist: Optional[str] = None

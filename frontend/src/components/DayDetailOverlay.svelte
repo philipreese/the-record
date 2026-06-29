@@ -186,6 +186,9 @@
                 tracks = patchWithCorrection(tracks, updated);
                 if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
               }}
+              onDeleted={(id) => {
+                tracks = tracks.filter((e) => e.id !== id);
+              }}
             />
           {/each}
         {/if}

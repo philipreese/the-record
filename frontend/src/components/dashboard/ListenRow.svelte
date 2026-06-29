@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ListenEntry, TrackStatsInfo } from '../../services/api';
+  import { deleteListen } from '../../services/api';
   import { sourceLabelFull, timeOnly, relativeTimeShort, absoluteTime } from '../../utils/listens';
   import Icon from '../layout/Icon.svelte';
   import MetadataCorrectionDrawer from './MetadataCorrectionDrawer.svelte';
@@ -13,6 +14,7 @@
     coverArtUrl = undefined,
     onToggle,
     onCorrectionSaved,
+    onDeleted,
   }: {
     entry: ListenEntry;
     showAbsoluteTime?: boolean;
@@ -22,9 +24,13 @@
     coverArtUrl?: string | null | undefined;
     onToggle?: () => void;
     onCorrectionSaved?: (updated: ListenEntry) => void;
+    onDeleted?: (id: number) => void;
   } = $props();
 
   let correctionOpen = $state(false);
+  let deleteConfirm = $state(false);
+  let deleting = $state(false);
+  let deleteError = $state('');
 
   let imgLoaded = $state(false);
   let imgError = $state(false);
@@ -39,6 +45,19 @@
       onToggle?.();
     } else if (e.key === 'Escape' && expanded) {
       onToggle?.();
+    }
+  }
+
+  async function handleDelete() {
+    deleting = true;
+    deleteError = '';
+    try {
+      await deleteListen(entry.id);
+      onDeleted?.(entry.id);
+    } catch (err) {
+      deleteError = err instanceof Error ? err.message : 'Delete failed.';
+      deleting = false;
+      deleteConfirm = false;
     }
   }
 </script>
@@ -157,16 +176,46 @@
           >
         {/if}
       {/if}
-      <button
-        type="button"
-        class="ml-auto text-theme-muted hover:text-theme-text transition-colors"
-        onclick={(e) => {
-          e.stopPropagation();
-          correctionOpen = true;
-        }}
-      >
-        edit
-      </button>
+      <div class="ml-auto flex items-center gap-3">
+        {#if deleteConfirm}
+          <span class="text-xs text-error">{deleteError || 'Delete this listen?'}</span>
+          <button
+            type="button"
+            class="text-xs text-error hover:text-error/70 transition-colors font-medium"
+            onclick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
+            disabled={deleting}>{deleting ? '…' : 'confirm'}</button
+          >
+          <button
+            type="button"
+            class="text-xs text-theme-muted hover:text-theme-text transition-colors"
+            onclick={(e) => {
+              e.stopPropagation();
+              deleteConfirm = false;
+              deleteError = '';
+            }}>cancel</button
+          >
+        {:else}
+          <button
+            type="button"
+            class="text-theme-muted hover:text-theme-text transition-colors"
+            onclick={(e) => {
+              e.stopPropagation();
+              correctionOpen = true;
+            }}>edit</button
+          >
+          <button
+            type="button"
+            class="text-theme-muted hover:text-error transition-colors"
+            onclick={(e) => {
+              e.stopPropagation();
+              deleteConfirm = true;
+            }}>delete</button
+          >
+        {/if}
+      </div>
     </div>
   {/if}
 </div>

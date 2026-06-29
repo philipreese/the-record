@@ -36,6 +36,13 @@ export type ArtistTrendResponse = components['schemas']['ArtistTrendResponse'];
 export type ArtistStatsInfo = components['schemas']['ArtistStatsResponse'];
 export type ArtistAnniversary = components['schemas']['ArtistAnniversary'];
 export type OnThisDayResponse = components['schemas']['OnThisDayResponse'];
+export type ListenCorrectionRequest = components['schemas']['ListenCorrectionRequest'];
+export type MBRecordingResult = components['schemas']['MBRecordingResult'];
+export type MBSearchResponse = components['schemas']['MBSearchResponse'];
+export type TrackCorrectionRequest = components['schemas']['TrackCorrectionRequest'];
+export type TrackRevertRequest = components['schemas']['TrackRevertRequest'];
+export type CoverArtResult = components['schemas']['CoverArtResult'];
+export type CoverArtSearchResponse = components['schemas']['CoverArtSearchResponse'];
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -336,27 +343,15 @@ export async function fetchArtistStats(
   return data;
 }
 
-export type ListenCorrectionRequest = components['schemas']['ListenCorrectionRequest'];
-export type MBRecordingResult = components['schemas']['MBRecordingResult'];
-export type MBSearchResponse = components['schemas']['MBSearchResponse'];
-
-// Manual types for new endpoints (not yet in generated api-types.ts)
-export interface TrackCorrectionRequest {
-  track_id?: number | null;
-  corrected_artist?: string | null;
-  corrected_title?: string | null;
-  corrections: Record<string, string | number | null>;
-}
-export interface TrackRevertRequest {
-  track_id?: number | null;
-  corrected_artist?: string | null;
-  corrected_title?: string | null;
-}
-
 export async function fetchListen(listenId: number): Promise<ListenEntry> {
   const res = await fetch(`${API_BASE}/api/listens/${listenId}`);
   if (!res.ok) throw new Error(`Failed to fetch listen ${listenId}`);
   return (await res.json()) as ListenEntry;
+}
+
+export async function deleteListen(listenId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/listens/${listenId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Failed to delete listen ${listenId}`);
 }
 
 export async function submitListenCorrection(
@@ -416,6 +411,20 @@ export async function searchMusicBrainz(
     params: { query: { artist, title } },
   });
   if (error) throw new Error('MusicBrainz search failed');
+  return data.results;
+}
+
+export async function searchCoverArt(
+  artist: string,
+  album: string,
+  recordingMbid?: string,
+): Promise<CoverArtResult[]> {
+  const { data, error } = await client.GET('/api/cover-art/search', {
+    params: {
+      query: { artist, album: album || undefined, recording_mbid: recordingMbid || undefined },
+    },
+  });
+  if (error) throw new Error('Cover art search failed');
   return data.results;
 }
 
