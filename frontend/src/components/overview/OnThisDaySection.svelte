@@ -9,6 +9,7 @@
     type ListenEntry,
   } from '../../services/api';
   import { appCache } from '../../services/store.svelte';
+  import { patchWithCorrection } from '../../utils/listens';
   import { router } from '../../services/router.svelte';
   import ListenRow from '../dashboard/ListenRow.svelte';
 
@@ -185,7 +186,7 @@
                 onCorrectionSaved={(updated) => {
                   appCache.onThisDay = appCache.onThisDay.map((g) => ({
                     ...g,
-                    listens: g.listens.map((e) => (e.id === updated.id ? updated : e)),
+                    listens: patchWithCorrection(g.listens, updated),
                   }));
                   if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
                 }}

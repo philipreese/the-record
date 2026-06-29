@@ -15,6 +15,7 @@ const ARTIST_QUERY = `
         durationSecs
         firstListenTs
         lastListenTs
+        representativeListenId
       }
       topAlbums {
         name
@@ -58,6 +59,7 @@ interface GqlArtistStats {
     durationSecs: number | null;
     firstListenTs: number | null;
     lastListenTs: number | null;
+    representativeListenId: number | null;
   }[];
   topAlbums: { name: string; playCount: number }[];
   monthlyTrends: { month: string; count: number }[];
@@ -98,6 +100,7 @@ export async function fetchArtistStatsGql(
       duration_secs: t.durationSecs ?? undefined,
       first_listen_ts: t.firstListenTs ?? undefined,
       last_listen_ts: t.lastListenTs ?? undefined,
+      representative_listen_id: t.representativeListenId ?? undefined,
     })),
     top_albums: gql.topAlbums,
     monthly_trends: gql.monthlyTrends,

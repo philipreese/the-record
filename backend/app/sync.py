@@ -174,6 +174,8 @@ async def _run_sync(mode: str) -> None:
                             duration_secs=item.get("duration_secs"),
                             album=item.get("album"),
                             recording_mbid=item.get("recording_mbid"),
+                            artist_raw_folded=item["artist"].casefold().strip(),
+                            title_raw_folded=item["title"].casefold().strip(),
                         )
                         for item in listens_to_insert
                     ]
@@ -431,6 +433,8 @@ async def _run_mirror() -> None:
                                 duration_secs=item.get("duration_secs"),
                                 album=item.get("album"),
                                 recording_mbid=item.get("recording_mbid"),
+                                artist_raw_folded=item["artist"].casefold().strip(),
+                                title_raw_folded=item["title"].casefold().strip(),
                             )
                             for item in chunk
                         ])

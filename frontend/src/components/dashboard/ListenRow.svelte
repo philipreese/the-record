@@ -174,6 +174,7 @@
 {#if correctionOpen}
   <MetadataCorrectionDrawer
     {entry}
+    trackPlayCount={entry.track_play_count ?? undefined}
     onClose={() => (correctionOpen = false)}
     onSaved={(updated) => {
       onCorrectionSaved?.(updated);

@@ -30,7 +30,7 @@ from app.db import bootstrap_db_from_json
 from app.graphql_schema import gql_router
 from app.lb_client import close_lb_client
 from app.playing_now_sse import broadcaster as pn_broadcaster
-from app.repository import apply_artist_corrections, get_all_cover_art, re_apply_listen_corrections
+from app.repository import apply_artist_corrections, get_all_cover_art
 from app.routes import get_playing_now, router, _cover_art_cache, _manual_override_art_keys
 
 @asynccontextmanager
@@ -41,10 +41,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     apply_artist_corrections()
     sync_album_corrections()
     apply_album_corrections()
-
-    n = re_apply_listen_corrections()
-    if n:
-        logger.info("Re-applied %d per-listen corrections", n)
 
     # Warm the in-process cover art cache from the DB so resolved art survives restarts.
     try:

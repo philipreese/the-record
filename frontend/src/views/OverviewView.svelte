@@ -30,6 +30,7 @@
   import { router } from '../services/router.svelte';
 
   import type { ListenEntry } from '../services/api';
+  import { patchWithCorrection } from '../utils/listens';
 
   let heatmapYear = $derived(
     parseInt(router.params.get('year') ?? String(new Date().getFullYear()), 10),
@@ -332,7 +333,7 @@
         ? '05'
         : '04'}
       onCorrectionSaved={(updated) => {
-        overviewListens = overviewListens.map((e) => (e.id === updated.id ? updated : e));
+        overviewListens = patchWithCorrection(overviewListens, updated);
         if (updated.cover_art_url) appCache.coverArt[updated.id] = updated.cover_art_url;
       }}
     />

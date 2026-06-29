@@ -3,8 +3,8 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, List, Optional, cast
 import os
 from zoneinfo import ZoneInfo
-from sqlalchemy import select, func, desc, distinct, text, tuple_, or_, and_
-from app.db import get_engine, get_session, Listen, CoverArtCache, ListenCorrection
+from sqlalchemy import Boolean, Column, Integer, Table, Text, MetaData, select, func, desc, distinct, text, tuple_, or_, and_
+from app.db import get_engine, get_session, Listen, CoverArtCache, ListenCorrection, CanonicalTrack, TrackRawKey
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 from app.schemas import (
     ArtistAnniversary,
@@ -36,6 +36,27 @@ from app.schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+# SQLAlchemy Table proxy for the corrected_listens view so ORM helpers
+# (get_date_expr, get_hour_expr, etc.) can reference its columns.
+_cl = Table(
+    "corrected_listens",
+    MetaData(),
+    Column("id", Integer),
+    Column("unix_ts", Integer),
+    Column("source", Text),
+    Column("artist", Text),
+    Column("title", Text),
+    Column("album", Text),
+    Column("duration_secs", Integer),
+    Column("recording_mbid", Text),
+    Column("artist_raw_folded", Text),
+    Column("title_raw_folded", Text),
+    Column("has_listen_correction", Boolean),
+    Column("has_track_correction", Boolean),
+    Column("track_id", Integer),
+)
+
 
 def get_current_local_date() -> date:
     """Resolve the current calendar date in the configured TZ timezone, falling back to local system date."""
@@ -518,17 +539,12 @@ def get_recent_listens(
     """
     with get_engine().connect() as conn:
         stmt = select(
-            Listen.id,
-            Listen.artist,
-            Listen.title,
-            Listen.unix_ts,
-            Listen.source,
-            Listen.duration_secs,
-            Listen.album,
-            Listen.recording_mbid,
+            _cl.c.id, _cl.c.artist, _cl.c.title, _cl.c.unix_ts,
+            _cl.c.source, _cl.c.duration_secs, _cl.c.album, _cl.c.recording_mbid,
+            _cl.c.has_listen_correction, _cl.c.has_track_correction, _cl.c.track_id,
         )
         if before_ts is not None and before_id is not None:
-            stmt = stmt.where(tuple_(Listen.unix_ts, Listen.id) < (before_ts, before_id))
+            stmt = stmt.where(tuple_(_cl.c.unix_ts, _cl.c.id) < (before_ts, before_id))
         elif anchor_date is not None:
             try:
                 dt = datetime.strptime(anchor_date, "%Y-%m-%d")
@@ -543,15 +559,20 @@ def get_recent_listens(
                 else:
                     dt_end = dt_end.astimezone()
                 anchor_ts = int(dt_end.timestamp())
-                stmt = stmt.where(Listen.unix_ts <= anchor_ts)
+                stmt = stmt.where(_cl.c.unix_ts <= anchor_ts)
             except ValueError:
                 logger.warning("Invalid anchor_date format: %r", anchor_date)
-        stmt = stmt.order_by(desc(Listen.unix_ts), desc(Listen.id)).limit(limit)
+        stmt = stmt.order_by(desc(_cl.c.unix_ts), desc(_cl.c.id)).limit(limit)
         rows = conn.execute(stmt).all()
         return [
-            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
-                        source=r.source, duration_secs=r.duration_secs, album=r.album,
-                        recording_mbid=r.recording_mbid)
+            ListenEntry(
+                id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                source=r.source, duration_secs=r.duration_secs, album=r.album,
+                recording_mbid=r.recording_mbid,
+                has_listen_correction=bool(r.has_listen_correction),
+                has_track_correction=bool(r.has_track_correction),
+                track_id=r.track_id,
+            )
             for r in rows
         ]
 
@@ -693,20 +714,21 @@ def get_on_this_day_anniversaries(month: int, day: int) -> list[ArtistAnniversar
 
 def get_on_this_day(month: int, day: int) -> OnThisDayResponse:
     """Retrieve listens for today's calendar date across all prior years (excluding current year), grouped by year."""
-    month_expr = get_month_num_expr(Listen.unix_ts)
-    day_expr = get_day_num_expr(Listen.unix_ts)
-    year_expr = get_year_expr(Listen.unix_ts)
+    month_expr = get_month_num_expr(_cl.c.unix_ts)
+    day_expr = get_day_num_expr(_cl.c.unix_ts)
+    year_expr = get_year_expr(_cl.c.unix_ts)
     current_year = datetime.now().year
 
     with get_engine().connect() as conn:
         stmt = (
             select(
-                Listen.id, Listen.artist, Listen.title, Listen.unix_ts, Listen.source,
-                Listen.duration_secs, Listen.album, Listen.recording_mbid,
+                _cl.c.id, _cl.c.artist, _cl.c.title, _cl.c.unix_ts, _cl.c.source,
+                _cl.c.duration_secs, _cl.c.album, _cl.c.recording_mbid,
+                _cl.c.has_listen_correction, _cl.c.has_track_correction, _cl.c.track_id,
                 year_expr.label("year"),
             )
             .where(month_expr == month, day_expr == day)
-            .order_by(desc(Listen.unix_ts))
+            .order_by(desc(_cl.c.unix_ts))
         )
         rows = conn.execute(stmt).all()
 
@@ -715,9 +737,14 @@ def get_on_this_day(month: int, day: int) -> OnThisDayResponse:
         if int(r.year) == current_year:
             continue
         groups.setdefault(str(r.year), []).append(
-            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
-                        source=r.source, duration_secs=r.duration_secs, album=r.album,
-                        recording_mbid=r.recording_mbid)
+            ListenEntry(
+                id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                source=r.source, duration_secs=r.duration_secs, album=r.album,
+                recording_mbid=r.recording_mbid,
+                has_listen_correction=bool(r.has_listen_correction),
+                has_track_correction=bool(r.has_track_correction),
+                track_id=r.track_id,
+            )
         )
     group_list = [OnThisDayGroup(year=int(k), listens=v) for k, v in groups.items()]
     anniversaries = get_on_this_day_anniversaries(month, day)
@@ -756,25 +783,27 @@ def get_export_data(range_days: str = "all") -> list[dict[str, Any]]:
 
 def get_listens_by_day(date_str: str) -> list[ListenEntry]:
     """Return all listens for a local-timezone calendar date (YYYY-MM-DD) in chronological order."""
-    date_expr = get_date_expr(Listen.unix_ts)
+    date_expr = get_date_expr(_cl.c.unix_ts)
     with get_engine().connect() as conn:
         stmt = (
             select(
-                Listen.id,
-                Listen.artist,
-                Listen.title,
-                Listen.unix_ts,
-                Listen.source,
-                Listen.duration_secs,
-                Listen.album,
+                _cl.c.id, _cl.c.artist, _cl.c.title, _cl.c.unix_ts,
+                _cl.c.source, _cl.c.duration_secs, _cl.c.album, _cl.c.recording_mbid,
+                _cl.c.has_listen_correction, _cl.c.has_track_correction, _cl.c.track_id,
             )
             .where(date_expr == date_str)
-            .order_by(Listen.unix_ts.asc(), Listen.id.asc())
+            .order_by(_cl.c.unix_ts.asc(), _cl.c.id.asc())
         )
         rows = conn.execute(stmt).all()
         return [
-            ListenEntry(id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
-                        source=r.source, duration_secs=r.duration_secs, album=r.album)
+            ListenEntry(
+                id=r.id, artist=r.artist, title=r.title, unix_ts=r.unix_ts,
+                source=r.source, duration_secs=r.duration_secs, album=r.album,
+                recording_mbid=r.recording_mbid,
+                has_listen_correction=bool(r.has_listen_correction),
+                has_track_correction=bool(r.has_track_correction),
+                track_id=r.track_id,
+            )
             for r in rows
         ]
 
@@ -910,16 +939,22 @@ def get_top_artist_trends(year: int, limit: int = 5) -> TopArtistTrendsResponse:
 
 def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsResponse:
     """Get comprehensive listening stats for a specific artist."""
-    artist_filter = func.lower(Listen.artist) == artist.lower()
-    range_filter = get_time_range_filter(time_range)
+    # Compute cutoff as a plain int so it works with _cl.c.unix_ts (corrected_listens view)
+    range_cutoff: Optional[int] = None
+    if time_range and time_range != "all":
+        try:
+            range_cutoff = int(datetime.now(timezone.utc).timestamp()) - (int(time_range) * 86400)
+        except ValueError:
+            pass
 
+    artist_filter = func.lower(_cl.c.artist) == artist.lower()
     filters = [artist_filter]
-    if range_filter is not None:
-        filters.append(range_filter)
+    if range_cutoff is not None:
+        filters.append(_cl.c.unix_ts >= range_cutoff)
 
     with get_engine().connect() as conn:
         total_plays = conn.execute(
-            select(func.count(Listen.id)).where(*filters)
+            select(func.count(_cl.c.id)).where(*filters)
         ).scalar() or 0
 
         if total_plays == 0:
@@ -934,7 +969,7 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
                 first_listen_ts=None,
             )
 
-        # All-time rank (ignores time_range)
+        # All-time rank (ignores time_range) — uses raw listens for global consistency
         rank_subq = (
             select(
                 Listen.artist,
@@ -949,33 +984,50 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
         ).first()
         rank = rank_row.rank if rank_row else None
 
-        # All tracks in selected time range with timestamps, album, and duration
+        # All tracks in selected time range — uses corrected_listens so corrections show in ArtistView
         stmt_tracks = (
             select(
-                Listen.title,
-                func.count(Listen.id).label("play_count"),
-                func.min(Listen.unix_ts).label("first_ts"),
-                func.max(Listen.unix_ts).label("last_ts"),
-                func.max(Listen.album).label("album"),
-                func.max(Listen.duration_secs).label("duration_secs"),
+                _cl.c.title,
+                func.count(_cl.c.id).label("play_count"),
+                func.min(_cl.c.unix_ts).label("first_ts"),
+                func.max(_cl.c.unix_ts).label("last_ts"),
+                func.max(_cl.c.album).label("album"),
+                func.max(_cl.c.duration_secs).label("duration_secs"),
             )
             .where(*filters)
-            .group_by(Listen.title)
+            .group_by(_cl.c.title)
             .order_by(desc("play_count"))
         )
+        track_rows = conn.execute(stmt_tracks).all()
+
+        # Batch-fetch a representative listen id per track (for the edit drawer)
+        if track_rows:
+            rep_rows = conn.execute(
+                text("""
+                    SELECT title, MAX(id) AS rep_id FROM listens
+                    WHERE LOWER(artist) = LOWER(:artist)
+                    GROUP BY title
+                """),
+                {"artist": artist},
+            ).fetchall()
+            rep_id_by_title = {r.title: r.rep_id for r in rep_rows}
+        else:
+            rep_id_by_title = {}
+
         top_tracks = [
             ArtistTopTrack(
                 title=r.title, play_count=r.play_count,
                 first_listen_ts=r.first_ts, last_listen_ts=r.last_ts,
                 album=r.album, duration_secs=r.duration_secs,
+                representative_listen_id=rep_id_by_title.get(r.title),
             )
-            for r in conn.execute(stmt_tracks).all()
+            for r in track_rows
         ]
 
         # Monthly trends in selected time range
-        month_expr = get_month_expr(Listen.unix_ts)
+        month_expr = get_month_expr(_cl.c.unix_ts)
         stmt_monthly = (
-            select(month_expr.label("month"), func.count(Listen.id).label("cnt"))
+            select(month_expr.label("month"), func.count(_cl.c.id).label("cnt"))
             .where(*filters)
             .group_by(month_expr)
             .order_by("month")
@@ -987,9 +1039,9 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
         ]
 
         # Peak day in selected time range
-        date_expr = get_date_expr(Listen.unix_ts)
+        date_expr = get_date_expr(_cl.c.unix_ts)
         stmt_peak = (
-            select(date_expr.label("day"), func.count(Listen.id).label("cnt"))
+            select(date_expr.label("day"), func.count(_cl.c.id).label("cnt"))
             .where(*filters)
             .group_by(date_expr)
             .order_by(desc("cnt"))
@@ -999,9 +1051,9 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
         peak_day = WrappedPeakDay(date=day_row.day, plays=day_row.cnt) if day_row else None
 
         # Hourly distribution in selected time range
-        hour_expr = get_hour_expr(Listen.unix_ts)
+        hour_expr = get_hour_expr(_cl.c.unix_ts)
         stmt_hourly = (
-            select(hour_expr.label("hour"), func.count(Listen.id).label("cnt"))
+            select(hour_expr.label("hour"), func.count(_cl.c.id).label("cnt"))
             .where(*filters)
             .group_by(hour_expr)
             .order_by("hour")
@@ -1013,8 +1065,8 @@ def get_artist_stats(artist: str, time_range: str = "all") -> ArtistStatsRespons
 
         # First listen timestamp and all-time plays — always all-time, ignores time_range
         all_time_row = conn.execute(
-            select(func.min(Listen.unix_ts), func.count(Listen.id))
-            .where(func.lower(Listen.artist) == artist.lower())
+            select(func.min(_cl.c.unix_ts), func.count(_cl.c.id))
+            .where(func.lower(_cl.c.artist) == artist.lower())
         ).first()
         first_listen_ts = all_time_row[0] if all_time_row else None
         plays_since_discovery = all_time_row[1] if all_time_row else 0
@@ -1094,20 +1146,16 @@ def get_artist_track_trends(artist: str, year: int, limit: int = 5) -> ArtistTre
 
 
 # ---------------------------------------------------------------------------
-# Per-listen correction helpers
+# Correction helpers
 # ---------------------------------------------------------------------------
-
-_LISTEN_FIELD_TYPES: dict[str, type] = {
-    "artist": str,
-    "title": str,
-    "album": str,
-    "duration_secs": int,
-    "recording_mbid": str,
-}
 
 
 def get_listen_by_id(listen_id: int) -> Optional[ListenEntry]:
-    """Fetch a single listen by primary key. Returns None if not found."""
+    """Fetch a single raw listen by primary key (bypasses corrected_listens view).
+
+    Used by LB write-back to read the original values before they're overridden.
+    Returns None if not found.
+    """
     with get_engine().connect() as conn:
         row = conn.execute(
             select(
@@ -1124,117 +1172,333 @@ def get_listen_by_id(listen_id: int) -> Optional[ListenEntry]:
     )
 
 
-def update_listen_fields(listen_id: int, updates: dict[str, Any]) -> None:
-    """Apply a dict of field→value updates directly to a listens row."""
-    if not updates:
-        return
-    set_clause = ", ".join(f"{k} = :{k}" for k in updates)
-    params: dict[str, Any] = {**updates, "_id": listen_id}
-    with get_engine().begin() as conn:
-        conn.execute(
-            text(f"UPDATE listens SET {set_clause} WHERE id = :_id"),
-            params,
-        )
+def get_listen_with_originals(listen_id: int) -> Optional[ListenEntry]:
+    """Return the effective (corrected) listen alongside its raw original values.
+
+    Populates has_listen_correction, has_track_correction, track_id, and
+    original_* fields so the UI can show what was corrected and offer reverts.
+    """
+    with get_engine().connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT
+                    cl.id, cl.unix_ts, cl.source,
+                    cl.artist, cl.title, cl.album, cl.duration_secs, cl.recording_mbid,
+                    cl.has_listen_correction, cl.has_track_correction, cl.track_id,
+                    l.artist  AS original_artist,
+                    l.title   AS original_title,
+                    l.album   AS original_album,
+                    l.duration_secs AS original_duration_secs,
+                    l.recording_mbid AS original_recording_mbid,
+                    (SELECT COUNT(*) FROM corrected_listens cl2
+                     WHERE LOWER(cl2.artist) = LOWER(cl.artist)
+                       AND LOWER(cl2.title)  = LOWER(cl.title)) AS track_play_count
+                FROM corrected_listens cl
+                JOIN listens l ON l.id = cl.id
+                WHERE cl.id = :id
+            """),
+            {"id": listen_id},
+        ).first()
+    if not row:
+        return None
+    any_correction = bool(row.has_listen_correction) or bool(row.has_track_correction)
+    return ListenEntry(
+        id=row.id, unix_ts=row.unix_ts, source=row.source,
+        artist=row.artist, title=row.title, album=row.album,
+        duration_secs=row.duration_secs, recording_mbid=row.recording_mbid,
+        has_listen_correction=bool(row.has_listen_correction),
+        has_track_correction=bool(row.has_track_correction),
+        track_id=row.track_id,
+        track_play_count=row.track_play_count,
+        original_artist=row.original_artist if any_correction else None,
+        original_title=row.original_title if any_correction else None,
+        original_album=row.original_album if any_correction else None,
+        original_duration_secs=row.original_duration_secs if any_correction else None,
+        original_recording_mbid=row.original_recording_mbid if any_correction else None,
+    )
 
 
-def save_listen_correction(listen_id: int, field: str, value: Optional[str]) -> int:
-    """Upsert a per-listen correction row. Returns the row id."""
+def save_listen_correction(listen_id: int, corrections: dict[str, Any]) -> None:
+    """Upsert a per-listen correction (wide schema).
+
+    Keys in corrections must be a subset of: artist, title, album, duration_secs,
+    recording_mbid. Pass "" (empty string) to explicitly clear a text field — do NOT
+    convert "" to None before calling, since COALESCE("", x) returns "" (correct)
+    while COALESCE(None, x) falls through (wrong).
+    """
+    fields = ["artist", "title", "album", "duration_secs", "recording_mbid"]
+    params: dict[str, Any] = {"listen_id": listen_id}
+    for f in fields:
+        params[f] = corrections.get(f)  # None = don't touch this field
+
     with get_engine().begin() as conn:
         if IS_POSTGRES:
             conn.execute(
-                text(
-                    "INSERT INTO listen_corrections (listen_id, field, corrected_value)"
-                    " VALUES (:listen_id, :field, :value)"
-                    " ON CONFLICT (listen_id, field) DO UPDATE SET"
-                    "   corrected_value = excluded.corrected_value,"
-                    "   corrected_at = now(),"
-                    "   lb_synced = false"
-                ),
-                {"listen_id": listen_id, "field": field, "value": value},
+                text("""
+                    INSERT INTO listen_corrections
+                        (listen_id, artist, title, album, duration_secs, recording_mbid)
+                    VALUES
+                        (:listen_id, :artist, :title, :album, :duration_secs, :recording_mbid)
+                    ON CONFLICT (listen_id) DO UPDATE SET
+                        artist         = COALESCE(EXCLUDED.artist,         listen_corrections.artist),
+                        title          = COALESCE(EXCLUDED.title,          listen_corrections.title),
+                        album          = COALESCE(EXCLUDED.album,          listen_corrections.album),
+                        duration_secs  = COALESCE(EXCLUDED.duration_secs,  listen_corrections.duration_secs),
+                        recording_mbid = COALESCE(EXCLUDED.recording_mbid, listen_corrections.recording_mbid),
+                        corrected_at   = now()
+                """),
+                params,
             )
         else:
             conn.execute(
-                text(
-                    "INSERT INTO listen_corrections (listen_id, field, corrected_value)"
-                    " VALUES (:listen_id, :field, :value)"
-                    " ON CONFLICT (listen_id, field) DO UPDATE SET"
-                    "   corrected_value = excluded.corrected_value,"
-                    "   corrected_at = strftime('%Y-%m-%d %H:%M:%S', 'now'),"
-                    "   lb_synced = 0"
-                ),
-                {"listen_id": listen_id, "field": field, "value": value},
+                text("""
+                    INSERT INTO listen_corrections
+                        (listen_id, artist, title, album, duration_secs, recording_mbid)
+                    VALUES
+                        (:listen_id, :artist, :title, :album, :duration_secs, :recording_mbid)
+                    ON CONFLICT (listen_id) DO UPDATE SET
+                        artist         = COALESCE(EXCLUDED.artist,         listen_corrections.artist),
+                        title          = COALESCE(EXCLUDED.title,          listen_corrections.title),
+                        album          = COALESCE(EXCLUDED.album,          listen_corrections.album),
+                        duration_secs  = COALESCE(EXCLUDED.duration_secs,  listen_corrections.duration_secs),
+                        recording_mbid = COALESCE(EXCLUDED.recording_mbid, listen_corrections.recording_mbid),
+                        corrected_at   = strftime('%Y-%m-%d %H:%M:%S', 'now')
+                """),
+                params,
             )
-        row = conn.execute(
-            text(
-                "SELECT id FROM listen_corrections"
-                " WHERE listen_id = :listen_id AND field = :field"
-            ),
-            {"listen_id": listen_id, "field": field},
-        ).fetchone()
-    return row.id if row else 0
 
 
-def mark_lb_synced(correction_id: int) -> None:
-    """Mark a listen_correction row as successfully synced to ListenBrainz."""
+def delete_listen_correction(listen_id: int) -> None:
+    """Delete the per-listen correction for a listen (revert to track correction or raw)."""
     with get_engine().begin() as conn:
         conn.execute(
-            text("UPDATE listen_corrections SET lb_synced = :v WHERE id = :id"),
-            {"v": True, "id": correction_id},
+            text("DELETE FROM listen_corrections WHERE listen_id = :id"),
+            {"id": listen_id},
         )
 
 
-def re_apply_listen_corrections() -> int:
-    """Re-apply all listen_corrections to listens and cover_art_cache on startup.
+def save_track_correction(
+    corrected_artist: str,
+    corrected_title: str,
+    corrections: dict[str, Any],
+    track_id: Optional[int] = None,
+    recording_mbid: Optional[str] = None,
+) -> Optional[int]:
+    """Upsert a canonical track correction and map all matching raw keys to it.
 
-    Called after batch corrections so per-listen manual overrides win last.
-    Returns the total number of field corrections applied.
+    Lookup order: track_id → recording_mbid → artist/title fanout → create new.
+    Returns the canonical_track_id.
+
+    When no recording MBID is available, artist+title is treated as the best
+    available approximation of logical track identity. Distinct recordings of the
+    same title may be merged into one canonical_tracks row in that case.
     """
-    with get_engine().connect() as conn:
-        rows = conn.execute(
-            text(
-                "SELECT listen_id, field, corrected_value"
-                " FROM listen_corrections"
-                " ORDER BY listen_id, corrected_at"
-            )
+    ct_fields = {k: v for k, v in corrections.items()
+                 if k in ("artist", "title", "album", "duration_secs", "recording_mbid")}
+    new_mbid = ct_fields.get("recording_mbid") or recording_mbid
+
+    with get_engine().begin() as conn:
+        # --- Find or create the canonical_tracks row ---
+        existing_id: Optional[int] = None
+
+        if track_id is not None:
+            row = conn.execute(
+                text("SELECT id FROM canonical_tracks WHERE id = :id"),
+                {"id": track_id},
+            ).first()
+            if row:
+                existing_id = row.id
+
+        if existing_id is None and new_mbid:
+            row = conn.execute(
+                text("SELECT id FROM canonical_tracks WHERE recording_mbid = :mbid"),
+                {"mbid": new_mbid},
+            ).first()
+            if row:
+                existing_id = row.id
+
+        if existing_id is None:
+            # Artist/title discovery: find if any existing canonical_track already maps
+            # to the raw keys that currently resolve to corrected_artist/corrected_title.
+            raw_key_row = conn.execute(
+                text("""
+                    SELECT trk.canonical_track_id
+                    FROM corrected_listens cl
+                    JOIN listens l ON l.id = cl.id
+                    JOIN track_raw_keys trk
+                        ON trk.artist_raw_folded = l.artist_raw_folded
+                       AND trk.title_raw_folded  = l.title_raw_folded
+                    WHERE cl.artist = :artist AND cl.title = :title
+                    LIMIT 1
+                """),
+                {"artist": corrected_artist, "title": corrected_title},
+            ).first()
+            if raw_key_row:
+                existing_id = raw_key_row.canonical_track_id
+
+        if existing_id is not None:
+            # Update existing canonical_tracks row
+            set_parts = []
+            update_params: dict[str, Any] = {"id": existing_id}
+            for col in ("artist", "title", "album", "duration_secs", "recording_mbid"):
+                if col in ct_fields:
+                    set_parts.append(f"{col} = :{col}")
+                    update_params[col] = ct_fields[col]
+            if set_parts:
+                if IS_POSTGRES:
+                    set_parts.append("corrected_at = now()")
+                else:
+                    set_parts.append("corrected_at = strftime('%Y-%m-%d %H:%M:%S', 'now')")
+                conn.execute(
+                    text(f"UPDATE canonical_tracks SET {', '.join(set_parts)} WHERE id = :id"),
+                    update_params,
+                )
+            canonical_track_id = existing_id
+        else:
+            # Create new canonical_tracks row
+            ins_params: dict[str, Any] = {
+                "artist": ct_fields.get("artist"),
+                "title": ct_fields.get("title"),
+                "album": ct_fields.get("album"),
+                "duration_secs": ct_fields.get("duration_secs"),
+                "recording_mbid": new_mbid,
+            }
+            if IS_POSTGRES:
+                row = conn.execute(
+                    text("""
+                        INSERT INTO canonical_tracks
+                            (artist, title, album, duration_secs, recording_mbid)
+                        VALUES (:artist, :title, :album, :duration_secs, :recording_mbid)
+                        RETURNING id
+                    """),
+                    ins_params,
+                ).first()
+                assert row is not None
+                canonical_track_id = row.id
+            else:
+                conn.execute(
+                    text("""
+                        INSERT INTO canonical_tracks
+                            (artist, title, album, duration_secs, recording_mbid)
+                        VALUES (:artist, :title, :album, :duration_secs, :recording_mbid)
+                    """),
+                    ins_params,
+                )
+                canonical_track_id = conn.execute(
+                    text("SELECT last_insert_rowid()")
+                ).scalar()
+
+        # --- Fan-out: upsert track_raw_keys for all matching raw identities ---
+        raw_keys = conn.execute(
+            text("""
+                SELECT DISTINCT l.artist_raw_folded, l.title_raw_folded
+                FROM corrected_listens cl
+                JOIN listens l ON l.id = cl.id
+                WHERE cl.artist = :artist AND cl.title = :title
+            """),
+            {"artist": corrected_artist, "title": corrected_title},
         ).fetchall()
 
-    if not rows:
-        return 0
+        for rk in raw_keys:
+            conn.execute(
+                text("""
+                    INSERT INTO track_raw_keys (canonical_track_id, artist_raw_folded, title_raw_folded)
+                    VALUES (:ct_id, :af, :tf)
+                    ON CONFLICT (artist_raw_folded, title_raw_folded)
+                    DO UPDATE SET canonical_track_id = EXCLUDED.canonical_track_id
+                """),
+                {
+                    "ct_id": canonical_track_id,
+                    "af": rk.artist_raw_folded,
+                    "tf": rk.title_raw_folded,
+                },
+            )
 
-    from collections import defaultdict
-    by_listen: dict[int, dict[str, Optional[str]]] = defaultdict(dict)
-    for row in rows:
-        by_listen[row.listen_id][row.field] = row.corrected_value
-
-    applied = 0
-    for listen_id, fields in by_listen.items():
-        art_url = fields.pop("cover_art_url", _SENTINEL)
-
-        if fields:
-            # Coerce stored text values to the correct Python type for each field
-            typed: dict[str, Any] = {}
-            for field, raw in fields.items():
-                if raw is None:
-                    typed[field] = None
-                elif field in _LISTEN_FIELD_TYPES:
-                    try:
-                        typed[field] = _LISTEN_FIELD_TYPES[field](raw)
-                    except (ValueError, TypeError):
-                        typed[field] = raw
-                else:
-                    typed[field] = raw
-            update_listen_fields(listen_id, typed)
-            applied += len(typed)
-
-        if art_url is not _SENTINEL:
-            listen = get_listen_by_id(listen_id)
-            if listen:
-                af = listen.artist.casefold().strip()
-                tf = listen.title.casefold().strip()
-                upsert_cover_art(af, tf, cast(Optional[str], art_url), manual_override=True)
-                applied += 1
-
-    return applied
+    return canonical_track_id
 
 
-_SENTINEL = object()
+def delete_track_correction(
+    corrected_artist: str,
+    corrected_title: str,
+    track_id: Optional[int] = None,
+) -> None:
+    """Delete the canonical track correction and its raw key mappings.
+
+    If track_id is provided, deletes that row directly. Otherwise finds the
+    canonical_track_id by querying corrected_listens for raw key matches.
+    """
+    with get_engine().begin() as conn:
+        ct_id = track_id
+        if ct_id is None:
+            row = conn.execute(
+                text("""
+                    SELECT trk.canonical_track_id
+                    FROM corrected_listens cl
+                    JOIN listens l ON l.id = cl.id
+                    JOIN track_raw_keys trk
+                        ON trk.artist_raw_folded = l.artist_raw_folded
+                       AND trk.title_raw_folded  = l.title_raw_folded
+                    WHERE cl.artist = :artist AND cl.title = :title
+                    LIMIT 1
+                """),
+                {"artist": corrected_artist, "title": corrected_title},
+            ).first()
+            if row:
+                ct_id = row.canonical_track_id
+
+        if ct_id is not None:
+            conn.execute(
+                text("DELETE FROM track_raw_keys WHERE canonical_track_id = :id"),
+                {"id": ct_id},
+            )
+            conn.execute(
+                text("DELETE FROM canonical_tracks WHERE id = :id"),
+                {"id": ct_id},
+            )
+
+
+def get_corrected_play_count(corrected_artist: str, corrected_title: str) -> int:
+    """Count listens that currently resolve to the given corrected artist+title."""
+    with get_engine().connect() as conn:
+        return conn.execute(
+            text("""
+                SELECT COUNT(*) FROM corrected_listens
+                WHERE artist = :artist AND title = :title
+            """),
+            {"artist": corrected_artist, "title": corrected_title},
+        ).scalar() or 0
+
+
+def get_representative_listen_id(corrected_artist: str, corrected_title: str) -> Optional[int]:
+    """Return the most-recent listen id that currently resolves to the given track."""
+    with get_engine().connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT id FROM corrected_listens
+                WHERE artist = :artist AND title = :title
+                ORDER BY unix_ts DESC LIMIT 1
+            """),
+            {"artist": corrected_artist, "title": corrected_title},
+        ).first()
+    return row.id if row else None
+
+
+def get_representative_listen_id_by_track_id(canonical_track_id: int) -> Optional[int]:
+    """Return the most-recent listen id mapped to a canonical_track by its id.
+
+    Used by revert endpoints to get a representative listen before deleting the
+    canonical_tracks row (after which the raw-key join no longer resolves).
+    """
+    with get_engine().connect() as conn:
+        row = conn.execute(
+            text("""
+                SELECT l.id FROM listens l
+                JOIN track_raw_keys trk
+                    ON trk.artist_raw_folded = l.artist_raw_folded
+                   AND trk.title_raw_folded  = l.title_raw_folded
+                WHERE trk.canonical_track_id = :ct_id
+                ORDER BY l.unix_ts DESC LIMIT 1
+            """),
+            {"ct_id": canonical_track_id},
+        ).first()
+    return row.id if row else None

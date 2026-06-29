@@ -48,15 +48,27 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import sessionmaker
 
-from app.db import Listen, CoverArtCache  # ORM model / table definitions
+from app.db import (  # ORM model / table definitions
+    Listen, CoverArtCache, ListenCorrection, CanonicalTrack, TrackRawKey,
+)
 
 load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
-COLUMNS = ["id", "artist", "title", "unix_ts", "source", "duration_secs", "album"]
+COLUMNS = ["id", "artist", "title", "unix_ts", "source", "duration_secs", "album",
+           "artist_raw_folded", "title_raw_folded"]
 # Columns copied into prod (id omitted so the autoincrement sequence regenerates)
-COPY_COLUMNS = ["artist", "title", "unix_ts", "source", "duration_secs", "album"]
+COPY_COLUMNS = ["artist", "title", "unix_ts", "source", "duration_secs", "album",
+                "artist_raw_folded", "title_raw_folded"]
 
 COVER_ART_COLUMNS = ["artist_folded", "title_folded", "url"]
+
+# listen_corrections: omit id (nothing references it; sequence regenerates)
+LC_COPY_COLUMNS = ["listen_id", "artist", "title", "album", "duration_secs", "recording_mbid",
+                   "corrected_at"]
+# canonical_tracks + track_raw_keys: include id so cross-table reference stays consistent
+CT_COPY_COLUMNS = ["id", "artist", "title", "album", "duration_secs", "recording_mbid",
+                   "corrected_at"]
+TRK_COPY_COLUMNS = ["id", "canonical_track_id", "artist_raw_folded", "title_raw_folded"]
 
 BACKUP_DIR = os.path.join(BACKEND_DIR, "backups")
 
@@ -142,6 +154,24 @@ def backup_cover_art(DestSession) -> tuple[str, int]:
     return path, len(data)
 
 
+def count_table(SessionFactory, model) -> int:
+    session = SessionFactory()
+    try:
+        return session.execute(select(func.count()).select_from(model)).scalar() or 0
+    finally:
+        session.close()
+
+
+def _reset_pg_sequence(session, table_name: str, id_col: str = "id") -> None:
+    """Advance the Postgres sequence to max(id) so next INSERT doesn't conflict."""
+    session.execute(
+        __import__("sqlalchemy").text(
+            f"SELECT setval(pg_get_serial_sequence('{table_name}', '{id_col}'), "
+            f"COALESCE((SELECT MAX({id_col}) FROM {table_name}), 0))"
+        )
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -162,6 +192,12 @@ def main() -> None:
     dst_count = count(DestSession)
     src_art_count = count_cover_art(SourceSession)
     dst_art_count = count_cover_art(DestSession)
+    src_lc_count = count_table(SourceSession, ListenCorrection)
+    dst_lc_count = count_table(DestSession, ListenCorrection)
+    src_ct_count = count_table(SourceSession, CanonicalTrack)
+    dst_ct_count = count_table(DestSession, CanonicalTrack)
+    src_trk_count = count_table(SourceSession, TrackRawKey)
+    dst_trk_count = count_table(DestSession, TrackRawKey)
 
     # Show a sanitized destination host so the operator can confirm the target
     # without printing credentials.
@@ -169,8 +205,12 @@ def main() -> None:
     dest_db = str(dest_engine.url.database)
 
     print("=== MIRROR LOCAL -> PROD ===")
-    print(f"Source (sqlite history.db):           listens={src_count:,}  cover_art_cache={src_art_count:,}")
-    print(f"Dest   (postgres {dest_host}/{dest_db}): listens={dst_count:,}  cover_art_cache={dst_art_count:,}")
+    print(f"Source (sqlite):  listens={src_count:,}  cover_art={src_art_count:,}  "
+          f"listen_corrections={src_lc_count:,}  canonical_tracks={src_ct_count:,}  "
+          f"track_raw_keys={src_trk_count:,}")
+    print(f"Dest   (postgres {dest_host}/{dest_db}): listens={dst_count:,}  cover_art={dst_art_count:,}  "
+          f"listen_corrections={dst_lc_count:,}  canonical_tracks={dst_ct_count:,}  "
+          f"track_raw_keys={dst_trk_count:,}")
 
     print("\nBacking up current prod listens table...")
     backup_path, backup_count = backup_dest(DestSession)
@@ -184,6 +224,9 @@ def main() -> None:
         print("\n=== DRY RUN ===")
         print(f"Would DELETE {dst_count:,} prod listens and INSERT {src_count:,} from local.")
         print(f"Would DELETE {dst_art_count:,} prod cover_art_cache rows and INSERT {src_art_count:,} from local.")
+        print(f"Would DELETE {dst_lc_count:,} prod listen_corrections and INSERT {src_lc_count:,} from local.")
+        print(f"Would DELETE {dst_ct_count:,} prod canonical_tracks and INSERT {src_ct_count:,} from local.")
+        print(f"Would DELETE {dst_trk_count:,} prod track_raw_keys and INSERT {src_trk_count:,} from local.")
         print("Re-run with --confirm to apply.")
         return
 
@@ -196,15 +239,48 @@ def main() -> None:
         listen_mappings = [{c: getattr(r, c) for c in COPY_COLUMNS} for r in src_rows]
         art_rows = s.execute(select(CoverArtCache)).scalars().all()
         art_mappings = [{c: getattr(r, c) for c in COVER_ART_COLUMNS} for r in art_rows]
+        lc_rows = s.execute(select(ListenCorrection)).scalars().all()
+        lc_mappings = [{c: getattr(r, c) for c in LC_COPY_COLUMNS} for r in lc_rows]
+        ct_rows = s.execute(select(CanonicalTrack)).scalars().all()
+        ct_mappings = [{c: getattr(r, c) for c in CT_COPY_COLUMNS} for r in ct_rows]
+        trk_rows = s.execute(select(TrackRawKey)).scalars().all()
+        trk_mappings = [{c: getattr(r, c) for c in TRK_COPY_COLUMNS} for r in trk_rows]
     finally:
         s.close()
 
+    from sqlalchemy import text as _text
+
     d = DestSession()
     try:
+        # Correction tables first (FK order: delete dependents before parents)
+        d.execute(TrackRawKey.__table__.delete())
+        d.execute(ListenCorrection.__table__.delete())
+        d.execute(CanonicalTrack.__table__.delete())
+        # Main data tables
         d.execute(Listen.__table__.delete())
-        d.bulk_insert_mappings(Listen, listen_mappings)
         d.execute(CoverArtCache.__table__.delete())
+
+        d.bulk_insert_mappings(Listen, listen_mappings)
         d.bulk_insert_mappings(CoverArtCache, art_mappings)
+        if lc_mappings:
+            d.bulk_insert_mappings(ListenCorrection, lc_mappings)
+        if ct_mappings:
+            d.bulk_insert_mappings(CanonicalTrack, ct_mappings)
+            _reset_pg_sequence(d, "canonical_tracks")
+        if trk_mappings:
+            d.bulk_insert_mappings(TrackRawKey, trk_mappings)
+            _reset_pg_sequence(d, "track_raw_keys")
+
+        # Orphan cleanup: listen_corrections rows whose listen was deleted during mirror sync
+        orphans = d.execute(
+            _text(
+                "DELETE FROM listen_corrections "
+                "WHERE listen_id NOT IN (SELECT id FROM listens)"
+            )
+        ).rowcount
+        if orphans:
+            print(f"  Cleaned up {orphans} orphaned listen_corrections row(s).")
+
         d.commit()
     except Exception:
         d.rollback()
@@ -215,8 +291,14 @@ def main() -> None:
 
     final = count(DestSession)
     final_art = count_cover_art(DestSession)
+    final_lc = count_table(DestSession, ListenCorrection)
+    final_ct = count_table(DestSession, CanonicalTrack)
+    final_trk = count_table(DestSession, TrackRawKey)
     print(f"Done. Prod listens: {final:,} (source: {src_count:,}).")
     print(f"Done. Prod cover_art_cache: {final_art:,} (source: {src_art_count:,}).")
+    print(f"Done. Prod listen_corrections: {final_lc:,} (source: {src_lc_count:,}).")
+    print(f"Done. Prod canonical_tracks: {final_ct:,} (source: {src_ct_count:,}).")
+    print(f"Done. Prod track_raw_keys: {final_trk:,} (source: {src_trk_count:,}).")
     if final != src_count:
         print("WARNING: listens count does not match source!")
     if final_art != src_art_count:

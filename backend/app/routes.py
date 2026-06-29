@@ -48,6 +48,8 @@ from app.schemas import (
     ArtistAnniversary,
     OnThisDayResponse,
     ListenCorrectionRequest,
+    TrackCorrectionRequest,
+    TrackRevertRequest,
     MBSearchResponse,
     MBRecordingResult,
 )
@@ -700,82 +702,207 @@ def read_artist_stats(
 
 
 
+@router.get("/listens/{listen_id}", response_model=ListenEntry)
+async def get_listen(
+    listen_id: int = Path(..., ge=1, description="ID of the listen"),
+) -> ListenEntry:
+    """Fetch a single listen with its effective (corrected) values and correction metadata."""
+    entry = await run_in_threadpool(repo.get_listen_with_originals, listen_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Listen not found")
+    _populate_cover_art([entry])
+    return entry
+
+
 @router.post("/listens/{listen_id}/correction", response_model=ListenEntry)
 async def correct_listen(
     listen_id: int = Path(..., ge=1, description="ID of the listen to correct"),
     correction: ListenCorrectionRequest = Body(...),
 ) -> ListenEntry:
-    """Apply field-level corrections to a listen and write back to ListenBrainz asynchronously."""
+    """Persist a per-listen metadata correction and write back to ListenBrainz."""
     listen = await run_in_threadpool(repo.get_listen_by_id, listen_id)
     if not listen:
         raise HTTPException(status_code=404, detail="Listen not found")
 
-    # Determine which DB-backed fields actually changed
+    # Only include fields that actually changed from the raw listens values.
+    # Pass "" as-is (do NOT convert to None) — COALESCE("", x) returns "" which
+    # is the correct way to explicitly clear a field via the corrected_listens view.
     db_updates: dict[str, Any] = {}
     if correction.artist is not None and correction.artist != listen.artist:
         db_updates["artist"] = correction.artist
     if correction.title is not None and correction.title != listen.title:
         db_updates["title"] = correction.title
-    if correction.album is not None and correction.album != listen.album:
+    if correction.album is not None and correction.album != (listen.album or ""):
         db_updates["album"] = correction.album
     if correction.duration_secs is not None and correction.duration_secs != listen.duration_secs:
         db_updates["duration_secs"] = correction.duration_secs
-    if correction.recording_mbid is not None and correction.recording_mbid != listen.recording_mbid:
+    if correction.recording_mbid is not None and correction.recording_mbid != (listen.recording_mbid or ""):
         db_updates["recording_mbid"] = correction.recording_mbid
 
-    # Cover art is separate — keyed by artist/title, not stored in listens
+    # Cover art is separate — stored in cover_art_cache, not in listen_corrections
     new_artist = db_updates.get("artist", listen.artist)
     new_title = db_updates.get("title", listen.title)
     new_art_key = _art_key(new_artist, new_title)
-    current_art = _cover_art_cache.get(new_art_key)
-    raw_art = correction.cover_art_url or None  # treat empty string as None
-    art_changed = raw_art != current_art and correction.cover_art_url is not None
+    raw_art = correction.cover_art_url  # None = no change; "" = clear
+    art_changed = raw_art is not None and raw_art != _cover_art_cache.get(new_art_key)
 
     if not db_updates and not art_changed:
-        _populate_cover_art([listen])
-        return listen
+        result = await run_in_threadpool(repo.get_listen_with_originals, listen_id)
+        if result:
+            _populate_cover_art([result])
+        return result or listen
 
-    # Persist each changed field to listen_corrections for audit + startup replay
-    correction_ids: list[int] = []
-    for field, value in db_updates.items():
-        cid = await run_in_threadpool(
-            repo.save_listen_correction, listen_id, field, str(value) if value is not None else None
-        )
-        correction_ids.append(cid)
-    if art_changed:
-        cid = await run_in_threadpool(repo.save_listen_correction, listen_id, "cover_art_url", raw_art)
-        correction_ids.append(cid)
-
-    # Apply to listens table
     if db_updates:
-        await run_in_threadpool(repo.update_listen_fields, listen_id, db_updates)
+        await run_in_threadpool(repo.save_listen_correction, listen_id, db_updates)
 
-    # Apply cover art override — stored under the (possibly corrected) artist/title key
     if art_changed:
-        _cover_art_cache[new_art_key] = raw_art
-        _manual_override_art_keys.add(new_art_key)
+        effective_art = raw_art or None
+        _cover_art_cache[new_art_key] = effective_art
+        if effective_art:
+            _manual_override_art_keys.add(new_art_key)
         af = new_artist.casefold().strip()
         tf = new_title.casefold().strip()
-        await run_in_threadpool(repo.upsert_cover_art, af, tf, raw_art, True)
+        await run_in_threadpool(repo.upsert_cover_art, af, tf, effective_art, True)
 
-    # LB write-back: fire-and-forget, does not block the response
-    asyncio.get_running_loop().create_task(
-        _lb_write_back(listen, db_updates, correction_ids)
-    )
+    # LB write-back: fire-and-forget
+    if db_updates:
+        asyncio.get_running_loop().create_task(_lb_write_back(listen, db_updates))
 
-    updated = await run_in_threadpool(repo.get_listen_by_id, listen_id)
+    updated = await run_in_threadpool(repo.get_listen_with_originals, listen_id)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to fetch updated listen")
     _populate_cover_art([updated])
     return updated
 
 
-async def _lb_write_back(
-    original: ListenEntry,
-    updates: dict[str, Any],
-    correction_ids: list[int],
-) -> None:
-    """Async write-back to ListenBrainz. Marks lb_synced for successful syncs."""
+@router.post("/listens/{listen_id}/correction/revert", response_model=ListenEntry)
+async def revert_listen_correction(
+    listen_id: int = Path(..., ge=1, description="ID of the listen to revert"),
+) -> ListenEntry:
+    """Remove the per-listen correction, reverting to track correction or raw values."""
+    current = await run_in_threadpool(repo.get_listen_with_originals, listen_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Listen not found")
+
+    await run_in_threadpool(repo.delete_listen_correction, listen_id)
+
+    # LB write-back: if artist or title was corrected, resubmit with raw (original) values.
+    # current has what LB knows; the raw listen has what we want LB to revert to.
+    if current.has_listen_correction:
+        raw = await run_in_threadpool(repo.get_listen_by_id, listen_id)
+        if raw:
+            revert_updates: dict[str, Any] = {}
+            if current.artist != raw.artist:
+                revert_updates["artist"] = raw.artist
+            if current.title != raw.title:
+                revert_updates["title"] = raw.title
+            if revert_updates:
+                asyncio.get_running_loop().create_task(_lb_write_back(current, revert_updates))
+
+    result = await run_in_threadpool(repo.get_listen_with_originals, listen_id)
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to fetch reverted listen")
+    _populate_cover_art([result])
+    return result
+
+
+@router.post("/tracks/correction", response_model=ListenEntry)
+async def correct_track(
+    body: TrackCorrectionRequest = Body(...),
+) -> ListenEntry:
+    """Apply corrections to all listens of a logical track (canonical track correction)."""
+    corrected_artist = body.corrected_artist or ""
+    corrected_title = body.corrected_title or ""
+
+    corrections = dict(body.corrections)
+    raw_art_val = corrections.pop("cover_art_url", None)
+    raw_art: Optional[str] = str(raw_art_val) if isinstance(raw_art_val, str) else None
+    new_artist = str(corrections.get("artist") or corrected_artist)
+    new_title = str(corrections.get("title") or corrected_title)
+    mbid_val = corrections.get("recording_mbid")
+    correction_mbid: Optional[str] = str(mbid_val) if isinstance(mbid_val, str) else None
+
+    # Capture representative listen id BEFORE saving (fanout changes the view)
+    rep_id = await run_in_threadpool(
+        repo.get_representative_listen_id, corrected_artist, corrected_title
+    ) if corrected_artist and corrected_title else None
+
+    await run_in_threadpool(
+        repo.save_track_correction,
+        corrected_artist, corrected_title, corrections,
+        body.track_id, correction_mbid,
+    )
+
+    if raw_art is not None:
+        new_art_key = _art_key(new_artist, new_title)
+        effective_art: Optional[str] = raw_art or None
+        _cover_art_cache[new_art_key] = effective_art
+        if effective_art:
+            _manual_override_art_keys.add(new_art_key)
+        af = new_artist.casefold().strip()
+        tf = new_title.casefold().strip()
+        await run_in_threadpool(repo.upsert_cover_art, af, tf, effective_art, True)
+
+    if not rep_id:
+        raise HTTPException(status_code=404, detail="No listens found for this track")
+    result = await run_in_threadpool(repo.get_listen_with_originals, rep_id)
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to fetch updated listen")
+    _populate_cover_art([result])
+    return result
+
+
+@router.post("/tracks/correction/revert", response_model=ListenEntry)
+async def revert_track_correction(
+    body: TrackRevertRequest = Body(...),
+) -> ListenEntry:
+    """Remove a canonical track correction, reverting all matching listens to raw values."""
+    track_id = body.track_id
+    corrected_artist = body.corrected_artist or ""
+    corrected_title = body.corrected_title or ""
+
+    # Resolve track_id if not provided
+    if not track_id and corrected_artist and corrected_title:
+        from app.db import get_engine as _get_engine
+        from sqlalchemy import text as _text
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                _text("""
+                    SELECT trk.canonical_track_id
+                    FROM corrected_listens cl
+                    JOIN listens l ON l.id = cl.id
+                    JOIN track_raw_keys trk
+                        ON trk.artist_raw_folded = l.artist_raw_folded
+                       AND trk.title_raw_folded  = l.title_raw_folded
+                    WHERE cl.artist = :artist AND cl.title = :title
+                    LIMIT 1
+                """),
+                {"artist": corrected_artist, "title": corrected_title},
+            ).first()
+        if row:
+            track_id = row.canonical_track_id
+
+    if not track_id:
+        raise HTTPException(status_code=404, detail="No track correction found")
+
+    # Get a representative listen BEFORE deletion (the join won't work after)
+    rep_id = await run_in_threadpool(repo.get_representative_listen_id_by_track_id, track_id)
+
+    await run_in_threadpool(
+        repo.delete_track_correction, corrected_artist, corrected_title, track_id
+    )
+
+    if not rep_id:
+        raise HTTPException(status_code=404, detail="No listens found for this track")
+    result = await run_in_threadpool(repo.get_listen_with_originals, rep_id)
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to fetch reverted listen")
+    _populate_cover_art([result])
+    return result
+
+
+async def _lb_write_back(original: ListenEntry, updates: dict[str, Any]) -> None:
+    """Async write-back to ListenBrainz. Best-effort, fire-and-forget."""
     from app.sync import LISTENBRAINZ_USERNAME, LISTENBRAINZ_TOKEN
 
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
@@ -786,15 +913,10 @@ async def _lb_write_back(
         "User-Agent": _UA,
     }
 
-    ok = False
     if "recording_mbid" in updates:
-        ok = await _lb_submit_manual_mapping(original.unix_ts, updates["recording_mbid"], lb_headers)
+        await _lb_submit_manual_mapping(original.unix_ts, updates["recording_mbid"], lb_headers)
     elif "artist" in updates or "title" in updates:
-        ok = await _lb_delete_and_resubmit(original, updates, lb_headers)
-
-    if ok:
-        for cid in correction_ids:
-            await run_in_threadpool(repo.mark_lb_synced, cid)
+        await _lb_delete_and_resubmit(original, updates, lb_headers)
 
 
 async def _lb_submit_manual_mapping(
@@ -940,10 +1062,12 @@ async def search_musicbrainz(
             )
             release = None
             release_date = None
+            release_mbid = None
             releases = rec.get("releases", [])
             if releases:
                 release = releases[0].get("title")
                 release_date = releases[0].get("date")
+                release_mbid = releases[0].get("id")
             results.append(MBRecordingResult(
                 mbid=rec.get("id", ""),
                 title=rec.get("title", ""),
@@ -951,6 +1075,7 @@ async def search_musicbrainz(
                 release=release,
                 release_date=release_date,
                 length_ms=rec.get("length"),
+                release_mbid=release_mbid,
             ))
         return MBSearchResponse(results=results)
     except asyncio.TimeoutError:
