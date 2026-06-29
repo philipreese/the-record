@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.2](https://github.com/philipreese/the-record/compare/v0.33.1...v0.33.2) (2026-06-29)
+
+
+### Code Refactoring
+
+* **all:** SQL consistency, sync modularization, chart extraction, test teardown ([e2a3c1e](https://github.com/philipreese/the-record/commit/e2a3c1eece87b7a9fedd6def2157af5d1a710016))
+
 ## [0.33.1](https://github.com/philipreese/the-record/compare/v0.33.0...v0.33.1) (2026-06-29)
 
 
