@@ -3,7 +3,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, List, Optional, cast
 import os
 from zoneinfo import ZoneInfo
-from sqlalchemy import Boolean, Column, Integer, Table, Text, MetaData, select, func, desc, distinct, text, tuple_, or_, and_
+from sqlalchemy import Boolean, Column, Integer, Table, Text, MetaData, select, func, desc, distinct, text, bindparam, tuple_, or_, and_
 from app.db import get_engine, get_session, Listen, CoverArtCache, ListenCorrection, CanonicalTrack, TrackRawKey
 from app.db_helpers import IS_POSTGRES, get_date_expr, get_hour_expr, get_month_expr, get_month_num_expr, get_day_num_expr, get_year_expr, get_day_of_week_expr
 from app.schemas import (

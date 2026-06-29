@@ -1,8 +1,6 @@
 import asyncio
 import logging
 import os
-import time
-from dataclasses import dataclass
 from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
@@ -14,25 +12,7 @@ from app.db import get_session, get_engine, Listen
 from app.repository import deduplicate_listens, apply_artist_corrections
 from app.utils import clean_artist, clean_title
 from app.ws import broadcast_sync_event
-
-LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
-LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
-
-@dataclass
-class SyncState:
-    running: bool = False
-    mode: str = ""
-    batches_fetched: int = 0
-    synced_count: int = 0
-    updated_count: int = 0
-    deleted_count: int = 0
-    lb_total: int = 0
-    local_total: int = 0
-    error: Optional[str] = None
-    finished: bool = False
-
-_sync_state = SyncState()
-_sync_lock = asyncio.Lock()
+from .state import _sync_state, _sync_lock, SyncState
 
 def _parse_duration(additional_info: dict) -> Optional[int]:
     """Return duration in whole seconds from LB additional_info.
@@ -51,6 +31,7 @@ def _parse_duration(additional_info: dict) -> Optional[int]:
             pass
     return None
 
+
 def _extract_recording_mbid(meta: dict) -> Optional[str]:
     """Resolve a track's MusicBrainz Recording ID from LB track_metadata.
 
@@ -62,12 +43,15 @@ def _extract_recording_mbid(meta: dict) -> Optional[str]:
         return mapped
     return (meta.get("additional_info") or {}).get("recording_mbid")
 
+
 async def _run_sync(mode: str) -> None:
     """
     Normal (incremental) sync: two-pass additive approach.
     Pass A (forward): fetch from newest LB entry down to the local watermark.
     Pass B (backfill): if LB total > local count, scan from oldest local ts downward.
     """
+    LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
+    LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
 
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         _sync_state.error = "Credentials missing. Configure LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN."
@@ -355,6 +339,9 @@ async def _run_mirror() -> None:
     No source restriction — all local rows are compared against LB.
     Identity key: (unix_ts, artist.lower(), title.lower())
     """
+    LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
+    LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
+
     if not LISTENBRAINZ_USERNAME or not LISTENBRAINZ_TOKEN:
         _sync_state.error = "Credentials missing. Configure LISTENBRAINZ_USERNAME and LISTENBRAINZ_TOKEN."
         _sync_state.running = False
@@ -638,23 +625,21 @@ if __name__ == "__main__":
     from pathlib import Path
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-
-    # Module-level os.getenv() ran before load_dotenv — re-read now
-    LISTENBRAINZ_USERNAME = os.getenv("LISTENBRAINZ_USERNAME")
-    LISTENBRAINZ_TOKEN = os.getenv("LISTENBRAINZ_TOKEN")
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
     parser = argparse.ArgumentParser(description="Run ListenBrainz sync standalone")
     parser.add_argument("--mode", choices=["normal", "mirror"], default="normal")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s",
-                        stream=__import__("sys").stdout)
+    import logging as _logging
+    _logging.basicConfig(level=_logging.INFO, format="%(levelname)s %(name)s: %(message)s",
+                         stream=__import__("sys").stdout)
 
     _sync_state.running = True
     _sync_state.finished = False
 
-    asyncio.run(_run_sync(args.mode) if args.mode == "normal" else _run_mirror())
+    import asyncio as _asyncio
+    _asyncio.run(_run_sync(args.mode) if args.mode == "normal" else _run_mirror())
 
     if _sync_state.error:
         print(f"ERROR: {_sync_state.error}")

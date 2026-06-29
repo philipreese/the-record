@@ -351,7 +351,8 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         deleted = database.deduplicate_listens()
         self.assertEqual(deleted, 1)
 
-        row = db.get_engine().connect().execute(text("SELECT COUNT(*) FROM listens")).fetchone()
+        with db.get_engine().connect() as conn:
+            row = conn.execute(text("SELECT COUNT(*) FROM listens")).fetchone()
         assert row is not None
         self.assertEqual(row[0], 1)
 
@@ -368,7 +369,8 @@ class TestDeduplicateCaseInsensitive(unittest.TestCase):
         deleted = database.deduplicate_listens()
         self.assertEqual(deleted, 0)
 
-        row = db.get_engine().connect().execute(text("SELECT COUNT(*) FROM listens")).fetchone()
+        with db.get_engine().connect() as conn:
+            row = conn.execute(text("SELECT COUNT(*) FROM listens")).fetchone()
         assert row is not None
         self.assertEqual(row[0], 2)
 

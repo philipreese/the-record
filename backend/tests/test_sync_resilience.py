@@ -59,8 +59,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
         respx.get(_LISTENS_RE).mock(
             return_value=httpx.Response(429, headers={"X-RateLimit-Reset-In": "10"})
         )
-        with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
-             mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
+        with mock.patch.dict(os.environ, {"LISTENBRAINZ_USERNAME": "testuser", "LISTENBRAINZ_TOKEN": "testtoken"}), \
              mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", new_callable=mock.AsyncMock):
             await sync_worker._run_sync("normal")
@@ -90,8 +89,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
         async def record_sleep(secs: float) -> None:
             sleep_calls.append(secs)
 
-        with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
-             mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
+        with mock.patch.dict(os.environ, {"LISTENBRAINZ_USERNAME": "testuser", "LISTENBRAINZ_TOKEN": "testtoken"}), \
              mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", side_effect=record_sleep):
             await sync_worker._run_sync("normal")
@@ -115,8 +113,7 @@ class TestSyncResilienceNormal(unittest.IsolatedAsyncioTestCase):
         async def record_sleep(secs: float) -> None:
             sleep_calls.append(secs)
 
-        with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
-             mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
+        with mock.patch.dict(os.environ, {"LISTENBRAINZ_USERNAME": "testuser", "LISTENBRAINZ_TOKEN": "testtoken"}), \
              mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, side_effect=_to_thread_se), \
              mock.patch("asyncio.sleep", side_effect=record_sleep):
             await sync_worker._run_sync("normal")
@@ -145,8 +142,7 @@ class TestSyncResilienceMirror(unittest.IsolatedAsyncioTestCase):
         respx.get(_LISTENS_RE).mock(
             return_value=httpx.Response(429, headers={"X-RateLimit-Reset-In": "30"})
         )
-        with mock.patch.object(sync_worker, "LISTENBRAINZ_USERNAME", "testuser"), \
-             mock.patch.object(sync_worker, "LISTENBRAINZ_TOKEN", "testtoken"), \
+        with mock.patch.dict(os.environ, {"LISTENBRAINZ_USERNAME": "testuser", "LISTENBRAINZ_TOKEN": "testtoken"}), \
              mock.patch("asyncio.to_thread", new_callable=mock.AsyncMock, return_value={}), \
              mock.patch("asyncio.sleep", new_callable=mock.AsyncMock):
             await sync_worker._run_mirror()

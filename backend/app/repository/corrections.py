@@ -5,6 +5,7 @@ from ._base import (
     select,
     func,
     text,
+    bindparam,
     get_engine,
     Listen,
     IS_POSTGRES,
@@ -241,9 +242,18 @@ def delete_track_listens(artist: str, title: str) -> int:
         ]
         if not ids:
             return 0
-        id_list = ",".join(str(i) for i in ids)
-        conn.execute(text(f"DELETE FROM listen_corrections WHERE listen_id IN ({id_list})"))
-        conn.execute(text(f"DELETE FROM listens WHERE id IN ({id_list})"))
+        conn.execute(
+            text("DELETE FROM listen_corrections WHERE listen_id IN :ids").bindparams(
+                bindparam("ids", expanding=True)
+            ),
+            {"ids": ids},
+        )
+        conn.execute(
+            text("DELETE FROM listens WHERE id IN :ids").bindparams(
+                bindparam("ids", expanding=True)
+            ),
+            {"ids": ids},
+        )
         # Clean up orphaned track_raw_keys and canonical_tracks
         conn.execute(text("""
             DELETE FROM track_raw_keys
