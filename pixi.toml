@@ -3,7 +3,7 @@ authors = ["Philip Reese <philipreese@mail.com>"]
 channels = ["conda-forge"]
 name = "the-record"
 platforms = ["win-64", "linux-64"]
-version = "0.33.2"
+version = "0.33.3"
 
 [tasks]
 dev = "python backend/scripts/run_dev.py"
