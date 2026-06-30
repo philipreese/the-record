@@ -29,15 +29,24 @@ def upgrade() -> None:
 
     bind = op.get_bind()
     rows = bind.execute(sa.text("SELECT id, artist, title FROM listens")).fetchall()
+    
+    updates = []
     for row in rows:
         af = (row.artist or "").casefold().strip()
         tf = (row.title or "").casefold().strip()
-        bind.execute(
-            sa.text(
-                "UPDATE listens SET artist_raw_folded = :af, title_raw_folded = :tf WHERE id = :id"
-            ),
-            {"af": af, "tf": tf, "id": row.id},
-        )
+        updates.append({"af": af, "tf": tf, "id": row.id})
+        
+    if updates:
+        # Execute in chunks to avoid memory/parameter limits on some databases
+        chunk_size = 10000
+        for i in range(0, len(updates), chunk_size):
+            chunk = updates[i:i + chunk_size]
+            bind.execute(
+                sa.text(
+                    "UPDATE listens SET artist_raw_folded = :af, title_raw_folded = :tf WHERE id = :id"
+                ),
+                chunk,
+            )
 
     op.create_index(
         "idx_listens_raw_folded", "listens", ["artist_raw_folded", "title_raw_folded"]
