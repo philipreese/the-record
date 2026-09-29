@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0](https://github.com/philipreese/the-record/compare/v0.33.3...v0.34.0) (2026-09-29)
+
+
+### Features
+
+* **hosting:** Serve Music as an installable private app ([979b340](https://github.com/philipreese/the-record/commit/979b340343071904c3342095a0117b49be74d0e9))
+
 ## [0.33.3](https://github.com/philipreese/the-record/compare/v0.33.2...v0.33.3) (2026-06-30)
 
 
