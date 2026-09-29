@@ -56,7 +56,7 @@
       <span
         class="text-xl font-serif italic lowercase tracking-tight text-theme-text flex items-baseline gap-2"
       >
-        the record
+        Music
         {#if scrollY > 80}
           <span transition:fade={{ duration: 150 }} class="text-theme-accent select-none">|</span>
           <span

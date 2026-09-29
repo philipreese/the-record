@@ -84,7 +84,7 @@
     },
     {
       "condition": "always_true",
-      "text": "Starting the record..."
+      "text": "Starting Music..."
     },
     {
       "condition": "always_true",
@@ -264,7 +264,7 @@
     },
     {
       "condition": "always_true",
-      "text": "the record"
+      "text": "Music"
     }
   ],
   "overview.subtitle": [
@@ -1302,7 +1302,7 @@
   "footer.title": [
     {
       "condition": "always_true",
-      "text": "the record"
+      "text": "Music"
     },
     {
       "condition": "always_true",
@@ -1368,23 +1368,23 @@
   "footer.copyright": [
     {
       "condition": "always_true",
-      "text": "© 2026 the record. all plays accounted for."
+      "text": "© 2026 Music. all plays accounted for."
     },
     {
       "condition": "always_true",
-      "text": "© 2026 the record. no sound forgotten."
+      "text": "© 2026 Music. no sound forgotten."
     },
     {
       "condition": "always_true",
-      "text": "© 2026 the record. preserving the signal."
+      "text": "© 2026 Music. preserving the signal."
     },
     {
       "condition": "always_true",
-      "text": "© 2026 the record. the archive remains."
+      "text": "© 2026 Music. the archive remains."
     },
     {
       "condition": "always_true",
-      "text": "© 2026 the record. tracking every beat."
+      "text": "© 2026 Music. tracking every beat."
     }
   ],
   "wrapped.slide0.section": [
@@ -1920,7 +1920,7 @@
     },
     {
       "condition": "always_true",
-      "text": "The URL you followed doesn't match any page in the record. Check the address and try again."
+      "text": "The URL you followed doesn't match any page in Music. Check the address and try again."
     },
     {
       "condition": "always_true",

@@ -8,7 +8,7 @@
   <div class="flex flex-col items-center md:items-start gap-1">
     <div class="flex items-center gap-2">
       <span class="text-sm font-serif italic lowercase tracking-tight text-theme-secondary"
-        >the record</span
+        >Music</span
       >
       <span class="opacity-30">/</span>
       <span>{appCache.narrative.plain['footer.title_tag'] || 'listening journal'}</span>
@@ -22,7 +22,7 @@
   <div class="flex items-center gap-6">
     <span class="opacity-40"
       >{appCache.narrative.plain['footer.copyright'] ||
-        '© 2026 the record. all plays accounted for.'}</span
+        '© 2026 Music. all plays accounted for.'}</span
     >
   </div>
 </footer>
