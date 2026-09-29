@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await close_lb_client()
 
 
-app = FastAPI(title="The Record API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Music API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -102,3 +102,9 @@ app.include_router(media.router, prefix="/api")
 app.include_router(playing.router, prefix="/api")
 app.include_router(sync_api.router, prefix="/api")
 app.include_router(gql_router, prefix="/api/graphql")
+
+
+# Production static serving is explicit so backend-only deployments stay supported.
+from app.web import mount_frontend
+
+mount_frontend(app, os.environ.get("FRONTEND_DIST"))

@@ -33,7 +33,7 @@
         <div class="flex items-center gap-3.5 py-4 mb-8">
           <Icon name="logo" size="w-8 h-8 text-theme-accent" />
           <span class="text-3xl font-serif italic tracking-tight lowercase text-theme-text">
-            the record
+            Music
           </span>
         </div>
       </button>

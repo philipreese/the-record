@@ -29,7 +29,7 @@ templates = {
         {"condition": "always_true", "text": "Waking up the server..."},
         {"condition": "always_true", "text": "Initializing systems..."},
         {"condition": "always_true", "text": "Powering up archive..."},
-        {"condition": "always_true", "text": "Starting the record..."},
+        {"condition": "always_true", "text": "Starting Music..."},
         {"condition": "always_true", "text": "Connecting to database..."}
     ],
     "sidebar.syncing": [
@@ -81,7 +81,7 @@ templates = {
         {"condition": "always_true", "text": "listening archive"},
         {"condition": "always_true", "text": "sonic record"},
         {"condition": "always_true", "text": "audio history"},
-        {"condition": "always_true", "text": "the record"}
+        {"condition": "always_true", "text": "Music"}
     ],
     "overview.subtitle": [
         {"condition": "always_true", "text": "Self-hosted scrobble archives and listening insights."},
@@ -461,7 +461,7 @@ templates = {
 
     # Footer
     "footer.title": [
-        {"condition": "always_true", "text": "the record"},
+        {"condition": "always_true", "text": "Music"},
         {"condition": "always_true", "text": "the archive"},
         {"condition": "always_true", "text": "the ledger"},
         {"condition": "always_true", "text": "the log"},
@@ -482,11 +482,11 @@ templates = {
         {"condition": "always_true", "text": "Keeping the score of your acoustic life."}
     ],
     "footer.copyright": [
-        {"condition": "always_true", "text": "&copy; 2026 the record. all plays accounted for."},
-        {"condition": "always_true", "text": "&copy; 2026 the record. no sound forgotten."},
-        {"condition": "always_true", "text": "&copy; 2026 the record. preserving the signal."},
-        {"condition": "always_true", "text": "&copy; 2026 the record. the archive remains."},
-        {"condition": "always_true", "text": "&copy; 2026 the record. tracking every beat."}
+        {"condition": "always_true", "text": "&copy; 2026 Music. all plays accounted for."},
+        {"condition": "always_true", "text": "&copy; 2026 Music. no sound forgotten."},
+        {"condition": "always_true", "text": "&copy; 2026 Music. preserving the signal."},
+        {"condition": "always_true", "text": "&copy; 2026 Music. the archive remains."},
+        {"condition": "always_true", "text": "&copy; 2026 Music. tracking every beat."}
     ],
 
     # Wrapped Card

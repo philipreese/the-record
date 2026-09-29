@@ -214,3 +214,12 @@ The Dockerfile exposes Uvicorn directly on port 8000 — TLS is handled upstream
 | Run Alembic commands | `pixi run alembic <cmd>` (e.g. `upgrade head`, `current`, `stamp 001`) |
 
 **Source of truth:** [pixi.toml](../pixi.toml)
+
+
+## Private single-origin hosting
+
+Music can serve its built frontend alongside the API when `FRONTEND_DIST` is explicitly
+set. Backend-only deployments retain their existing routing. Missing production assets
+fail startup; unknown API routes remain errors. The local production launcher requires
+an existing SQLite database, binds loopback, and uses the current startup migrations.
+The PWA caches only a static unavailable screen, never listening history or API responses.
